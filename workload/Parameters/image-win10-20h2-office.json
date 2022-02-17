@@ -1,0 +1,8 @@
+{
+    "name": "Windows10_21H2_Office",
+    "osType": "Windows",
+    "osState": "Generalized",
+    "offer": "office-365",
+    "publisher": "MicrosoftWindowsDesktop",
+    "sku": "win10-21h2-avd-m365"
+}
