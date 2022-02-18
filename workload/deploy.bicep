@@ -5,7 +5,7 @@ targetScope = 'subscription'
 // ========== //
 
 @description('Required. The name of the resource group to deploy')
-param DeploymentPrefix string = 'AVD'
+param deploymentPrefix string = 'AVD'
 
 @description('Required. The location to deploy into')
 param location string = deployment().location
@@ -15,33 +15,36 @@ param location string = deployment().location
     'Pooled'
   ])
 @description('Optional. AVD host pool type (Default: Pooled)')
-param AvdHostPoolType string = 'Pooled' 
+param avdHostPoolType string = 'Pooled' 
 
 @allowed([
     'BreadthFirst'
     'DepthFirst'
   ])
 @description('Optional. AVD host pool load balacing type (Default: BreadthFirst)')
-param AvdHostPoolloadBalancerType string = 'BreadthFirst' 
+param avdHostPoolloadBalancerType string = 'BreadthFirst' 
 
-@description('Optional. AVD host pool start VM on connect (Default: true)')
-param AvdStartVMOnConnect bool = true
+@description('Optional. AVD host pool start VM on Connect (Default: true)')
+param avdStartVMOnConnect bool = true
 
 @allowed([
     'Desktop'
     'RemoteApp'
   ])
 @description('Optional. AVD application group type (Default: Desktop)')
-param AvdApplicationGroupType string = 'Desktop' 
+param avdApplicationGroupType string = 'Desktop' 
 
-@description('Optional. AVD host pool custom RDP properties')
-param AvdHostPoolRdpProperty string = 'audiocapturemode:i:1;audiomode:i:0;drivestoredirect:s:;redirectclipboard:i:1;redirectcomports:i:1;redirectprinters:i:1;redirectsmartcards:i:1;screen mode id:i:2'
+@description('Optional. AVD host pool Custom RDP properties')
+param avdHostPoolRdpProperty string = 'audiocapturemode:i:1;audiomode:i:0;drivestoredirect:s:;redirectclipboard:i:1;redirectcomports:i:1;redirectprinters:i:1;redirectsmartcards:i:1;screen mode id:i:2'
 
-@description('Create custom Start VM on Connect Role')
-param CreateStartVmOnConnectCustomRole bool = true
+@description('Create custom Start VM on connect role')
+param createStartVmOnConnectCustomRole bool = true
 
-@description('Create custom Azure Image Builder Role')
-param CreateAzureImageBuilderCustomRole bool = true
+@description('Create custom azure image builder role')
+param createAibCustomRole bool = true
+
+@description('Create azure image Builder managed identity')
+param createAibManagedIdentity bool = true
 
 @description('Do not modify, used to set unique value for resource deployment')
 param time string = utcNow()
@@ -49,106 +52,107 @@ param time string = utcNow()
 // =========== //
 // Variable declaration //
 // =========== //
-var DeploymentPrefixLowercase = toLower(DeploymentPrefix)
-var AvdServiceObjectsRgName = 'rg-${DeploymentPrefixLowercase}-avd-service-objects'
-var AvdNetworkObjectsRgName = 'rg-${DeploymentPrefixLowercase}-avd-network'
-var AvdComputeObjectsRgName = 'rg-${DeploymentPrefixLowercase}-avd-compute'
-var AvdStorageObjectsRgName = 'rg-${DeploymentPrefixLowercase}-avd-storage'
-var AvdWorkSpaceName = 'avdws-${DeploymentPrefixLowercase}'
-var AvdHostPoolName = 'avdhp-${DeploymentPrefixLowercase}'
-var AvdApplicationGroupName = 'avdag-${DeploymentPrefixLowercase}'
+var deploymentPrefixLowercase = toLower(deploymentPrefix)
+var avdServiceObjectsRgName = 'rg-${deploymentPrefixLowercase}-avd-service-objects'
+var avdNetworkObjectsRgName = 'rg-${deploymentPrefixLowercase}-avd-network'
+var avdComputeObjectsRgName = 'rg-${deploymentPrefixLowercase}-avd-compute'
+var avdStorageObjectsRgName = 'rg-${deploymentPrefixLowercase}-avd-storage'
+var avdWorkSpaceName = 'avdws-${deploymentPrefixLowercase}'
+var avdHostPoolName = 'avdhp-${deploymentPrefixLowercase}'
+var avdApplicationGroupName = 'avdag-${deploymentPrefixLowercase}'
+var aibManagedIdentityName = 'uai-${deploymentPrefixLowercase}-imagebuilder'
 
 // =========== //
 // Deployments //
 // =========== //
 
 // Resource groups
-module AvdServiceObjectsRg '../arm/Microsoft.Resources/resourceGroups/deploy.bicep' = {
+module avdServiceObjectsRg '../arm/Microsoft.Resources/resourceGroups/deploy.bicep' = {
   name: 'AVD-ServiceObjects-RG-${time}'
      params: {
-         name: AvdServiceObjectsRgName
+         name: avdServiceObjectsRgName
          location: location
      }
  }
 
- module AvdNetworkObjectsRg '../arm/Microsoft.Resources/resourceGroups/deploy.bicep' = {
+ module avdNetworkObjectsRg '../arm/Microsoft.Resources/resourceGroups/deploy.bicep' = {
   name: 'AVD-Network-RG-${time}'
      params: {
-         name: AvdNetworkObjectsRgName
+         name: avdNetworkObjectsRgName
          location: location
      }
  }
 
- module AvdComputeObjectsRg '../arm/Microsoft.Resources/resourceGroups/deploy.bicep' = {
+ module avdComputeObjectsRg '../arm/Microsoft.Resources/resourceGroups/deploy.bicep' = {
   name: 'AVD-Compute-RG-${time}'
      params: {
-         name: AvdComputeObjectsRgName
+         name: avdComputeObjectsRgName
          location: location
      }
  }
 
- module AvdStorageObjectsRg '../arm/Microsoft.Resources/resourceGroups/deploy.bicep' = {
+ module avdStorageObjectsRg '../arm/Microsoft.Resources/resourceGroups/deploy.bicep' = {
   name: 'AVD-Storage-RG-${time}'
      params: {
-         name: AvdStorageObjectsRgName
+         name: avdStorageObjectsRgName
          location: location
      }
  }
 //
 
 // AVD management plane
-module AvdWorkSpace '../arm/Microsoft.DesktopVirtualization/workspaces/deploy.bicep' = {
-    scope: resourceGroup(AvdServiceObjectsRgName)
+module avdWorkSpace '../arm/Microsoft.DesktopVirtualization/workspaces/deploy.bicep' = {
+    scope: resourceGroup(avdServiceObjectsRgName)
     name: 'AVD-WorkSpace-${time}'
     params: {
-      name: AvdWorkSpaceName
+      name: avdWorkSpaceName
       location: location
       appGroupResourceIds: [
-        AvdApplicationGroup.outputs.resourceId
+        avdApplicationGroup.outputs.resourceId
       ]
     }
     dependsOn: [
-        AvdServiceObjectsRg
-        AvdApplicationGroup
+        avdServiceObjectsRg
+        avdApplicationGroup
     ]
   }
   
-  module AvdHostPool '../arm/Microsoft.DesktopVirtualization/hostpools/deploy.bicep' = {
-    scope: resourceGroup(AvdServiceObjectsRgName)
+  module avdHostPool '../arm/Microsoft.DesktopVirtualization/hostpools/deploy.bicep' = {
+    scope: resourceGroup(avdServiceObjectsRgName)
     name: 'AVD-HostPool-${time}'
     params: {
-      name: AvdHostPoolName
+      name: avdHostPoolName
       location: location
-      hostpoolType: AvdHostPoolType
-      startVMOnConnect: AvdStartVMOnConnect
-      loadBalancerType: AvdHostPoolloadBalancerType
-      customRdpProperty: AvdHostPoolRdpProperty
-      //validationEnviroment: false
+      hostpoolType: avdHostPoolType
+      startVMOnConnect: avdStartVMOnConnect
+      loadBalancerType: avdHostPoolloadBalancerType
+      customRdpProperty: avdHostPoolRdpProperty
+      validationEnviroment: false
     }
     dependsOn: [
-        AvdServiceObjectsRg
+        avdServiceObjectsRg
     ]
   }
   
-  module AvdApplicationGroup '../arm/Microsoft.DesktopVirtualization/applicationgroups/deploy.bicep' = {
-    scope: resourceGroup(AvdServiceObjectsRgName)
+  module avdApplicationGroup '../arm/Microsoft.DesktopVirtualization/applicationgroups/deploy.bicep' = {
+    scope: resourceGroup(avdServiceObjectsRgName)
     name: 'AVD-ApplicationGroup-${time}'
     params: {
-      name: AvdApplicationGroupName
+      name: avdApplicationGroupName
       location: location
-      applicationGroupType: AvdApplicationGroupType
-      hostpoolName: AvdHostPool.outputs.name
+      applicationGroupType: avdApplicationGroupType
+      hostpoolName: avdHostPool.outputs.name
     }
     dependsOn: [
-        AvdServiceObjectsRg
-        AvdHostPool
+        avdServiceObjectsRg
+        avdHostPool
     ]
   }
 //
 
 // Custom RBAC Roles
-module StartVMonConnectRole '../arm/Microsoft.Authorization/roleDefinitions/.bicep/nested_roleDefinitions_sub.bicep' = if (CreateStartVmOnConnectCustomRole) {
-    name: 'Start-VM-onConnect-Role-${time}'
+module startVMonConnectRole '../arm/Microsoft.Authorization/roleDefinitions/.bicep/nested_roleDefinitions_sub.bicep' = if (createStartVmOnConnectCustomRole) {
+    name: 'Start-VM-on-Connect-Role-${time}'
     params: {
       subscriptionId: subscription().subscriptionId
       description: 'Start VM on connect (Custom)'
@@ -163,8 +167,8 @@ module StartVMonConnectRole '../arm/Microsoft.Authorization/roleDefinitions/.bic
     }
   }
 
-module AzureImageBuilderRole '../arm/Microsoft.Authorization/roleDefinitions/.bicep/nested_roleDefinitions_sub.bicep' = if (CreateAzureImageBuilderCustomRole) {
-    name: 'AzureImageBuilder-Role-${time}'
+module azureImageBuilderRole '../arm/Microsoft.Authorization/roleDefinitions/.bicep/nested_roleDefinitions_sub.bicep' = if (createAibCustomRole) {
+    name: 'Azure-Image-Builder-Role-${time}'
     params: {
       subscriptionId: subscription().subscriptionId
       description: 'Azure Image Builder (Custom)'
@@ -200,23 +204,30 @@ module AzureImageBuilderRole '../arm/Microsoft.Authorization/roleDefinitions/.bi
   }
 //
 
-// RBAC role Assignments
-module AzureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignments/.bicep/nested_rbac_rg.bicep' = if (CreateAzureImageBuilderCustomRole) {
-    name: 'AzureImageBuilder-RoleAssign-${time}'
-    scope: resourceGroup(AvdServiceObjectsRgName)
+// Managed identities
+module imageBuilderManagedIdentity '../arm/Microsoft.ManagedIdentity/userAssignedIdentities/deploy.bicep' = if (createAibManagedIdentity) {
+    scope: resourceGroup(avdServiceObjectsRgName)
+    name: 'image-Builder-Managed-Identity-${time}'
     params: {
-      roleDefinitionIdOrName: AzureImageBuilderRole.outputs.resourceId
-      principalId: imageBuilderIdentity.outputs.identityPrincipalId
+        name: aibManagedIdentityName
+        location:location
     }
   }
-  
-  module AzureImageBuilderRoleAssignExisting '../arm/Microsoft.Authorization/roleAssignments/.bicep/nested_rbac_rg.bicep' = if (!CreateAzureImageBuilderCustomRole) {
-    name: 'AzureImageBuilder-RoleAssignExisting-${time}'
-    scope: resourceGroup(AvdServiceObjectsRgName)
+//
+
+// RBAC role Assignments
+module azureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignments/.bicep/nested_rbac_rg.bicep' = if (createAibCustomRole && createAibManagedIdentity) {
+    name: 'Azure-Image-Builder-RoleAssign-${time}'
+    scope: resourceGroup(avdServiceObjectsRgName)
     params: {
-      roleDefinitionId: guid(AzureImageBuilderRole.outputs.name, subscription().id)
-      principalId: imageBuilderIdentity.outputs.identityPrincipalId
+      roleDefinitionIdOrName: azureImageBuilderRole.outputs.resourceId
+      principalId: imageBuilderManagedIdentity.outputs.principalId
+      //resourceGroupName: resourceGroup(AvdServiceObjectsRgName)
     }
+    dependsOn: [
+        azureImageBuilderRole
+        imageBuilderManagedIdentity
+    ]
   }
 //
 
@@ -224,10 +235,11 @@ module AzureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignmen
 // Outputs //
 // ======= //
 
-output AvdServiceObjectsRgId string = AvdServiceObjectsRg.outputs.resourceId
-output AvdNetworkObjectsRgId string = AvdNetworkObjectsRg.outputs.resourceId
-output AvdComputeObjectsRgId string = AvdComputeObjectsRg.outputs.resourceId
-output AvdStorageObjectsRgId string = AvdStorageObjectsRg.outputs.resourceId
-output AvdApplicationGroupId string = AvdApplicationGroup.outputs.resourceId
-output AvdHPoolName string = AvdHostPool.outputs.name
-output AzureImageBuilderRoleId string =  AzureImageBuilderRole.outputs.resourceId
+output avdServiceObjectsRgId string = avdServiceObjectsRg.outputs.resourceId
+output adNetworkObjectsRgId string = avdNetworkObjectsRg.outputs.resourceId
+output avdComputeObjectsRgId string = avdComputeObjectsRg.outputs.resourceId
+output avdStorageObjectsRgId string = avdStorageObjectsRg.outputs.resourceId
+output avdApplicationGroupId string = avdApplicationGroup.outputs.resourceId
+output avdHPoolName string = avdHostPool.outputs.name
+output azureImageBuilderRoleId string =  azureImageBuilderRole.outputs.resourceId
+output aibManagedIdentityNameId string =  imageBuilderManagedIdentity.outputs.principalId
