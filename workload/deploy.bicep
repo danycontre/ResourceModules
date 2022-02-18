@@ -43,6 +43,21 @@ param createStartVmOnConnectCustomRole bool = true
 @description('Create custom azure image builder role')
 param createAibCustomRole bool = true
 
+@allowed([
+    'win10-21h2-office'
+    'win10-21h2'
+    'win11-21h2-office'
+    'win11-21h2'
+  ])
+@description('Optional. AVD OS image source')
+param avdOsImage string = 'win10-21h2' 
+
+
+@description('Regions to replicate AVD images')
+param avdImageRegionsReplicas array       = [
+    'EastUs'
+  ]
+
 @description('Create azure image Builder managed identity')
 param createAibManagedIdentity bool = true
 
@@ -61,8 +76,9 @@ var avdWorkSpaceName = 'avdws-${deploymentPrefixLowercase}'
 var avdHostPoolName = 'avdhp-${deploymentPrefixLowercase}'
 var avdApplicationGroupName = 'avdag-${deploymentPrefixLowercase}'
 var aibManagedIdentityName = 'uai-${deploymentPrefixLowercase}-imagebuilder'
-var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${ImageDefinition}'
-var avdOsImages = [
+var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
+var avdDefaulOstImage = json(loadTextContent('./Parameters/${avdOsImage}.json'))
+var avdOsImageDefinitions = [
     json(loadTextContent('./Parameters/image-win10-21h2-office.json'))
     json(loadTextContent('./Parameters/image-win10-21h2.json'))
     json(loadTextContent('./Parameters/image-win11-21h2-office.json'))
@@ -246,9 +262,9 @@ module imageDefinitionTemplate 'Modules/template-image-definition.bicep' = {
       templateSpecName: imageDefinitionsTemSpecName
       location: location
       templateSpecDisplayName: 'Image Builder Definition'
-      buildDefinition: defaultImage
+      buildDefinition: avdDefaulOstImage
       imageId: imageDefinitions[1].outputs.imageId
-      imageRegions: imageRegionReplicas
+      imageRegions: avdImageRegionsReplicas
       managedIdentityId: imageBuilderManagedIdentity.outputs.principalId
       scriptUri: ''
     }
