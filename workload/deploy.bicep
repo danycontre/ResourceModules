@@ -40,6 +40,12 @@ param AVDApplicationGroupType string = 'Desktop'
 @description('Optional. AVD host pool custom RDP properties')
 param AVDHostPoolRdpProperty string = 'audiocapturemode:i:1;audiomode:i:0;drivestoredirect:s:;redirectclipboard:i:1;redirectcomports:i:1;redirectprinters:i:1;redirectsmartcards:i:1;screen mode id:i:2'
 
+@description('Create custom Start VM on Connect Role')
+param CreateStartVmOnConnectCustomRole bool = true
+
+@description('Create custom Azure Image Builder Role')
+param CreateAzureImageBuilderCustomRole bool = true
+
 @description('Do not modify, used to set unique value for resource deployment')
 param time string = utcNow()
 
@@ -96,7 +102,7 @@ module AVDServiceObjectsRG '../arm/Microsoft.Resources/resourceGroups/deploy.bic
 
 // AVD management plane
 module AVDWorkSpace '../arm/Microsoft.DesktopVirtualization/workspaces/deploy.bicep' = {
-    scope: managementGroup(ParentManagementGroupId)
+    scope: resourceGroup(AVDServiceObjectsRGName)
     name: 'AVD-WorkSpace-${time}'
     params: {
       name: AVDWorkSpaceName
@@ -112,7 +118,7 @@ module AVDWorkSpace '../arm/Microsoft.DesktopVirtualization/workspaces/deploy.bi
   }
   
   module AVDHostPool '../arm/Microsoft.DesktopVirtualization/hostpools/deploy.bicep' = {
-    scope: managementGroup(ParentManagementGroupId)
+    scope: resourceGroup(AVDServiceObjectsRGName)
     name: 'AVD-HostPool-${time}'
     params: {
       name: AVDHostPoolName
@@ -145,13 +151,12 @@ module AVDWorkSpace '../arm/Microsoft.DesktopVirtualization/workspaces/deploy.bi
 //
 
 // Custom RBAC Roles
-module StartVMonConnectRole '../arm/Microsoft.Authorization/roleDefinitions/deploy.bicep' = {
-    scope: subscription().id
+module StartVMonConnectRole '../arm/Microsoft.Authorization/roleDefinitions/.bicep/nested_roleDefinitions_sub.bicep' = if (CreateStartVmOnConnectCustomRole) {
     name: 'Start-VM-onConnect-Role-${time}'
     params: {
-      subscriptionId: subscription().id
+      subscriptionId: subscription().subscriptionId
+      description: 'Start VM on connect (Custom)'
       roleName: 'Start VM on connect (Custom)'
-      location: location
       actions: [
         'Microsoft.Compute/virtualMachines/start/action'
         'Microsoft.Compute/virtualMachines/*/read'
@@ -161,13 +166,13 @@ module StartVMonConnectRole '../arm/Microsoft.Authorization/roleDefinitions/depl
       ]
     }
   }
-  
-module AzureImageBuilderRole '../arm/Microsoft.Authorization/roleDefinitions/deploy.bicep' = {
-    scope: subscription().id
+
+module AzureImageBuilderRole '../arm/Microsoft.Authorization/roleDefinitions/.bicep/nested_roleDefinitions_sub.bicep' = if (CreateAzureImageBuilderCustomRole) {
     name: 'AzureImageBuilder-Role-${time}'
     params: {
+      subscriptionId: subscription().subscriptionId
+      description: 'Azure Image Builder (Custom)'
       roleName: 'Azure Image Builder (Custom)'
-      location: location
       actions: [
         'Microsoft.Compute/images/write'
         'Microsoft.Compute/images/read'
@@ -200,23 +205,25 @@ module AzureImageBuilderRole '../arm/Microsoft.Authorization/roleDefinitions/dep
 //
 
 // RBAC role Assignments
-//module aibRoleAssign 'Modules/role-assign.bicep' = if (createAibRole) {
-//    name: 'aibRoleAssign-${time}'
-//    scope: avdRg
-//    params: {
-//      roleDefinitionId: createAibRole ? aibRole.outputs.roleId : ''
-//      principalId: imageBuilderIdentity.outputs.identityPrincipalId
-//    }
-//  }
-//  
-//  module aibRoleAssignExisting 'Modules/role-assign.bicep' = if (!createAibRole) {
-//    name: 'aibRoleAssignExt-${time}'
-//    scope: avdRg
-//    params: {
-//      roleDefinitionId: guid(aibRoleDef.Name, subscription().id)
-//      principalId: imageBuilderIdentity.outputs.identityPrincipalId
-//    }
-//  }
+/*
+module aibRoleAssign 'Modules/role-assign.bicep' = if (createAibRole) {
+    name: 'aibRoleAssign-${time}'
+    scope: avdRg
+    params: {
+      roleDefinitionId: createAibRole ? aibRole.outputs.roleId : ''
+      principalId: imageBuilderIdentity.outputs.identityPrincipalId
+    }
+  }
+  
+  module aibRoleAssignExisting 'Modules/role-assign.bicep' = if (!createAibRole) {
+    name: 'aibRoleAssignExt-${time}'
+    scope: avdRg
+    params: {
+      roleDefinitionId: guid(aibRoleDef.Name, subscription().id)
+      principalId: imageBuilderIdentity.outputs.identityPrincipalId
+    }
+  }
+  */
 //
 
 // ======= //
