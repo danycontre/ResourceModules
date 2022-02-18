@@ -206,7 +206,7 @@ module AzureImageBuilderRole '../arm/Microsoft.Authorization/roleDefinitions/.bi
 
 // RBAC role Assignments
 /*
-module aibRoleAssign 'Modules/role-assign.bicep' = if (createAibRole) {
+module aibRoleAssign 'Modules/role-assign.bicep' = if (CreateAzureImageBuilderCustomRole) {
     name: 'aibRoleAssign-${time}'
     scope: avdRg
     params: {
@@ -215,7 +215,7 @@ module aibRoleAssign 'Modules/role-assign.bicep' = if (createAibRole) {
     }
   }
   
-  module aibRoleAssignExisting 'Modules/role-assign.bicep' = if (!createAibRole) {
+  module aibRoleAssignExisting 'Modules/role-assign.bicep' = if (CreateAzureImageBuilderCustomRole) {
     name: 'aibRoleAssignExt-${time}'
     scope: avdRg
     params: {
