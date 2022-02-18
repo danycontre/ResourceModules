@@ -61,6 +61,13 @@ var avdWorkSpaceName = 'avdws-${deploymentPrefixLowercase}'
 var avdHostPoolName = 'avdhp-${deploymentPrefixLowercase}'
 var avdApplicationGroupName = 'avdag-${deploymentPrefixLowercase}'
 var aibManagedIdentityName = 'uai-${deploymentPrefixLowercase}-imagebuilder'
+var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${ImageDefinition}'
+var avdOsImages = [
+    json(loadTextContent('./Parameters/image-win10-21h2-office.json'))
+    json(loadTextContent('./Parameters/image-win10-21h2.json'))
+    json(loadTextContent('./Parameters/image-win11-21h2-office.json'))
+    json(loadTextContent('./Parameters/image-win11-21h2.json'))
+  ]
 
 // =========== //
 // Deployments //
@@ -229,6 +236,26 @@ module azureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignmen
         imageBuilderManagedIdentity
     ]
   }
+//
+
+// Azure Image Builder
+module imageDefinitionTemplate 'Modules/template-image-definition.bicep' = {
+    scope: resourceGroup(avdServiceObjectsRgName)
+    name: 'Image-Definition-TemplateSpec-${time}'
+    params: {
+      templateSpecName: imageDefinitionsTemSpecName
+      location: location
+      templateSpecDisplayName: 'Image Builder Definition'
+      buildDefinition: defaultImage
+      imageId: imageDefinitions[1].outputs.imageId
+      imageRegions: imageRegionReplicas
+      managedIdentityId: imageBuilderManagedIdentity.outputs.principalId
+      scriptUri: ''
+    }
+  }
+//
+
+// Azure Compute Gallery
 //
 
 // ======= //
