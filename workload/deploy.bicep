@@ -96,7 +96,7 @@ module AVDServiceObjectsRG '../arm/Microsoft.Resources/resourceGroups/deploy.bic
 
 // AVD management plane
 module AVDWorkSpace '../arm/Microsoft.DesktopVirtualization/workspaces/deploy.bicep' = {
-    scope: resourceGroup(AVDServiceObjectsRGName)
+    scope: managementGroup(ParentManagementGroupId)
     name: 'AVD-WorkSpace-${time}'
     params: {
       name: AVDWorkSpaceName
@@ -112,7 +112,7 @@ module AVDWorkSpace '../arm/Microsoft.DesktopVirtualization/workspaces/deploy.bi
   }
   
   module AVDHostPool '../arm/Microsoft.DesktopVirtualization/hostpools/deploy.bicep' = {
-    scope: resourceGroup(AVDServiceObjectsRGName)
+    scope: managementGroup(ParentManagementGroupId)
     name: 'AVD-HostPool-${time}'
     params: {
       name: AVDHostPoolName
@@ -121,6 +121,7 @@ module AVDWorkSpace '../arm/Microsoft.DesktopVirtualization/workspaces/deploy.bi
       startVMOnConnect: AVDStartVMOnConnect
       loadBalancerType: AVDHostPoolloadBalancerType
       customRdpProperty: AVDHostPoolRdpProperty
+      //validationEnviroment: false
     }
     dependsOn: [
         AVDServiceObjectsRG
@@ -145,6 +146,7 @@ module AVDWorkSpace '../arm/Microsoft.DesktopVirtualization/workspaces/deploy.bi
 
 // Custom RBAC Roles
 module StartVMonConnectRole '../arm/Microsoft.Authorization/roleDefinitions/deploy.bicep' = {
+    scope: subscription().id
     name: 'Start-VM-onConnect-Role-${time}'
     params: {
       subscriptionId: subscription().id
@@ -161,9 +163,9 @@ module StartVMonConnectRole '../arm/Microsoft.Authorization/roleDefinitions/depl
   }
   
 module AzureImageBuilderRole '../arm/Microsoft.Authorization/roleDefinitions/deploy.bicep' = {
+    scope: subscription().id
     name: 'AzureImageBuilder-Role-${time}'
     params: {
-      subscriptionId: subscription().id
       roleName: 'Azure Image Builder (Custom)'
       location: location
       actions: [
