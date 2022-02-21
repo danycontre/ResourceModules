@@ -1,4 +1,5 @@
-targetScope = 'subscription'
+//targetScope = 'subscription'
+targetScope = 'managementGroup'
 
 // ========== //
 // Parameters //
@@ -109,7 +110,6 @@ var avdSharedAcgRgName = 'rg-${locationLowercase}-avd-shared-acg'
 var avdVnetworkName = 'vnet-${locationLowercase}-avd-${deploymentPrefixLowercase}'
 var avdVnetworkSubnetName = 'avd-${deploymentPrefixLowercase}'
 var avdNetworksecurityGroupName = 'nsg-${locationLowercase}-avd-${deploymentPrefixLowercase}'
-//var avdVNetworkPeeringName = 'avd-${deploymentPrefixLowercase}-hub-${locationLowercase}'
 var avdVNetworkPeeringName = '${uniqueString(deploymentPrefixLowercase, location)}-virtualNetworkPeering-avd-${deploymentPrefixLowercase}'
 var avdWorkSpaceName = 'avdws-${deploymentPrefixLowercase}'
 var avdHostPoolName = 'avdhp-${deploymentPrefixLowercase}'
@@ -188,7 +188,8 @@ module avdStorageObjectsRg '../arm/Microsoft.Resources/resourceGroups/deploy.bic
 
 // Networking
 module avdNetworksecurityGroup '../arm/Microsoft.Network/networkSecurityGroups/deploy.bicep' = if(createAvdVnet) {
-    scope: resourceGroup(avdNetworkObjectsRgName)
+    //scope: resourceGroup(avdNetworkObjectsRgName)
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdNetworkObjectsRgName}')
     name: 'AVD-NSG-${time}'
     params: {
         name: avdNetworksecurityGroupName
@@ -200,8 +201,33 @@ module avdNetworksecurityGroup '../arm/Microsoft.Network/networkSecurityGroups/d
 }
 
 module avdVirtualNetwork '../arm/Microsoft.Network/virtualNetworks/deploy.bicep' = if(createAvdVnet && customDnsAvailable) {
-    scope: resourceGroup(avdNetworkObjectsRgName)
-    name: 'AVD-vNet-Custom-DNS-${time}'
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdNetworkObjectsRgName}')
+    name: 'AVD-vNet-${time}'
+    params: {
+        name: avdVnetworkName
+        location: location
+        addressPrefixes: avdVnetworkAddressPrefixes
+        dnsServers: customDnsIps
+        subnets: [
+            {
+                name: avdVnetworkSubnetName
+                addressPrefix: avdVnetworkSubnetAddressPrefix
+                privateEndpointNetworkPolicies: 'Disabled'
+                privateLinkServiceNetworkPolicies: 'Enabled'
+                networkSecurityGroupName: avdNetworksecurityGroupName
+                //routeTableName:
+            }
+        ]
+    }
+    dependsOn: [
+        avdNetworkObjectsRg
+        avdNetworksecurityGroup
+    ]
+}
+
+module avdVirtualNetworkNoDns '../arm/Microsoft.Network/virtualNetworks/deploy.bicep' = if(createAvdVnet && !customDnsAvailable) {
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdNetworkObjectsRgName}')
+    name: 'AVD-vNet-NoDNS-${time}'
     params: {
         name: avdVnetworkName
         location: location
@@ -214,7 +240,6 @@ module avdVirtualNetwork '../arm/Microsoft.Network/virtualNetworks/deploy.bicep'
                 privateLinkServiceNetworkPolicies: 'Enabled'
                 networkSecurityGroupName: avdNetworksecurityGroupName
                 //routeTableName:
-                dnsServers: customDnsIps
             }
         ]
     }
@@ -224,32 +249,8 @@ module avdVirtualNetwork '../arm/Microsoft.Network/virtualNetworks/deploy.bicep'
     ]
 }
 /*
-module avdVirtualNetworkNoCustmDns '../arm/Microsoft.Network/virtualNetworks/deploy.bicep' = if(createAvdVnet && !customDnsAvailable) {
-    scope: resourceGroup(avdNetworkObjectsRgName)
-    name: 'AVD-vNet-${time}'
-    params: {
-        name: avdVnetworkName
-        location: location
-        addressPrefixes: avdVnetworkAddressPrefixes
-        subnets: [
-            {
-                name: avdVnetworkSubnetName
-                addressPrefix: avdVnetworkSubnetAddressPrefix
-                privateEndpointNetworkPolicies: 'Disabled'
-                privateLinkServiceNetworkPolicies: 'Enabled'
-                networkSecurityGroupName: avdNetworksecurityGroupName
-                //routeTableName:
-            }
-        ]
-    }
-    dependsOn: [
-        avdNetworkObjectsRg
-        avdNetworksecurityGroup
-    ]
-}
-*/
-module avdVirtualNetworkPeeringLocal '../arm/Microsoft.Network/virtualNetworks/virtualNetworkPeerings/deploy.bicep' = if(createAvdVnet) {
-    scope: resourceGroup(avdNetworkObjectsRgName)
+module avdVirtualNetworkPeeringLocal '../arm/Microsoft.Network/virtualNetworks/virtualNetworkPeerings/deploy.bicep' = if(createAvdVnet && customDnsAvailable) {
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdNetworkObjectsRgName}')
     name: 'AVD-vNet-Peerings-Local-${time}'
     params: {
         name: avdVNetworkPeeringName
@@ -266,9 +267,9 @@ module avdVirtualNetworkPeeringLocal '../arm/Microsoft.Network/virtualNetworks/v
     ]
 }
 
-module avdVirtualNetworkPeeringRemote '../arm/Microsoft.Network/virtualNetworks/virtualNetworkPeerings/deploy.bicep' = if(createAvdVnet) {
+module avdVirtualNetworkPeeringRemote '../arm/Microsoft.Network/virtualNetworks/virtualNetworkPeerings/deploy.bicep' = if(createAvdVnet && customDnsAvailable) {
     scope: resourceGroup(split(hubVnetId, '/')[2], split(hubVnetId, '/')[4])
-    name: 'Hub-vNet-Peerings-${time}'
+    name: 'AVD-vNet-Peerings-Remote-${time}'
     params: {
         name: avdVNetworkPeeringName
         remoteVirtualNetworkId: avdVirtualNetwork.outputs.resourceId
@@ -284,11 +285,50 @@ module avdVirtualNetworkPeeringRemote '../arm/Microsoft.Network/virtualNetworks/
         avdVirtualNetworkPeeringLocal
     ]
 }
+*/
+/*
+module avdVirtualNetworkPeeringLocalNoCustomDns '../arm/Microsoft.Network/virtualNetworks/virtualNetworkPeerings/deploy.bicep' = if(createAvdVnet && !customDnsAvailable) {
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdNetworkObjectsRgName}')
+    name: 'AVD-vNet-NoDNS-Peerings-Local-${time}'
+    params: {
+        name: avdVNetworkPeeringName
+        remoteVirtualNetworkId: hubVnetId
+        localVnetName: avdVirtualNetworkNoCustomDns.outputs.name
+        allowForwardedTraffic: true
+        allowVirtualNetworkAccess: true
+        //useRemoteGateways: true
+        allowGatewayTransit: false
+    }
+    dependsOn: [
+        avdNetworkObjectsRg
+        avdVirtualNetworkNoCustomDns
+    ]
+}
+
+module avdVirtualNetworkPeeringRemoteNoCustomDns '../arm/Microsoft.Network/virtualNetworks/virtualNetworkPeerings/deploy.bicep' = if(createAvdVnet && !customDnsAvailable) {
+    scope: resourceGroup(split(hubVnetId, '/')[2], split(hubVnetId, '/')[4])
+    name: 'Hub-vNet-NoDNS-Peerings-Remote-${time}'
+    params: {
+        name: avdVNetworkPeeringName
+        remoteVirtualNetworkId: avdVirtualNetworkNoCustomDns.outputs.resourceId
+        localVnetName: hubVnetId
+        allowForwardedTraffic: true
+        allowVirtualNetworkAccess: true
+        //useRemoteGateways: true
+        allowGatewayTransit: false
+    }
+    dependsOn: [
+        avdNetworkObjectsRg
+        avdVirtualNetworkNoCustomDns
+        avdVirtualNetworkPeeringLocal
+    ]
+}
+*/
 //
 
 // AVD management plane
 module avdWorkSpace '../arm/Microsoft.DesktopVirtualization/workspaces/deploy.bicep' = {
-    scope: resourceGroup(avdServiceObjectsRgName)
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
     name: 'AVD-WorkSpace-${time}'
     params: {
         name: avdWorkSpaceName
@@ -304,7 +344,7 @@ module avdWorkSpace '../arm/Microsoft.DesktopVirtualization/workspaces/deploy.bi
 }
 
 module avdHostPool '../arm/Microsoft.DesktopVirtualization/hostpools/deploy.bicep' = {
-    scope: resourceGroup(avdServiceObjectsRgName)
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
     name: 'AVD-HostPool-${time}'
     params: {
         name: avdHostPoolName
@@ -321,7 +361,7 @@ module avdHostPool '../arm/Microsoft.DesktopVirtualization/hostpools/deploy.bice
 }
 
 module avdApplicationGroup '../arm/Microsoft.DesktopVirtualization/applicationgroups/deploy.bicep' = {
-    scope: resourceGroup(avdServiceObjectsRgName)
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
     name: 'AVD-ApplicationGroup-${time}'
     params: {
         name: avdApplicationGroupName
@@ -338,9 +378,10 @@ module avdApplicationGroup '../arm/Microsoft.DesktopVirtualization/applicationgr
 
 // RBAC Roles
 module startVMonConnectRole '../arm/Microsoft.Authorization/roleDefinitions/.bicep/nested_roleDefinitions_sub.bicep' = if (createStartVmOnConnectCustomRole) {
+    scope: subscription(avdWrklSubscriptionId)
     name: 'Start-VM-on-Connect-Role-${time}'
     params: {
-        subscriptionId: subscription().subscriptionId
+        subscriptionId: avdWrklSubscriptionId
         description: 'Start VM on connect AVD'
         roleName: 'Start VM on connect-AVD'
         actions: [
@@ -348,15 +389,16 @@ module startVMonConnectRole '../arm/Microsoft.Authorization/roleDefinitions/.bic
             'Microsoft.Compute/virtualMachines/*/read'
         ]
         assignableScopes: [
-            subscription().id
+            '/subscriptions/${avdWrklSubscriptionId}'
         ]
     }
 }
 
 module azureImageBuilderRole '../arm/Microsoft.Authorization/roleDefinitions/.bicep/nested_roleDefinitions_sub.bicep' = if (createAibCustomRole) {
+    scope: subscription(avdShrdlSubscriptionId)
     name: 'Azure-Image-Builder-Role-${time}'
     params: {
-        subscriptionId: subscription().subscriptionId
+        subscriptionId: avdShrdlSubscriptionId
         description: 'Azure Image Builder AVD'
         roleName: 'Azure Image Builder-AVD'
         actions: [
@@ -384,7 +426,7 @@ module azureImageBuilderRole '../arm/Microsoft.Authorization/roleDefinitions/.bi
             'Microsoft.Network/virtualNetworks/subnets/join/action'
         ]
         assignableScopes: [
-            subscription().id
+            '/subscriptions/${avdShrdlSubscriptionId}'
         ]
     }
 }
@@ -392,7 +434,7 @@ module azureImageBuilderRole '../arm/Microsoft.Authorization/roleDefinitions/.bi
 
 // Managed identities
 module imageBuilderManagedIdentity '../arm/Microsoft.ManagedIdentity/userAssignedIdentities/deploy.bicep' = if (createAibManagedIdentity) {
-    scope: resourceGroup(avdSharedAibRgName)
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedAibRgName}')
     name: 'image-Builder-Managed-Identity-${time}'
     params: {
         name: aibManagedIdentityName
@@ -400,11 +442,11 @@ module imageBuilderManagedIdentity '../arm/Microsoft.ManagedIdentity/userAssigne
     }
 }
 //
-/*
+
 // RBAC role Assignments
 module azureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignments/.bicep/nested_rbac_rg.bicep' = if (createAibCustomRole && createAibManagedIdentity) {
     name: 'Azure-Image-Builder-RoleAssign-${time}'
-    scope: resourceGroup(avdSharedAibRgName)
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedAibRgName}')
     params: {
         roleDefinitionIdOrName: azureImageBuilderRole.outputs.resourceId
         principalId: imageBuilderManagedIdentity.outputs.principalId
@@ -416,10 +458,10 @@ module azureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignmen
     ]
 }
 //
-
+/*
 // Azure Image Builder
 module imageDefinitionTemplate 'Modules/template-image-definition.bicep' = {
-    scope: resourceGroup(avdSharedAibRgName)
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedAibRgName}')
     name: 'Image-Definition-TemplateSpec-${time}'
     params: {
       templateSpecName: imageDefinitionsTemSpecName
