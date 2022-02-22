@@ -42,6 +42,9 @@ param avdApplicationGroupType string = 'Desktop'
 @description('Optional. AVD host pool Custom RDP properties')
 param avdHostPoolRdpProperty string = 'audiocapturemode:i:1;audiomode:i:0;drivestoredirect:s:;redirectclipboard:i:1;redirectcomports:i:1;redirectprinters:i:1;redirectsmartcards:i:1;screen mode id:i:2'
 
+@description('Optional. Fslogix file share size (Default: 5TB)')
+param avdFslogixFileShareQuotaSize string = '51200'
+
 @description('Create custom Start VM on connect role')
 param createStartVmOnConnectCustomRole bool = true
 
@@ -107,10 +110,16 @@ var avdSharedResourcesRgName = 'rg-${locationLowercase}-avd-shared-resources'
 var avdVnetworkName = 'vnet-${locationLowercase}-avd-${deploymentPrefixLowercase}'
 var avdVnetworkSubnetName = 'avd-${deploymentPrefixLowercase}'
 var avdNetworksecurityGroupName = 'nsg-${locationLowercase}-avd-${deploymentPrefixLowercase}'
+var avdApplicationsecurityGroupName = 'asg-${locationLowercase}-avd-${deploymentPrefixLowercase}'
 var avdVNetworkPeeringName = '${uniqueString(deploymentPrefixLowercase, location)}-virtualNetworkPeering-avd-${deploymentPrefixLowercase}'
 var avdWorkSpaceName = 'avdws-${deploymentPrefixLowercase}'
 var avdHostPoolName = 'avdhp-${deploymentPrefixLowercase}'
 var avdApplicationGroupName = 'avdag-${deploymentPrefixLowercase}'
+var avdFslogixStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}fslogix${deploymentPrefixLowercase}'
+var avdFslogixFileShareName = 'fslogix-${deploymentPrefixLowercase}'
+var avdSharedSResourcesStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}shared${deploymentPrefixLowercase}'
+var avdSharedSResourcesAibContainerName = 'aib-${deploymentPrefixLowercase}'
+var avdSharedSResourcesScriptsContainerName = 'scripts-${deploymentPrefixLowercase}'
 // azure image builder
     var aibManagedIdentityName = 'uai-avd-aib'
     var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
@@ -184,6 +193,18 @@ module avdNetworksecurityGroup '../arm/Microsoft.Network/networkSecurityGroups/d
     name: 'AVD-NSG-${time}'
     params: {
         name: avdNetworksecurityGroupName
+        location: location
+    }
+    dependsOn: [
+        avdNetworkObjectsRg
+    ]
+}
+
+module avdApplicationsecurityGroup '../arm/Microsoft.Network/applicationSecurityGroups/deploy.bicep' = if (createAvdVnet) {
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdNetworkObjectsRgName}')
+    name: 'AVD-ASG-${time}'
+    params: {
+        name: avdApplicationsecurityGroupName
         location: location
     }
     dependsOn: [
@@ -355,7 +376,6 @@ module imageBuilderManagedIdentity '../arm/Microsoft.ManagedIdentity/userAssigne
 //
 
 // Enterprise applications
-
 //
 
 // RBAC role Assignments
@@ -385,6 +405,7 @@ module azureImageBuilderRoleAssignExisting '../arm/Microsoft.Authorization/roleA
     ]
 }
 */
+/*
 module startVMonConnectRoleAssign '../arm/Microsoft.Authorization/roleAssignments/.bicep/nested_rbac_rg.bicep' = if (createStartVmOnConnectCustomRole) {
     name: 'Satrt-VM-OnConnect-RoleAssign-${time}'
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
@@ -397,6 +418,7 @@ module startVMonConnectRoleAssign '../arm/Microsoft.Authorization/roleAssignment
         startVMonConnectRole
     ]
 }
+*/
 //
 /*
 // Azure Image Builder
@@ -417,8 +439,75 @@ module imageDefinitionTemplate 'Modules/template-image-definition.bicep' = {
 //
 */
 // Azure Compute Gallery
+//
+
+// Storage
+module fslogixStorage '../arm/Microsoft.Storage/storageAccounts/deploy.bicep' = {
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdStorageObjectsRgName}')
+    name: 'AVD-Fslogix-Storage-${time}'
+    params: {
+        name: avdFslogixStorageName
+        location: location
+        storageAccountSku: 'Premium_LRS'
+        allowBlobPublicAccess: false
+        //azureFilesIdentityBasedAuthentication:
+        storageAccountKind: 'FileStorage'
+        storageAccountAccessTier: 'Hot'
+        networkAcls: {
+            bypass: 'AzureServices'
+            defaultAction: 'Deny'
+            virtualNetworkRules: []
+            ipRules: []
+        }
+        fileServices: {
+            shares: [
+                {
+                    name: avdFslogixFileShareName
+                    shareQuota: avdFslogixFileShareQuotaSize
+                    //roleAssgnments:
+                }
+            ]
+        }
+        privateEndpoints: [
+            {
+                subnetResourceId: '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}'
+                service: 'file'
+            }
+        ]
+    }
+    dependsOn: [
+        avdStorageObjectsRg
+    ]
+}
+
+module avdSharedServicesStorage '../arm/Microsoft.Storage/storageAccounts/deploy.bicep' = {
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
+    name: 'AVD-Shared-Services-Storage-${time}'
+    params: {
+        name: avdSharedSResourcesStorageName
+        location: location
+        storageAccountSku: 'Standard_LRS'
+        storageAccountKind: 'StorageV2'
+        blobServices: {
+            containers: [
+                {
+                    name: avdSharedSResourcesAibContainerName
+                    publicAccess: 'None'
+                }
+                {
+                    name: avdSharedSResourcesScriptsContainerName
+                    publicAccess: 'None'
+                }
+            ]
+        }
+    }
+    dependsOn: [
+        avdSharedResourcesRg
+    ]
+}
 
 //
+
 
 // ======= //
 // Outputs //
@@ -434,3 +523,4 @@ output azureImageBuilderRoleId string = azureImageBuilderRole.outputs.resourceId
 output aibManagedIdentityNameId string = imageBuilderManagedIdentity.outputs.principalId
 output avdVirtualNetworkId string = avdVirtualNetwork.outputs.resourceId
 output avdNetworksecurityGroupId string = avdNetworksecurityGroup.outputs.resourceId
+output fslogixStorageId string = fslogixStorage.outputs.resourceId
