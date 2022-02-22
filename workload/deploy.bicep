@@ -86,7 +86,10 @@ param customDnsIps array = [
 ]
 
 @description('Provide existing virtual network hub URI')
-param hubVnetId string = '/subscriptions/a7bc841f-34c0-4214-9469-cd463b66de35/resourceGroups/aadjisolatedtest/providers/Microsoft.Network/virtualNetworks/testcarml'
+param hubVnetId string = '/subscriptions/bf8ce47f-27f8-4e3d-9fce-ef902d0c2845/resourceGroups/d2l-network-eastus-cs01/providers/Microsoft.Network/virtualNetworks/d2l-default-eastus'
+
+@description('Does the hub contains a virtual network gateway (defualt: false)')
+param vNetworkGatewayOnHub bool = false
 
 @description('Do not modify, used to set unique value for resource deployment')
 param time string = utcNow()
@@ -96,13 +99,12 @@ param time string = utcNow()
 // =========== //
 var deploymentPrefixLowercase = toLower(deploymentPrefix)
 var locationLowercase = toLower(location)
-// Resource groups lenth limit 90 characters')
-var avdServiceObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-service-objects'
-var avdNetworkObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-network'
-var avdComputeObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-pool-compute'
-var avdStorageObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-storage'
-//var avdSharedWipRgName = 'rg-${location}-avd-shared-wip'
-//var avdSharedReadyRgName = 'rg-${location}-avd-shared-ready'
+var avdServiceObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-service-objects' // Resource groups lenth limit 90 characters
+var avdNetworkObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-network' // Resource groups lenth limit 90 characters
+var avdComputeObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-pool-compute' // Resource groups lenth limit 90 characters
+var avdStorageObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-storage' // Resource groups lenth limit 90 characters
+//var avdSharedWipRgName = 'rg-${location}-avd-shared-wip' // Resource groups lenth limit 90 characters
+//var avdSharedReadyRgName = 'rg-${location}-avd-shared-ready' // Resource groups lenth limit 90 characters
 var avdEnterpriseApplicationId = '9cdead84-a844-4324-93f2-b2e6bb768d07'
 var avdSharedAibRgName = 'rg-${locationLowercase}-avd-shared-aib'
 var avdSharedAcgRgName = 'rg-${locationLowercase}-avd-shared-acg'
@@ -123,6 +125,7 @@ var avdOsImageDefinitions = [
     json(loadTextContent('./Parameters/image-win11-21h2-office.json'))
     json(loadTextContent('./Parameters/image-win11-21h2.json'))
   ]
+//
 
 // =========== //
 // Deployments //
@@ -187,7 +190,6 @@ module avdStorageObjectsRg '../arm/Microsoft.Resources/resourceGroups/deploy.bic
 
 // Networking
 module avdNetworksecurityGroup '../arm/Microsoft.Network/networkSecurityGroups/deploy.bicep' = if(createAvdVnet) {
-    //scope: resourceGroup(avdNetworkObjectsRgName)
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdNetworkObjectsRgName}')
     name: 'AVD-NSG-${time}'
     params: {
@@ -215,9 +217,11 @@ module avdVirtualNetwork '../arm/Microsoft.Network/virtualNetworks/deploy.bicep'
                 allowGatewayTransit: false
                 allowVirtualNetworkAccess: true
                 doNotVerifyRemoteGateways: true
-                useRemoteGateways: false
+                useRemoteGateways: vNetworkGatewayOnHub ? true: false
+                remotePeeringEnabled: true
+                remotePeeringName: avdVNetworkPeeringName
                 remotePeeringAllowForwardedTraffic: true
-                remotePeeringAllowGatewayTransit: false
+                remotePeeringAllowGatewayTransit: vNetworkGatewayOnHub ? true: false
                 remotePeeringAllowVirtualNetworkAccess: true
                 remotePeeringDoNotVerifyRemoteGateways: true
                 remotePeeringUseRemoteGateways: false
@@ -268,7 +272,6 @@ module avdHostPool '../arm/Microsoft.DesktopVirtualization/hostpools/deploy.bice
         startVMOnConnect: avdStartVMOnConnect
         loadBalancerType: avdHostPoolloadBalancerType
         customRdpProperty: avdHostPoolRdpProperty
-        //validationEnviroment: false
     }
     dependsOn: [
         avdServiceObjectsRg
@@ -435,8 +438,5 @@ output avdApplicationGroupId string = avdApplicationGroup.outputs.resourceId
 output avdHPoolId string = avdHostPool.outputs.resourceId
 output azureImageBuilderRoleId string = azureImageBuilderRole.outputs.resourceId
 output aibManagedIdentityNameId string = imageBuilderManagedIdentity.outputs.principalId
-//output avdVirtualNetworkId string = avdVirtualNetwork.outputs.resourceId
-//output avdVirtualNetworkNoCustmDnsId string = avdVirtualNetworkNoCustmDns.outputs.resourceId
+output avdVirtualNetworkId string = avdVirtualNetwork.outputs.resourceId
 output avdNetworksecurityGroupId string = avdNetworksecurityGroup.outputs.resourceId
-//output avdVirtualNetworkPeeringId string = avdVirtualNetworkPeering.outputs.resourceId
-//output hubVirtualNetworkPeeringId string = hubVirtualNetworkPeering.outputs.resourceId
