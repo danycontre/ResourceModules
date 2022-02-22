@@ -340,7 +340,7 @@ module azureImageBuilderRole '../arm/Microsoft.Authorization/roleDefinitions/.bi
 
 // Managed identities
 module imageBuilderManagedIdentity '../arm/Microsoft.ManagedIdentity/userAssignedIdentities/deploy.bicep' = if (createAibManagedIdentity) {
-    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRg}')
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     name: 'image-Builder-Managed-Identity-${time}'
     params: {
         name: aibManagedIdentityName
@@ -355,13 +355,12 @@ module imageBuilderManagedIdentity '../arm/Microsoft.ManagedIdentity/userAssigne
 // RBAC role Assignments
 module azureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignments/.bicep/nested_rbac_rg.bicep' = if (createAibCustomRole && createAibManagedIdentity) {
     name: 'Azure-Image-Builder-RoleAssign-${time}'
-    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRg}')
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     params: {
         roleDefinitionIdOrName: createAibCustomRole ? azureImageBuilderRole.outputs.resourceId : ''
         principalId: imageBuilderManagedIdentity.outputs.principalId
     }
     dependsOn: [
-        avdSharedResourcesRg
         azureImageBuilderRole
         imageBuilderManagedIdentity
     ]
@@ -369,7 +368,7 @@ module azureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignmen
 /*
 module azureImageBuilderRoleAssignExisting '../arm/Microsoft.Authorization/roleAssignments/.bicep/nested_rbac_rg.bicep' = if (!createAibCustomRole && createAibManagedIdentity) {
     name: 'Azure-Image-Builder-RoleAssign-${time}'
-    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedAibRgName}')
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     params: {
         roleDefinitionIdOrName: createAibCustomRole ? azureImageBuilderRole.outputs.resourceId : ''
         principalId: imageBuilderManagedIdentity.outputs.principalId
@@ -380,10 +379,9 @@ module azureImageBuilderRoleAssignExisting '../arm/Microsoft.Authorization/roleA
     ]
 }
 */
-/*
 module startVMonConnectRoleAssign '../arm/Microsoft.Authorization/roleAssignments/.bicep/nested_rbac_rg.bicep' = if (createStartVmOnConnectCustomRole) {
     name: 'Satrt-VM-OnConnect-RoleAssign-${time}'
-    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRg}')
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
     params: {
         roleDefinitionIdOrName: createStartVmOnConnectCustomRole ? startVMonConnectRole.outputs.resourceId : ''
         principalId: avdEnterpriseApplicationId
@@ -393,7 +391,6 @@ module startVMonConnectRoleAssign '../arm/Microsoft.Authorization/roleAssignment
         startVMonConnectRole
     ]
 }
-*/
 //
 /*
 // Azure Image Builder
