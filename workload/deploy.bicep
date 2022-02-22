@@ -111,17 +111,19 @@ var avdVNetworkPeeringName = '${uniqueString(deploymentPrefixLowercase, location
 var avdWorkSpaceName = 'avdws-${deploymentPrefixLowercase}'
 var avdHostPoolName = 'avdhp-${deploymentPrefixLowercase}'
 var avdApplicationGroupName = 'avdag-${deploymentPrefixLowercase}'
-var aibManagedIdentityName = 'uai-avd-aib'
-var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
-//var avdDefaulOstImage = json(loadTextContent('./Parameters/${avdOsImage}.json'))
-var avdEnterpriseApplicationId = '9cdead84-a844-4324-93f2-b2e6bb768d07'
-var avdOsImage = json(loadTextContent('./Parameters/image-win10-21h2.json'))
-var avdOsImageDefinitions = [
-    json(loadTextContent('./Parameters/image-win10-21h2-office.json'))
-    json(loadTextContent('./Parameters/image-win10-21h2.json'))
-    json(loadTextContent('./Parameters/image-win11-21h2-office.json'))
-    json(loadTextContent('./Parameters/image-win11-21h2.json'))
-  ]
+// azure image builder
+    var aibManagedIdentityName = 'uai-avd-aib'
+    var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
+    //var avdDefaulOstImage = json(loadTextContent('./Parameters/${avdOsImage}.json'))
+    var avdEnterpriseApplicationId = '9cdead84-a844-4324-93f2-b2e6bb768d07'
+    var avdOsImage = json(loadTextContent('./Parameters/image-win10-21h2.json'))
+    var avdOsImageDefinitions = [
+        json(loadTextContent('./Parameters/image-win10-21h2-office.json'))
+        json(loadTextContent('./Parameters/image-win10-21h2.json'))
+        json(loadTextContent('./Parameters/image-win11-21h2-office.json'))
+        json(loadTextContent('./Parameters/image-win11-21h2.json'))
+    ]
+//
 //
 
 // =========== //
@@ -177,7 +179,7 @@ module avdStorageObjectsRg '../arm/Microsoft.Resources/resourceGroups/deploy.bic
 //
 
 // Networking
-module avdNetworksecurityGroup '../arm/Microsoft.Network/networkSecurityGroups/deploy.bicep' = if(createAvdVnet) {
+module avdNetworksecurityGroup '../arm/Microsoft.Network/networkSecurityGroups/deploy.bicep' = if (createAvdVnet) {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdNetworkObjectsRgName}')
     name: 'AVD-NSG-${time}'
     params: {
@@ -189,15 +191,15 @@ module avdNetworksecurityGroup '../arm/Microsoft.Network/networkSecurityGroups/d
     ]
 }
 
-module avdVirtualNetwork '../arm/Microsoft.Network/virtualNetworks/deploy.bicep' = if(createAvdVnet) {
+module avdVirtualNetwork '../arm/Microsoft.Network/virtualNetworks/deploy.bicep' = if (createAvdVnet) {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdNetworkObjectsRgName}')
     name: 'AVD-vNet-${time}'
     params: {
         name: avdVnetworkName
         location: location
         addressPrefixes: avdVnetworkAddressPrefixes
-        dnsServers: customDnsAvailable ? customDnsIps: []
-        virtualNetworkPeerings:[
+        dnsServers: customDnsAvailable ? customDnsIps : []
+        virtualNetworkPeerings: [
             {
                 remoteVirtualNetworkId: hubVnetId
                 name: avdVNetworkPeeringName
@@ -205,11 +207,11 @@ module avdVirtualNetwork '../arm/Microsoft.Network/virtualNetworks/deploy.bicep'
                 allowGatewayTransit: false
                 allowVirtualNetworkAccess: true
                 doNotVerifyRemoteGateways: true
-                useRemoteGateways: vNetworkGatewayOnHub ? true: false
+                useRemoteGateways: vNetworkGatewayOnHub ? true : false
                 remotePeeringEnabled: true
                 remotePeeringName: avdVNetworkPeeringName
                 remotePeeringAllowForwardedTraffic: true
-                remotePeeringAllowGatewayTransit: vNetworkGatewayOnHub ? true: false
+                remotePeeringAllowGatewayTransit: vNetworkGatewayOnHub ? true : false
                 remotePeeringAllowVirtualNetworkAccess: true
                 remotePeeringDoNotVerifyRemoteGateways: true
                 remotePeeringUseRemoteGateways: false
@@ -352,6 +354,10 @@ module imageBuilderManagedIdentity '../arm/Microsoft.ManagedIdentity/userAssigne
 }
 //
 
+// Enterprise applications
+
+//
+
 // RBAC role Assignments
 module azureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignments/.bicep/nested_rbac_rg.bicep' = if (createAibCustomRole && createAibManagedIdentity) {
     name: 'Azure-Image-Builder-RoleAssign-${time}'
@@ -411,12 +417,12 @@ module imageDefinitionTemplate 'Modules/template-image-definition.bicep' = {
 //
 */
 // Azure Compute Gallery
+
 //
 
 // ======= //
 // Outputs //
 // ======= //
-
 output avdSharedResourcesRgId string = avdSharedResourcesRg.outputs.resourceId
 output avdServiceObjectsRgId string = avdServiceObjectsRg.outputs.resourceId
 output adNetworkObjectsRgId string = avdNetworkObjectsRg.outputs.resourceId
