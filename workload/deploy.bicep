@@ -103,11 +103,7 @@ var avdServiceObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLow
 var avdNetworkObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-network' // Resource groups lenth limit 90 characters
 var avdComputeObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-pool-compute' // Resource groups lenth limit 90 characters
 var avdStorageObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-storage' // Resource groups lenth limit 90 characters
-//var avdSharedWipRgName = 'rg-${location}-avd-shared-wip' // Resource groups lenth limit 90 characters
-//var avdSharedReadyRgName = 'rg-${location}-avd-shared-ready' // Resource groups lenth limit 90 characters
-var avdEnterpriseApplicationId = '9cdead84-a844-4324-93f2-b2e6bb768d07'
-var avdSharedAibRgName = 'rg-${locationLowercase}-avd-shared-aib'
-var avdSharedAcgRgName = 'rg-${locationLowercase}-avd-shared-acg'
+var avdSharedResourcesRgName = 'rg-${locationLowercase}-avd-shared-resources'
 var avdVnetworkName = 'vnet-${locationLowercase}-avd-${deploymentPrefixLowercase}'
 var avdVnetworkSubnetName = 'avd-${deploymentPrefixLowercase}'
 var avdNetworksecurityGroupName = 'nsg-${locationLowercase}-avd-${deploymentPrefixLowercase}'
@@ -118,6 +114,7 @@ var avdApplicationGroupName = 'avdag-${deploymentPrefixLowercase}'
 var aibManagedIdentityName = 'uai-avd-aib'
 var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
 //var avdDefaulOstImage = json(loadTextContent('./Parameters/${avdOsImage}.json'))
+var avdEnterpriseApplicationId = '9cdead84-a844-4324-93f2-b2e6bb768d07'
 var avdOsImage = json(loadTextContent('./Parameters/image-win10-21h2.json'))
 var avdOsImageDefinitions = [
     json(loadTextContent('./Parameters/image-win10-21h2-office.json'))
@@ -133,20 +130,11 @@ var avdOsImageDefinitions = [
 
 // Resource groups
 // AVD shared services subscription RGs
-module avdSharedAibRg '../arm/Microsoft.Resources/resourceGroups/deploy.bicep' = {
+module avdSharedResourcesRg '../arm/Microsoft.Resources/resourceGroups/deploy.bicep' = {
     scope: subscription(avdShrdlSubscriptionId)
-    name: 'AVD-RG-AIB-${time}'
+    name: 'AVD-RG-Shared-Resources-${time}'
     params: {
-        name: avdSharedAibRgName
-        location: location
-    }
-}
-
-module avdSharedAcgRg '../arm/Microsoft.Resources/resourceGroups/deploy.bicep' = {
-    scope: subscription(avdShrdlSubscriptionId)
-    name: 'AVD-RG-ACG-${time}'
-    params: {
-        name: avdSharedAcgRgName
+        name: avdSharedResourcesRgName
         location: location
     }
 }
@@ -352,24 +340,28 @@ module azureImageBuilderRole '../arm/Microsoft.Authorization/roleDefinitions/.bi
 
 // Managed identities
 module imageBuilderManagedIdentity '../arm/Microsoft.ManagedIdentity/userAssignedIdentities/deploy.bicep' = if (createAibManagedIdentity) {
-    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedAibRgName}')
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRg}')
     name: 'image-Builder-Managed-Identity-${time}'
     params: {
         name: aibManagedIdentityName
         location: location
     }
+    dependsOn: [
+        avdSharedResourcesRg
+    ]
 }
 //
 
 // RBAC role Assignments
 module azureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignments/.bicep/nested_rbac_rg.bicep' = if (createAibCustomRole && createAibManagedIdentity) {
     name: 'Azure-Image-Builder-RoleAssign-${time}'
-    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedAibRgName}')
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRg}')
     params: {
         roleDefinitionIdOrName: createAibCustomRole ? azureImageBuilderRole.outputs.resourceId : ''
         principalId: imageBuilderManagedIdentity.outputs.principalId
     }
     dependsOn: [
+        avdSharedResourcesRg
         azureImageBuilderRole
         imageBuilderManagedIdentity
     ]
@@ -428,8 +420,7 @@ module imageDefinitionTemplate 'Modules/template-image-definition.bicep' = {
 // Outputs //
 // ======= //
 
-output avdSharedAibRgId string = avdSharedAibRg.outputs.resourceId
-output avdSharedAcgRgId string = avdSharedAcgRg.outputs.resourceId
+output avdSharedResourcesRgId string = avdSharedResourcesRg.outputs.resourceId
 output avdServiceObjectsRgId string = avdServiceObjectsRg.outputs.resourceId
 output adNetworkObjectsRgId string = avdNetworkObjectsRg.outputs.resourceId
 output avdComputeObjectsRgId string = avdComputeObjectsRg.outputs.resourceId
