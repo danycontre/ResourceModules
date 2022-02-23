@@ -48,13 +48,13 @@ param avdFslogixFileShareQuotaSize string = '51200'
 @description('Create custom Start VM on connect role')
 param createStartVmOnConnectCustomRole bool = true
 
-@description('AVD session host local credentials')
+@description('Required. AVD session host local credentials')
 @secure()
 param avdVmLocalUserName string = 'kjshsdjhgklsgh'
 @secure()
 param avdVmLocalUserPassword string = 'Mdjhkljsdjhfgslkdyghsjkhgs'
 
-@description('AVD session host domain join credentials')
+@description('Required. AVD session host domain join credentials')
 @secure()
 param avdDomainJoinUserName string = 'kjshsdjhgklsgh'
 @secure()
@@ -63,7 +63,14 @@ param avdDomainJoinUserPassword string = 'Mdjhkljsdjhfgslkdyghsjkhgs'
 @description('Id to grant access to on AVD workload key vault secrets')
 param avdWrklSecretAccess string = ''
 
+@description('Deploy new session hosts (defualt: false)')
+param avdDeploySessionHosts bool = false
 
+@description('Cuantity of session hosts to deploy')
+param avdDeploySessionHostsCount int = 1
+
+@description('OS disk type for session host (Defualt: Standard_LRS) ')
+param avdSessionHostDiskType string = 'Standard_LRS'
 
 
 
@@ -124,9 +131,6 @@ param hubVnetId string = ''
 @description('Does the hub contains a virtual network gateway (defualt: false)')
 param vNetworkGatewayOnHub bool = false
 
-@description('Deploy new session hosts (defualt: false)')
-param avdDeployNewVms bool = false
-
 @description('Do not modify, used to set unique value for resource deployment')
 param time string = utcNow()
 
@@ -153,8 +157,11 @@ var avdFslogixFileShareName = 'fslogix-${deploymentPrefixLowercase}'
 var avdSharedSResourcesStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}avdshared'
 var avdSharedSResourcesAibContainerName = 'aib-${deploymentPrefixLowercase}'
 var avdSharedSResourcesScriptsContainerName = 'scripts-${deploymentPrefixLowercase}'
-var avdSharedServicesKvName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}-shared' // max length limit 24 characters
+var avdSharedServicesKvName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}-avd-shared' // max length limit 24 characters
 var avdWrklKvName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}-avd-${deploymentPrefixLowercase}' // max length limit 24 characters
+var avdSessionHostNamePrefix = 'avdsh-${deploymentPrefix}'
+
+
 // azure image builder
     var aibManagedIdentityName = 'uai-avd-aib'
     var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
@@ -640,13 +647,75 @@ module avdSharedServicesStorage '../arm/Microsoft.Storage/storageAccounts/deploy
 //
 
 // Session hosts
-/*
-resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2021-09-03-preview' existing = {
-    name: hostPoolName
-    scope: resourceGroup(avdResourceGroup)
-  }
+module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' = [for i in range(0, avdDeploySessionHostsCount): if(avdDeploySessionHosts) {
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
+    name: 'AVD-Session-Host-${i}-${time}'
+    params: {
+        name:'${avdSessionHostNamePrefix}-${i}'
+        location: location
+        systemAssignedIdentity: true
+        osType: 'Windows'
+        imageReference: {
+            publisher: 
+            offer:
+            sku:
+            version:
+        }
+        osDisk: {
+            createOption: 'fromImage'
+            deleteOption: 'Delete'
+            diskSizeGB: 128
+            managedDisk: {
+                storageAccountType: avdSessionHostDiskType
+            }
+        }
+        adminUsername: {
+            reference: {
+                KeyVault: {
+                    id: avdWrklKeyVault.outputs.resourceId
+                }
+                secretName: 'AVD-Local-Admin-User-${deploymentPrefix}'
+            }
+        }
+        adminPassword: {
+            reference: {
+                KeyVault: {
+                    id: avdWrklKeyVault.outputs.resourceId
+                }
+                secretName: 'AVD-Local-User-Password-${deploymentPrefix}'
+            }
+        }
+        nicConfigurations: [
+            {
+                nicSuffix: '-nic-01'
+                deleteOption: 'Delete'
+                ipConfigurations: {
+                    name: 'ipconfig01'
+                    subnetId: '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}'
 
-module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' = if(avdDeployNewVms) {
+                }
+            }
+        ]
+        extensionMonitoringAgentConfig: {
+            enabled: true
+        }
+        extensionCustomScriptConfig: {
+        }
+
+    }
+    dependsOn: [
+        avdComputeObjectsRg
+        avdWrklKeyVault
+    ]
+  }
+]
+
+
+
+
+
+
+module  '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' = if(avdDeploySessionHosts) {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
     name: 'AVD-Shared-Services-Storage-${time}'
     params: {
