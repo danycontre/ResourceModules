@@ -20,7 +20,7 @@ stages:
     displayName: Deploy AVD Accelerator
     jobs:
       # Deploy template deploy.bicep for AVD Accelerator
-      - template: ../jobs/deploy-template-sub.yml
+      - template: deploy-template-sub.yml
         parameters:
           jobName: Deploy_AVD_Accelerator
           location: $(deploymentRegion)
