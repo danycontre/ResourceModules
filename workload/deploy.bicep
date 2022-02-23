@@ -60,6 +60,7 @@ param avdOsImage string = 'win10-21h2'
 @description('Regions to replicate AVD images')
 param avdImageRegionsReplicas array = [
     'EastUs'
+    'CanadaCentral'
 ]
 
 @description('Create azure image Builder managed identity')
@@ -112,7 +113,7 @@ var avdApplicationGroupName = 'avdag-${deploymentPrefixLowercase}'
 var aibManagedIdentityName = 'uai-avd-aib'
 var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
 //var avdDefaulOstImage = json(loadTextContent('./Parameters/${avdOsImage}.json'))
-var avdEnterpriseApplicationId = '82205950-fef1-4f88-8801-86e60c2e9318'
+var avdEnterpriseApplicationId = '82205950-fef1-4f88-8801-86e60c2e9318' // needs to be queried.
 
 var avdOsImageDefinitions = {
     'win10-21h2-office': {
@@ -148,6 +149,8 @@ var avdOsImageDefinitions = {
         sku: 'win11-21h2-avd'
     }
 }
+
+var aiblocation = 'eastus2'
 //
 
 // =========== //
@@ -406,7 +409,7 @@ module startVMonConnectRoleAssign '../arm/Microsoft.Authorization/roleAssignment
 }
 //
 
-// Custom images: Azure Image Buider deployment
+// Custom images: Azure Image Buider deployment. Azure Compute Gallery --> Image Template Definition --> Image Template --> Build and Publish Template --> Create VMs
 
 // Azure Compute Gallery
 
@@ -438,6 +441,35 @@ module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/dep
         azureComputeGallery
     ]
 }
+
+// Create Imaga Template
+
+module imageTempalte '../arm/Microsoft.VirtualMachineImages/imageTemplates/deploy.bicep' = {
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
+    name: 'Deploy-Image-Template-${time}'
+    params: {
+        customizationSteps: [
+            {
+                type: 'WindowsUpdate'
+                searchCriteria: 'IsInstalled=0'
+                filters: [
+                    'exclude:$_.Title -like \'*Preview*\''
+                    'include:$true'
+                ]
+                updateLimit: 40
+            }
+        ]
+        imageSource: avdOsImageDefinitions[avdOsImage]
+        name: imageDefinitionsTemSpecName
+        userMsiName: imageBuilderManagedIdentity.outputs.name
+        location: aiblocation
+        imageReplicationRegions: avdImageRegionsReplicas
+        sigImageDefinitionId: azureComputeGallery.outputs.resourceId
+    }
+}
+
+// Build Image Template
+
 /*
 module imageDefinitionTemplate 'Modules/template-image-definition.bicep' = {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedAibRgName}')
