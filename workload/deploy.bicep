@@ -442,7 +442,7 @@ module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/dep
     ]
 }
 
-// Create Imaga Template
+// Create Image Template
 
 module imageTempalte '../arm/Microsoft.VirtualMachineImages/imageTemplates/deploy.bicep' = {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
@@ -464,8 +464,12 @@ module imageTempalte '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
         userMsiName: imageBuilderManagedIdentity.outputs.name
         location: aiblocation
         imageReplicationRegions: avdImageRegionsReplicas
-        sigImageDefinitionId: azureComputeGallery.outputs.resourceId
+        sigImageDefinitionId: avdImageTemplataDefinition.outputs.resourceId
     }
+    dependsOn: [
+        azureComputeGallery
+        avdImageTemplataDefinition
+    ]
 }
 
 // Build Image Template
