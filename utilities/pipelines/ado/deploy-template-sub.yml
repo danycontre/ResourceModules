@@ -36,10 +36,10 @@ jobs:
           targetType: 'inline'
           script: |
             $myArray = ConvertFrom-Json $Env:PARAMETER_ARRAY
-            # Need to add depth for embedded json arrays. 
+            # Need to add depth for embedded json arrays.
             $jsonmyArray = $myArray | ConvertTo-Json -Compress -Depth 100
-            Write-Host "json_my_Array is: $jsonmyArray" 
-             # Converting into json into hash array to extract the string array 
+            Write-Host "json_my_Array is: $jsonmyArray"
+             # Converting into json into hash array to extract the string array
             $hasharray=@{}
               $jsonObjmyArray= ConvertFrom-Json $jsonmyArray
               foreach ( $property in $jsonObjmyArray.PSObject.Properties ) {
@@ -51,10 +51,10 @@ jobs:
                 $stringmyArray += $parameter
               }
               Write-Host "Here is our string array: $stringmyArray"
-              # Formatting for the bicep deployment 
+              # Formatting for the bicep deployment
             $stringparameterArray=@()
              foreach ( $string in $stringmyArray) {
-               $string1 = $string -replace ' ', '=' 
+               $string1 = $string -replace ' ', '='
                $stringparameterArray += $string1
              }
               Write-Host "Here is final format of parameters for deployment with Bicep"
@@ -62,25 +62,22 @@ jobs:
               $stringparameters=[string]::Join(" ", $stringparameterArray)
               $stringparameters
               Write-Host "##vso[task.setvariable variable=bicep_parameters]$stringparameters"
-        env: 
+        env:
           PARAMETER_ARRAY: ${{convertToJson(parameters.parameterArray)}}
-
-
-            
 
       - task: AzureCLI@2
         displayName: Resource deployment at subscription scope
-        inputs: 
+        inputs:
           azureSubscription: $(serviceConnection)
           scriptType: 'bash'
           scriptLocation: 'inlineScript'
-          inlineScript: | 
-               $(var-bashPreInjectScript)
-               ls
-               echo "Deploying ${{ parameters.templateFile }} using ${{ parameters.deployOperation}} operation..."
-               az deployment sub ${{ parameters.deployOperation }} \
-                --location ${{ parameters.location }} \
-                --name $(Build.BuildNumber) \
-                --template-file ${{ parameters.templateFile}} \
-                --parameters $(bicep_parameters)
+          inlineScript: |
+            $(var-bashPreInjectScript)
+            ls
+            echo "Deploying ${{ parameters.templateFile }} using ${{ parameters.deployOperation}} operation..."
+            az deployment mg ${{ parameters.deployOperation }} \
+             --location ${{ parameters.location }} \
+             --name $(Build.BuildNumber) \
+             --template-file ${{ parameters.templateFile}} \
+             --parameters $(bicep_parameters)
           workingDirectory: ${{ parameters.workingDir }}
