@@ -80,13 +80,10 @@ param avdVnetworkSubnetAddressPrefix string = '10.0.0.0/23'
 param customDnsAvailable bool = false
 
 @description('custom DNS servers IPs (defualt: 10.10.10.5, 10.10.10.6)')
-param customDnsIps array = [
-    '10.10.10.5'
-    '10.10.10.6'
-]
+param customDnsIps array = []
 
 @description('Provide existing virtual network hub URI')
-param hubVnetId string = '/subscriptions/bf8ce47f-27f8-4e3d-9fce-ef902d0c2845/resourceGroups/d2l-network-eastus-cs01/providers/Microsoft.Network/virtualNetworks/d2l-default-eastus'
+param hubVnetId string = '/subscriptions/4f6c98e1-04a4-49f0-abce-6240b1726c3f/resourceGroups/AzurelabCACN-VNET/providers/Microsoft.Network/virtualNetworks/azurelabcacn-avd-vnet'
 
 @description('Does the hub contains a virtual network gateway (defualt: false)')
 param vNetworkGatewayOnHub bool = false
