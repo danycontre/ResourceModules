@@ -434,6 +434,9 @@ module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/dep
         sku: avdOsImageDefinitions[avdOsImage].sku
         location: location
     }
+    dependsOn: [
+        azureComputeGallery
+    ]
 }
 /*
 module imageDefinitionTemplate 'Modules/template-image-definition.bicep' = {
