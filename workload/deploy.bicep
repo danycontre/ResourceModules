@@ -15,6 +15,8 @@ param deploymentPrefix string = 'App1'
 @description('Required. The location to deploy into')
 param location string = deployment().location
 
+param aiblocation string = 'eastus2'
+
 @allowed([
     'Personal'
     'Pooled'
@@ -112,6 +114,7 @@ var avdHostPoolName = 'avdhp-${deploymentPrefixLowercase}'
 var avdApplicationGroupName = 'avdag-${deploymentPrefixLowercase}'
 var aibManagedIdentityName = 'uai-avd-aib'
 var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
+var imageTemplateBuildName = 'AVD-Image-Template-Build'
 //var avdDefaulOstImage = json(loadTextContent('./Parameters/${avdOsImage}.json'))
 var avdEnterpriseApplicationId = '82205950-fef1-4f88-8801-86e60c2e9318' // needs to be queried.
 
@@ -150,7 +153,6 @@ var avdOsImageDefinitions = {
     }
 }
 
-var aiblocation = 'eastus2'
 //
 
 // =========== //
@@ -444,7 +446,7 @@ module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/dep
 
 // Create Image Template
 
-module imageTempalte '../arm/Microsoft.VirtualMachineImages/imageTemplates/deploy.bicep' = {
+module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deploy.bicep' = {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     name: 'Deploy-Image-Template-${time}'
     params: {
@@ -473,6 +475,18 @@ module imageTempalte '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
 }
 
 // Build Image Template
+
+module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.bicep' = {
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
+    name: 'Build-Image-Template-${time}'
+    params: {
+        name: 'imageTemplateBuildName-${avdOsImage}'
+        location: aiblocation
+    }
+    dependsOn: [
+        imageTemplate
+    ]
+}
 
 /*
 module imageDefinitionTemplate 'Modules/template-image-definition.bicep' = {
