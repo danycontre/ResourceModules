@@ -112,7 +112,7 @@ var avdApplicationGroupName = 'avdag-${deploymentPrefixLowercase}'
 var aibManagedIdentityName = 'uai-avd-aib'
 var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
 //var avdDefaulOstImage = json(loadTextContent('./Parameters/${avdOsImage}.json'))
-var avdEnterpriseApplicationId = '9cdead84-a844-4324-93f2-b2e6bb768d07'
+var avdEnterpriseApplicationId = '82205950-fef1-4f88-8801-86e60c2e9318'
 
 var avdOsImageDefinitions = {
     'win10-21h2-office': {
