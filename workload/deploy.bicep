@@ -482,6 +482,9 @@ module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.b
     params: {
         name: 'imageTemplateBuildName-${avdOsImage}'
         location: aiblocation
+        azPowerShellVersion: '6.2'
+        cleanupPreference: 'OnSuccess'
+        scriptContent: 'Invoke-AzResourceAction -ResourceName "${imageDefinitionsTemSpecName}" -ResourceGroupName "${resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')}" -ResourceType "Microsoft.VirtualMachineImages/imageTemplates" -ApiVersion "2020-02-14" -Action Run -Force'
     }
     dependsOn: [
         imageTemplate
