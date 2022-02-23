@@ -72,19 +72,6 @@ param avdDeploySessionHostsCount int = 1
 @description('OS disk type for session host (Defualt: Standard_LRS) ')
 param avdSessionHostDiskType string = 'Standard_LRS'
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 @description('Create custom azure image builder role')
 param createAibCustomRole bool = true
 /*
@@ -107,6 +94,18 @@ param createAibManagedIdentity bool = true
 
 @description('Create new virtual network (Default: true)')
 param createAvdVnet bool = true
+
+@description('Existing virtual network subscription')
+param existingVnetSubscriptionId string = ''
+
+@description('Existing virtual network resource group')
+param existingVnetRgName string = ''
+
+@description('Existing virtual network')
+param existingVnetName string = ''
+
+@description('Existing virtual network subnet (subnet requires PrivateEndpointNetworkPolicies property to be disabled)')
+param existingVnetSubnetName string = ''
 
 @description('AVD virtual network address prefixes (Default: 10.0.0.0/23)')
 param avdVnetworkAddressPrefixes array = [
@@ -144,6 +143,7 @@ var avdNetworkObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLow
 var avdComputeObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-pool-compute' // max length limit 90 characters
 var avdStorageObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-storage' // max length limit 90 characters
 var avdSharedResourcesRgName = 'rg-${locationLowercase}-avd-shared-resources'
+var existingVnetResourceId = '/subscriptions/${existingVnetSubscriptionId}/resourceGroups/${existingVnetRgName}/providers/Microsoft.Network/virtualNetworks/${existingVnetName}'
 var avdVnetworkName = 'vnet-${locationLowercase}-avd-${deploymentPrefixLowercase}'
 var avdVnetworkSubnetName = 'avd-${deploymentPrefixLowercase}'
 var avdNetworksecurityGroupName = 'nsg-${locationLowercase}-avd-${deploymentPrefixLowercase}'
@@ -157,16 +157,14 @@ var avdFslogixFileShareName = 'fslogix-${deploymentPrefixLowercase}'
 var avdSharedSResourcesStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}avdshared'
 var avdSharedSResourcesAibContainerName = 'aib-${deploymentPrefixLowercase}'
 var avdSharedSResourcesScriptsContainerName = 'scripts-${deploymentPrefixLowercase}'
-var avdSharedServicesKvName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}-avd-shared' // max length limit 24 characters
-var avdWrklKvName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}-avd-${deploymentPrefixLowercase}' // max length limit 24 characters
+var avdSharedServicesKvName = 'avd-${uniqueString(deploymentPrefixLowercase, locationLowercase)}-shared' // max length limit 24 characters
+var avdWrklKvName = 'avd-${uniqueString(deploymentPrefixLowercase, locationLowercase)}-${deploymentPrefixLowercase}' // max length limit 24 characters
 var avdSessionHostNamePrefix = 'avdsh-${deploymentPrefix}'
-
-
 // azure image builder
     var aibManagedIdentityName = 'uai-avd-aib'
     var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
     //var avdDefaulOstImage = json(loadTextContent('./Parameters/${avdOsImage}.json'))
-    var avdEnterpriseApplicationId = '9cdead84-a844-4324-93f2-b2e6bb768d07'
+    var avdEnterpriseApplicationId = '486795c7-d929-4b48-a99e-3c5329d4ce86'
     var avdOsImage = json(loadTextContent('./Parameters/image-win10-21h2.json'))
     var avdOsImageDefinitions = [
         json(loadTextContent('./Parameters/image-win10-21h2-office.json'))
@@ -514,7 +512,7 @@ module avdWrklKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep' = {
         }
         privateEndpoints: [
             {
-                subnetResourceId: '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}'
+                subnetResourceId: createAvdVnet ? '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}': '${existingVnetResourceId}/subnets/${existingVnetSubnetName}'
                 service: 'vault'
             }
         ]
@@ -580,6 +578,7 @@ module avdSharedServicesKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep'
 }
 //
 
+
 // Storage
 module fslogixStorage '../arm/Microsoft.Storage/storageAccounts/deploy.bicep' = {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdStorageObjectsRgName}')
@@ -609,7 +608,7 @@ module fslogixStorage '../arm/Microsoft.Storage/storageAccounts/deploy.bicep' = 
         }
         privateEndpoints: [
             {
-                subnetResourceId: '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}'
+                subnetResourceId: createAvdVnet ? '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}': '${existingVnetResourceId}/subnets/${existingVnetSubnetName}'
                 service: 'file'
             }
         ]
@@ -647,6 +646,7 @@ module avdSharedServicesStorage '../arm/Microsoft.Storage/storageAccounts/deploy
 //
 
 // Session hosts
+/*
 module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' = [for i in range(0, avdDeploySessionHostsCount): if(avdDeploySessionHosts) {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
     name: 'AVD-Session-Host-${i}-${time}'
@@ -691,7 +691,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                 deleteOption: 'Delete'
                 ipConfigurations: {
                     name: 'ipconfig01'
-                    subnetId: '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}'
+                    subnetId: createAvdVnet ? '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}': '${existingVnetResourceId}/subnets/${existingVnetSubnetName}'
 
                 }
             }
@@ -709,29 +709,13 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
     ]
   }
 ]
-
-
-
-
-
-
-module  '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' = if(avdDeploySessionHosts) {
-    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
-    name: 'AVD-Shared-Services-Storage-${time}'
-    params: {
-        name: 
-        location: location
-    }
-    dependsOn: [
-        avdComputeObjectsRg
-    ]
-}
 */
 //
 
 // ======= //
 // Outputs //
 // ======= //
+/*
 output avdSharedResourcesRgId string = avdSharedResourcesRg.outputs.resourceId
 output avdServiceObjectsRgId string = avdServiceObjectsRg.outputs.resourceId
 output adNetworkObjectsRgId string = avdNetworkObjectsRg.outputs.resourceId
@@ -744,3 +728,4 @@ output aibManagedIdentityNameId string = imageBuilderManagedIdentity.outputs.pri
 output avdVirtualNetworkId string = avdVirtualNetwork.outputs.resourceId
 output avdNetworksecurityGroupId string = avdNetworksecurityGroup.outputs.resourceId
 output fslogixStorageId string = fslogixStorage.outputs.resourceId
+*/
