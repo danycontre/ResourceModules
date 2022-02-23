@@ -1,4 +1,8 @@
-trigger: none
+trigger:
+  - none
+
+pr:
+  - none
 
 variables:
   - name: deploymentRegion
