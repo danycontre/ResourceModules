@@ -461,7 +461,12 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
                 updateLimit: 40
             }
         ]
-        imageSource: avdOsImageDefinitions[avdOsImage]
+        imageSource: {
+            type: 'PlatformImage'
+            publisher: avdOsImageDefinitions[avdOsImage].publisher
+            offer: avdOsImageDefinitions[avdOsImage].offer
+            sku: avdOsImageDefinitions[avdOsImage].sku
+        }
         name: imageDefinitionsTemSpecName
         userMsiName: imageBuilderManagedIdentity.outputs.name
         location: aiblocation
