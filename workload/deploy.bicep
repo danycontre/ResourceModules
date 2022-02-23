@@ -66,7 +66,7 @@ param avdImageRegionsReplicas array = [
 param createAibManagedIdentity bool = true
 
 @description('Create new virtual network (Default: true)')
-param createAvdVnet bool = true
+param createAvdVnet bool = false
 
 @description('AVD virtual network address prefixes (Default: 10.0.0.0/23)')
 param avdVnetworkAddressPrefixes array = [
@@ -121,7 +121,7 @@ var avdOsImageDefinitions = [
     json(loadTextContent('./Parameters/image-win10-21h2.json'))
     json(loadTextContent('./Parameters/image-win11-21h2-office.json'))
     json(loadTextContent('./Parameters/image-win11-21h2.json'))
-  ]
+]
 //
 
 // =========== //
@@ -177,7 +177,7 @@ module avdStorageObjectsRg '../arm/Microsoft.Resources/resourceGroups/deploy.bic
 //
 
 // Networking
-module avdNetworksecurityGroup '../arm/Microsoft.Network/networkSecurityGroups/deploy.bicep' = if(createAvdVnet) {
+module avdNetworksecurityGroup '../arm/Microsoft.Network/networkSecurityGroups/deploy.bicep' = if (createAvdVnet) {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdNetworkObjectsRgName}')
     name: 'AVD-NSG-${time}'
     params: {
@@ -189,15 +189,15 @@ module avdNetworksecurityGroup '../arm/Microsoft.Network/networkSecurityGroups/d
     ]
 }
 
-module avdVirtualNetwork '../arm/Microsoft.Network/virtualNetworks/deploy.bicep' = if(createAvdVnet) {
+module avdVirtualNetwork '../arm/Microsoft.Network/virtualNetworks/deploy.bicep' = if (createAvdVnet) {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdNetworkObjectsRgName}')
     name: 'AVD-vNet-${time}'
     params: {
         name: avdVnetworkName
         location: location
         addressPrefixes: avdVnetworkAddressPrefixes
-        dnsServers: customDnsAvailable ? customDnsIps: []
-        virtualNetworkPeerings:[
+        dnsServers: customDnsAvailable ? customDnsIps : []
+        virtualNetworkPeerings: [
             {
                 remoteVirtualNetworkId: hubVnetId
                 name: avdVNetworkPeeringName
@@ -205,11 +205,11 @@ module avdVirtualNetwork '../arm/Microsoft.Network/virtualNetworks/deploy.bicep'
                 allowGatewayTransit: false
                 allowVirtualNetworkAccess: true
                 doNotVerifyRemoteGateways: true
-                useRemoteGateways: vNetworkGatewayOnHub ? true: false
+                useRemoteGateways: vNetworkGatewayOnHub ? true : false
                 remotePeeringEnabled: true
                 remotePeeringName: avdVNetworkPeeringName
                 remotePeeringAllowForwardedTraffic: true
-                remotePeeringAllowGatewayTransit: vNetworkGatewayOnHub ? true: false
+                remotePeeringAllowGatewayTransit: vNetworkGatewayOnHub ? true : false
                 remotePeeringAllowVirtualNetworkAccess: true
                 remotePeeringDoNotVerifyRemoteGateways: true
                 remotePeeringUseRemoteGateways: false
