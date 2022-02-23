@@ -47,7 +47,7 @@ param createStartVmOnConnectCustomRole bool = true
 
 @description('Create custom azure image builder role')
 param createAibCustomRole bool = true
-/*
+
 @allowed([
     'win10-21h2-office'
     'win10-21h2'
@@ -56,7 +56,7 @@ param createAibCustomRole bool = true
 ])
 @description('Optional. AVD OS image source')
 param avdOsImage string = 'win10-21h2'
-*/
+
 @description('Regions to replicate AVD images')
 param avdImageRegionsReplicas array = [
     'EastUs'
@@ -101,6 +101,7 @@ var avdNetworkObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLow
 var avdComputeObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-pool-compute' // Resource groups lenth limit 90 characters
 var avdStorageObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-storage' // Resource groups lenth limit 90 characters
 var avdSharedResourcesRgName = 'rg-${locationLowercase}-avd-shared-resources'
+var imageGalleryName = 'avd-gallery-${locationLowercase}'
 var avdVnetworkName = 'vnet-${locationLowercase}-avd-${deploymentPrefixLowercase}'
 var avdVnetworkSubnetName = 'avd-${deploymentPrefixLowercase}'
 var avdNetworksecurityGroupName = 'nsg-${locationLowercase}-avd-${deploymentPrefixLowercase}'
@@ -112,13 +113,41 @@ var aibManagedIdentityName = 'uai-avd-aib'
 var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
 //var avdDefaulOstImage = json(loadTextContent('./Parameters/${avdOsImage}.json'))
 var avdEnterpriseApplicationId = '9cdead84-a844-4324-93f2-b2e6bb768d07'
-var avdOsImage = json(loadTextContent('./Parameters/image-win10-21h2.json'))
-var avdOsImageDefinitions = [
-    json(loadTextContent('./Parameters/image-win10-21h2-office.json'))
-    json(loadTextContent('./Parameters/image-win10-21h2.json'))
-    json(loadTextContent('./Parameters/image-win11-21h2-office.json'))
-    json(loadTextContent('./Parameters/image-win11-21h2.json'))
-]
+
+var avdOsImageDefinitions = {
+    'win10-21h2-office': {
+        name: 'Windows10_21H2_Office'
+        osType: 'Windows'
+        osState: 'Generalized'
+        offer: 'office-365'
+        publisher: 'MicrosoftWindowsDesktop'
+        sku: 'win10-21h2-avd-m365'
+    }
+    'win10-21h2': {
+        name: 'Windows10_21H2'
+        osType: 'Windows'
+        osState: 'Generalized'
+        offer: 'Windows-10'
+        publisher: 'MicrosoftWindowsDesktop'
+        sku: '21h2-evd'
+    }
+    'win11-21h2-office': {
+        name: 'Windows11_21H2'
+        osType: 'Windows'
+        osState: 'Generalized'
+        offer: 'windows-11'
+        publisher: 'MicrosoftWindowsDesktop'
+        sku: 'win11-21h2-avd-m365'
+    }
+    'win11-21h2': {
+        name: 'Windows11_21H2'
+        osType: 'Windows'
+        osState: 'Generalized'
+        offer: 'windows-11'
+        publisher: 'MicrosoftWindowsDesktop'
+        sku: 'win11-21h2-avd'
+    }
+}
 //
 
 // =========== //
@@ -362,22 +391,9 @@ module azureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignmen
         imageBuilderManagedIdentity
     ]
 }
-/*
-module azureImageBuilderRoleAssignExisting '../arm/Microsoft.Authorization/roleAssignments/.bicep/nested_rbac_rg.bicep' = if (!createAibCustomRole && createAibManagedIdentity) {
-    name: 'Azure-Image-Builder-RoleAssign-${time}'
-    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
-    params: {
-        roleDefinitionIdOrName: createAibCustomRole ? azureImageBuilderRole.outputs.resourceId : ''
-        principalId: imageBuilderManagedIdentity.outputs.principalId
-    }
-    dependsOn: [
-        azureImageBuilderRole
-        imageBuilderManagedIdentity
-    ]
-}
-*/
+
 module startVMonConnectRoleAssign '../arm/Microsoft.Authorization/roleAssignments/.bicep/nested_rbac_rg.bicep' = if (createStartVmOnConnectCustomRole) {
-    name: 'Satrt-VM-OnConnect-RoleAssign-${time}'
+    name: 'Start-VM-OnConnect-RoleAssign-${time}'
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
     params: {
         roleDefinitionIdOrName: createStartVmOnConnectCustomRole ? startVMonConnectRole.outputs.resourceId : ''
@@ -389,8 +405,37 @@ module startVMonConnectRoleAssign '../arm/Microsoft.Authorization/roleAssignment
     ]
 }
 //
+
+// Custom images: Azure Image Buider deployment
+
+// Azure Compute Gallery
+
+module azureComputeGallery '../arm/Microsoft.Compute/galleries/deploy.bicep' = {
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
+    name: 'Deploy-Azure-Compute-Gallery-${time}'
+    params: {
+        name: imageGalleryName
+        location: location
+    }
+}
+
+// Image Template Definition
+
+module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/deploy.bicep' = {
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
+    name: 'Deploy-AVD-Image-Template-Definition-${time}'
+    params: {
+        galleryName: azureComputeGallery.outputs.name
+        name: imageDefinitionsTemSpecName
+        osState: avdOsImageDefinitions[avdOsImage].osState
+        osType: avdOsImageDefinitions[avdOsImage].osType
+        publisher: avdOsImageDefinitions[avdOsImage].publisher
+        offer: avdOsImageDefinitions[avdOsImage].offer
+        sku: avdOsImageDefinitions[avdOsImage].sku
+        location: location
+    }
+}
 /*
-// Azure Image Builder
 module imageDefinitionTemplate 'Modules/template-image-definition.bicep' = {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedAibRgName}')
     name: 'Image-Definition-TemplateSpec-${time}'
