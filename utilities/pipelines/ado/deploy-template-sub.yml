@@ -75,7 +75,7 @@ jobs:
             $(var-bashPreInjectScript)
             ls
             echo "Deploying ${{ parameters.templateFile }} using ${{ parameters.deployOperation}} operation..."
-            az deployment mg ${{ parameters.deployOperation }} \
+            az deployment sub ${{ parameters.deployOperation }} \
              --location ${{ parameters.location }} \
              --name $(Build.BuildNumber) \
              --template-file ${{ parameters.templateFile}} \
