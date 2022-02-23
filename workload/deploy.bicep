@@ -117,9 +117,11 @@ var avdHostPoolName = 'avdhp-${deploymentPrefixLowercase}'
 var avdApplicationGroupName = 'avdag-${deploymentPrefixLowercase}'
 var avdFslogixStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}fslogix${deploymentPrefixLowercase}'
 var avdFslogixFileShareName = 'fslogix-${deploymentPrefixLowercase}'
-var avdSharedSResourcesStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}shared${deploymentPrefixLowercase}'
+var avdSharedSResourcesStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}avdshared'
 var avdSharedSResourcesAibContainerName = 'aib-${deploymentPrefixLowercase}'
 var avdSharedSResourcesScriptsContainerName = 'scripts-${deploymentPrefixLowercase}'
+var avdSharedServicesKvName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}-shared'
+var avdWrklKvName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}-avd-${deploymentPrefixLowercase}'
 // azure image builder
     var aibManagedIdentityName = 'uai-avd-aib'
     var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
@@ -441,6 +443,54 @@ module imageDefinitionTemplate 'Modules/template-image-definition.bicep' = {
 // Azure Compute Gallery
 //
 
+// Key vaults
+module avdWrklKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep' = {
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
+    name: 'AVD-Workload-KeyVault-${time}'
+    params: {
+        name: avdWrklKvName
+        location: location
+        enableRbacAuthorization: false
+        softDeleteRetentionInDays: 7
+        networkAcls: {
+            bypass: 'AzureServices'
+            defaultAction: 'Deny'
+            virtualNetworkRules: []
+            ipRules: []
+        }
+        privateEndpoints: [
+            {
+                subnetResourceId: '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}'
+                service: 'vault'
+            }
+        ]
+    }
+    dependsOn: [
+        avdComputeObjectsRg
+    ]
+}
+
+module avdSharedServicesKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep' = {
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
+    name: 'AVD-Shared-Services-KeyVault-${time}'
+    params: {
+        name: avdSharedServicesKvName
+        location: location
+        enableRbacAuthorization: false
+        softDeleteRetentionInDays: 7
+        networkAcls: {
+            bypass: 'AzureServices'
+            defaultAction: 'Deny'
+            virtualNetworkRules: []
+            ipRules: []
+        }
+    }
+    dependsOn: [
+        avdSharedResourcesRg
+    ]
+}
+//
+
 // Storage
 module fslogixStorage '../arm/Microsoft.Storage/storageAccounts/deploy.bicep' = {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdStorageObjectsRgName}')
@@ -505,7 +555,6 @@ module avdSharedServicesStorage '../arm/Microsoft.Storage/storageAccounts/deploy
         avdSharedResourcesRg
     ]
 }
-
 //
 
 
