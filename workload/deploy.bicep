@@ -437,7 +437,7 @@ module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/dep
         publisher: avdOsImageDefinitions[avdOsImage].publisher
         offer: avdOsImageDefinitions[avdOsImage].offer
         sku: avdOsImageDefinitions[avdOsImage].sku
-        location: location
+        location: aiblocation
     }
     dependsOn: [
         azureComputeGallery
