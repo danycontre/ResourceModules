@@ -466,6 +466,7 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
             publisher: avdOsImageDefinitions[avdOsImage].publisher
             offer: avdOsImageDefinitions[avdOsImage].offer
             sku: avdOsImageDefinitions[avdOsImage].sku
+            version: 'latest'
         }
         name: imageDefinitionsTemSpecName
         userMsiName: imageBuilderManagedIdentity.outputs.name
