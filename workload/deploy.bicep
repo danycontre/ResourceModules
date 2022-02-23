@@ -66,7 +66,7 @@ param avdImageRegionsReplicas array = [
 param createAibManagedIdentity bool = true
 
 @description('Create new virtual network (Default: true)')
-param createAvdVnet bool = false
+param createAvdVnet bool = true
 
 @description('AVD virtual network address prefixes (Default: 10.0.0.0/23)')
 param avdVnetworkAddressPrefixes array = [
