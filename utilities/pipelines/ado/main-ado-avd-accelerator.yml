@@ -32,6 +32,6 @@ stages:
           workingDir: $(System.DefaultWorkingDirectory)/workload
           templateFile: deploy.bicep
           parameterArray:
-            - avdShrdlSubscriptionId ($avdShrdlSubscriptionId)
-            - avdWrklSubscriptionId ($avdWrklSubscriptionId)
+            - avdShrdlSubscriptionId $(avdShrdlSubscriptionId)
+            - avdWrklSubscriptionId $(avdWrklSubscriptionId)
             - location $(deploymentRegion)
