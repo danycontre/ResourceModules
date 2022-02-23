@@ -9,6 +9,12 @@ variables:
     value: ubuntu-latest
   - name: deployOperation
     value: create
+
+  - name: avdShrdlSubscriptionId
+    value: 4f6c98e1-04a4-49f0-abce-6240b1726c3f
+  - name: avdWrklSubscriptionId
+    value: 4f6c98e1-04a4-49f0-abce-6240b1726c3f
+  - name: 
 stages:
   - stage: Deploy_AVD_Accelerator
     displayName: Deploy AVD Accelerator
@@ -21,5 +27,6 @@ stages:
           workingDir: $(System.DefaultWorkingDirectory)/workload
           templateFile: deploy.bicep
           parameterArray:
-            - resourceGroupName AVD-${{ parameters.personaId }}-RG
-            - resourceGroupLocation $(deploymentRegion)
+            - avdShrdlSubscriptionId ($avdShrdlSubscriptionId)
+            - avdWrklSubscriptionId ($avdWrklSubscriptionId)
+            - location $(deploymentRegion)
