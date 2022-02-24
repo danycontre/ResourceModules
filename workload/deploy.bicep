@@ -133,7 +133,7 @@ var avdOsImageDefinitions = {
         osState: 'Generalized'
         offer: 'Windows-10'
         publisher: 'MicrosoftWindowsDesktop'
-        sku: '21h2-evd'
+        sku: '21h1-evd'
     }
     'win11-21h2-office': {
         name: 'Windows11_21H2'
