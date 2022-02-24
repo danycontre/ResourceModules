@@ -488,7 +488,10 @@ module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.b
         location: aiblocation
         azPowerShellVersion: '6.2'
         cleanupPreference: 'OnSuccess'
-        scriptContent: 'Invoke-AzResourceAction -ResourceName "${imageDefinitionsTemSpecName}" -ResourceGroupName "${avdSharedResourcesRgName}" -ResourceType "Microsoft.VirtualMachineImages/imageTemplates" -ApiVersion "2020-02-14" -Action Run -Force'
+        userAssignedIdentities: {
+            '${imageBuilderManagedIdentity.outputs.principalId}': {}
+        }
+        scriptContent: imageTemplate.outputs.runThisCommand
     }
     dependsOn: [
         imageTemplate
