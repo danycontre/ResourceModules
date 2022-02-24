@@ -475,7 +475,6 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
         sigImageDefinitionId: avdImageTemplataDefinition.outputs.resourceId
     }
     dependsOn: [
-        azureComputeGallery
         avdImageTemplataDefinition
     ]
 }
