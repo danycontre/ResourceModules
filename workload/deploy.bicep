@@ -474,9 +474,7 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
         imageReplicationRegions: avdImageRegionsReplicas
         sigImageDefinitionId: avdImageTemplataDefinition.outputs.resourceId
     }
-    dependsOn: [
-        avdImageTemplataDefinition
-    ]
+    dependsOn: []
 }
 
 // Build Image Template
