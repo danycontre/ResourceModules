@@ -50,24 +50,36 @@ param createStartVmOnConnectCustomRole bool = true
 
 @description('Required. AVD session host local credentials')
 @secure()
-param avdVmLocalUserName string = 'kjshsdjhgklsgh'
+param avdVmLocalUserName string = 'danycontreras'
 @secure()
-param avdVmLocalUserPassword string = 'Mdjhkljsdjhfgslkdyghsjkhgs'
+param avdVmLocalUserPassword string = 'Fkljhysdgtfsd10324786'
 
 @description('Required. AVD session host domain join credentials')
 @secure()
-param avdDomainJoinUserName string = 'kjshsdjhgklsgh'
+param avdDomainJoinUserName string = 'danycontreras'
 @secure()
-param avdDomainJoinUserPassword string = 'Mdjhkljsdjhfgslkdyghsjkhgs'
+param avdDomainJoinUserPassword string = 'Fkljhysdgtfsd10324786'
 
 @description('Id to grant access to on AVD workload key vault secrets')
 param avdWrklSecretAccess string = ''
 
 @description('Deploy new session hosts (defualt: false)')
-param avdDeploySessionHosts bool = false
+param avdDeploySessionHosts bool = true
 
 @description('Cuantity of session hosts to deploy')
 param avdDeploySessionHostsCount int = 1
+
+@description('Optional. Creates an availability zone and adds the VMs to it. Cannot be used in combination with availability set nor scale set. (Defualt: true)')
+param avdUseAvailabilityZones bool = true
+
+@description('Optional. If set to 1, 2 or 3, the availability zone for all VMs is hardcoded to that value. If zero, then the automatic algorithm will be used to give every VM in a different zone (up to three zones). Cannot be used in combination with availability set nor scale set.')
+@allowed([
+  0
+  1
+  2
+  3
+])
+param avdAvailabilityZone int = 1
 
 @description('OS disk type for session host (Defualt: Standard_LRS) ')
 param avdSessionHostDiskType string = 'Standard_LRS'
@@ -147,6 +159,7 @@ var existingVnetResourceId = '/subscriptions/${existingVnetSubscriptionId}/resou
 var avdVnetworkName = 'vnet-${locationLowercase}-avd-${deploymentPrefixLowercase}'
 var avdVnetworkSubnetName = 'avd-${deploymentPrefixLowercase}'
 var avdNetworksecurityGroupName = 'nsg-${locationLowercase}-avd-${deploymentPrefixLowercase}'
+var avdRouteTableName = 'udr-${locationLowercase}-avd-${deploymentPrefixLowercase}'
 var avdApplicationsecurityGroupName = 'asg-${locationLowercase}-avd-${deploymentPrefixLowercase}'
 var avdVNetworkPeeringName = '${uniqueString(deploymentPrefixLowercase, location)}-virtualNetworkPeering-avd-${deploymentPrefixLowercase}'
 var avdWorkSpaceName = 'avdws-${deploymentPrefixLowercase}'
@@ -251,6 +264,18 @@ module avdApplicationsecurityGroup '../arm/Microsoft.Network/applicationSecurity
     ]
 }
 
+module avdRouteTable '../arm/Microsoft.Network/routeTables/deploy.bicep' = if (createAvdVnet) {
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdNetworkObjectsRgName}')
+    name: 'AVD-UDR-${time}'
+    params: {
+        name: avdRouteTableName
+        location: location
+    }
+    dependsOn: [
+        avdNetworkObjectsRg
+    ]
+}
+
 module avdVirtualNetwork '../arm/Microsoft.Network/virtualNetworks/deploy.bicep' = if (createAvdVnet) {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdNetworkObjectsRgName}')
     name: 'AVD-vNet-${time}'
@@ -284,13 +309,15 @@ module avdVirtualNetwork '../arm/Microsoft.Network/virtualNetworks/deploy.bicep'
                 privateEndpointNetworkPolicies: 'Disabled'
                 privateLinkServiceNetworkPolicies: 'Enabled'
                 networkSecurityGroupName: avdNetworksecurityGroupName
-                //routeTableName:
+                routeTableName: avdRouteTableName
             }
         ]
     }
     dependsOn: [
         avdNetworkObjectsRg
         avdNetworksecurityGroup
+        avdApplicationsecurityGroup
+        avdRouteTable
     ]
 }
 //
@@ -497,7 +524,7 @@ module imageDefinitionTemplate 'Modules/template-image-definition.bicep' = {
 
 // Key vaults
 module avdWrklKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep' = {
-    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
     name: 'AVD-Workload-KeyVault-${time}'
     params: {
         name: avdWrklKvName
@@ -646,7 +673,6 @@ module avdSharedServicesStorage '../arm/Microsoft.Storage/storageAccounts/deploy
 //
 
 // Session hosts
-/*
 module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' = [for i in range(0, avdDeploySessionHostsCount): if(avdDeploySessionHosts) {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
     name: 'AVD-Session-Host-${i}-${time}'
@@ -654,12 +680,16 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         name:'${avdSessionHostNamePrefix}-${i}'
         location: location
         systemAssignedIdentity: true
+        encryptionAtHost: false
+        //zones: useAvailabilityZone ? array(availabilityZone) : null
+        useAvailabilityZone: avdUseAvailabilityZones
+        availabilityZone: avdAvailabilityZone
         osType: 'Windows'
         imageReference: {
-            publisher: 
-            offer:
-            sku:
-            version:
+            publisher: 'MicrosoftWindowsDesktop'
+            offer: 'windows-11'
+            sku: 'win11-21h2-avd'
+            version: '22000.438.220116'
         }
         osDisk: {
             createOption: 'fromImage'
@@ -669,47 +699,47 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                 storageAccountType: avdSessionHostDiskType
             }
         }
-        adminUsername: {
-            reference: {
-                KeyVault: {
-                    id: avdWrklKeyVault.outputs.resourceId
-                }
-                secretName: 'AVD-Local-Admin-User-${deploymentPrefix}'
-            }
-        }
-        adminPassword: {
-            reference: {
-                KeyVault: {
-                    id: avdWrklKeyVault.outputs.resourceId
-                }
-                secretName: 'AVD-Local-User-Password-${deploymentPrefix}'
-            }
-        }
+        adminUsername: avdVmLocalUserName  //{
+        //    reference: {
+        //        KeyVault: {
+        //            id: avdWrklKeyVault.outputs.resourceId
+        //        }
+        //        secretName: 'AVD-Local-Admin-User-${deploymentPrefix}'
+        //    }
+        //}
+        adminPassword: avdVmLocalUserPassword //{
+        //    reference: {
+        //        KeyVault: {
+        //            id: avdWrklKeyVault.outputs.resourceId
+        //        }
+        //        secretName: 'AVD-Local-User-Password-${deploymentPrefix}'
+        //    }
+        //}
         nicConfigurations: [
             {
                 nicSuffix: '-nic-01'
                 deleteOption: 'Delete'
-                ipConfigurations: {
-                    name: 'ipconfig01'
-                    subnetId: createAvdVnet ? '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}': '${existingVnetResourceId}/subnets/${existingVnetSubnetName}'
+                applicationSecurityGroups: avdApplicationGroupName
+                ipConfigurations: [
+                    {
+                        name: 'ipconfig01'
+                        subnetId: createAvdVnet ? '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}': '${existingVnetResourceId}/subnets/${existingVnetSubnetName}'
+                    }
+                ]
 
-                }
             }
         ]
-        extensionMonitoringAgentConfig: {
-            enabled: true
-        }
-        extensionCustomScriptConfig: {
-        }
-
+        //extensionMonitoringAgentConfig: {
+        //    enabled: true
+        //}
+        //extensionCustomScriptConfig: {
+        //}
     }
     dependsOn: [
         avdComputeObjectsRg
         avdWrklKeyVault
     ]
-  }
-]
-*/
+  }]
 //
 
 // ======= //
