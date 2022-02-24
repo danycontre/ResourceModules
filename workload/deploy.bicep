@@ -4,10 +4,10 @@ targetScope = 'subscription'
 // Parameters //
 // ========== //
 @description('Required. AVD shared services subscription ID')
-param avdShrdlSubscriptionId string = 'dd720a0b-58a4-43b6-9f35-2d91a8760991'
+param avdShrdlSubscriptionId string = ''
 
 @description('Required. AVD wrokload subscription ID')
-param avdWrklSubscriptionId string = 'a7bc841f-34c0-4214-9469-cd463b66de35'
+param avdWrklSubscriptionId string = ''
 
 @description('Required. The name of the resource group to deploy')
 param deploymentPrefix string = 'App1'
@@ -44,8 +44,35 @@ param avdApplicationGroupType string = 'Desktop'
 @description('Optional. AVD host pool Custom RDP properties')
 param avdHostPoolRdpProperty string = 'audiocapturemode:i:1;audiomode:i:0;drivestoredirect:s:;redirectclipboard:i:1;redirectcomports:i:1;redirectprinters:i:1;redirectsmartcards:i:1;screen mode id:i:2'
 
+@description('Optional. Fslogix file share size (Default: 5TB)')
+param avdFslogixFileShareQuotaSize string = '51200'
+
 @description('Create custom Start VM on connect role')
 param createStartVmOnConnectCustomRole bool = true
+
+@description('Required. AVD session host local credentials')
+@secure()
+param avdVmLocalUserName string = 'kjshsdjhgklsgh'
+@secure()
+param avdVmLocalUserPassword string = 'Mdjhkljsdjhfgslkdyghsjkhgs'
+
+@description('Required. AVD session host domain join credentials')
+@secure()
+param avdDomainJoinUserName string = 'kjshsdjhgklsgh'
+@secure()
+param avdDomainJoinUserPassword string = 'Mdjhkljsdjhfgslkdyghsjkhgs'
+
+@description('Id to grant access to on AVD workload key vault secrets')
+param avdWrklSecretAccess string = ''
+
+@description('Deploy new session hosts (defualt: false)')
+param avdDeploySessionHosts bool = false
+
+@description('Cuantity of session hosts to deploy')
+param avdDeploySessionHostsCount int = 1
+
+@description('OS disk type for session host (Defualt: Standard_LRS) ')
+param avdSessionHostDiskType string = 'Standard_LRS'
 
 @description('Create custom azure image builder role')
 param createAibCustomRole bool = true
@@ -70,6 +97,18 @@ param createAibManagedIdentity bool = true
 
 @description('Create new virtual network (Default: true)')
 param createAvdVnet bool = true
+
+@description('Existing virtual network subscription')
+param existingVnetSubscriptionId string = ''
+
+@description('Existing virtual network resource group')
+param existingVnetRgName string = ''
+
+@description('Existing virtual network')
+param existingVnetName string = ''
+
+@description('Existing virtual network subnet (subnet requires PrivateEndpointNetworkPolicies property to be disabled)')
+param existingVnetSubnetName string = ''
 
 @description('AVD virtual network address prefixes (Default: 10.0.0.0/23)')
 param avdVnetworkAddressPrefixes array = [
@@ -99,19 +138,22 @@ param time string = utcNow()
 // =========== //
 var deploymentPrefixLowercase = toLower(deploymentPrefix)
 var locationLowercase = toLower(location)
-var avdServiceObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-service-objects' // Resource groups lenth limit 90 characters
-var avdNetworkObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-network' // Resource groups lenth limit 90 characters
-var avdComputeObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-pool-compute' // Resource groups lenth limit 90 characters
-var avdStorageObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-storage' // Resource groups lenth limit 90 characters
+var avdServiceObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-service-objects' // max length limit 90 characters
+var avdNetworkObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-network' // max length limit 90 characters
+var avdComputeObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-pool-compute' // max length limit 90 characters
+var avdStorageObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-storage' // max length limit 90 characters
 var avdSharedResourcesRgName = 'rg-${locationLowercase}-avd-shared-resources'
 var imageGalleryName = 'avdGgallery${locationLowercase}'
+var existingVnetResourceId = '/subscriptions/${existingVnetSubscriptionId}/resourceGroups/${existingVnetRgName}/providers/Microsoft.Network/virtualNetworks/${existingVnetName}'
 var avdVnetworkName = 'vnet-${locationLowercase}-avd-${deploymentPrefixLowercase}'
 var avdVnetworkSubnetName = 'avd-${deploymentPrefixLowercase}'
 var avdNetworksecurityGroupName = 'nsg-${locationLowercase}-avd-${deploymentPrefixLowercase}'
+var avdApplicationsecurityGroupName = 'asg-${locationLowercase}-avd-${deploymentPrefixLowercase}'
 var avdVNetworkPeeringName = '${uniqueString(deploymentPrefixLowercase, location)}-virtualNetworkPeering-avd-${deploymentPrefixLowercase}'
 var avdWorkSpaceName = 'avdws-${deploymentPrefixLowercase}'
 var avdHostPoolName = 'avdhp-${deploymentPrefixLowercase}'
 var avdApplicationGroupName = 'avdag-${deploymentPrefixLowercase}'
+// azure image builder
 var aibManagedIdentityName = 'uai-avd-aib'
 var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
 var imageTemplateBuildName = 'AVD-Image-Template-Build'
@@ -152,8 +194,15 @@ var avdOsImageDefinitions = {
         sku: 'win11-21h2-avd'
     }
 }
-
 //
+var avdFslogixStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}fslogix${deploymentPrefixLowercase}'
+var avdFslogixFileShareName = 'fslogix-${deploymentPrefixLowercase}'
+var avdSharedSResourcesStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}avdshared'
+var avdSharedSResourcesAibContainerName = 'aib-${deploymentPrefixLowercase}'
+var avdSharedSResourcesScriptsContainerName = 'scripts-${deploymentPrefixLowercase}'
+var avdSharedServicesKvName = 'avd-${uniqueString(deploymentPrefixLowercase, locationLowercase)}-shared' // max length limit 24 characters
+var avdWrklKvName = 'avd-${uniqueString(deploymentPrefixLowercase, locationLowercase)}-${deploymentPrefixLowercase}' // max length limit 24 characters
+var avdSessionHostNamePrefix = 'avdsh-${deploymentPrefix}'
 
 // =========== //
 // Deployments //
@@ -213,6 +262,18 @@ module avdNetworksecurityGroup '../arm/Microsoft.Network/networkSecurityGroups/d
     name: 'AVD-NSG-${time}'
     params: {
         name: avdNetworksecurityGroupName
+        location: location
+    }
+    dependsOn: [
+        avdNetworkObjectsRg
+    ]
+}
+
+module avdApplicationsecurityGroup '../arm/Microsoft.Network/applicationSecurityGroups/deploy.bicep' = if (createAvdVnet) {
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdNetworkObjectsRgName}')
+    name: 'AVD-ASG-${time}'
+    params: {
+        name: avdApplicationsecurityGroupName
         location: location
     }
     dependsOn: [
@@ -291,6 +352,21 @@ module avdHostPool '../arm/Microsoft.DesktopVirtualization/hostpools/deploy.bice
         startVMOnConnect: avdStartVMOnConnect
         loadBalancerType: avdHostPoolloadBalancerType
         customRdpProperty: avdHostPoolRdpProperty
+        //vmTemplate: {
+        //    domain: avdDomainToJoin
+        //    galleryImageOffer: avdVmImageOffer
+        //    galleryImagePublisher: avdVmImagePublisher
+        //    galleryImageSKU: avdVmImageSku
+        //    imageType: avdVmImageType
+        //    imageUri: avdVmImageUri
+        //    customImageId: avdVmImageId
+        //    namePrefix: deploymentPrefixLowercase
+        //    osDiskType: avdVmDiskType
+        //    useManagedDisks: true
+        //    vmSize: {
+        //        id: avdVmSize
+        //    }
+        //}
     }
     dependsOn: [
         avdServiceObjectsRg
@@ -383,8 +459,24 @@ module imageBuilderManagedIdentity '../arm/Microsoft.ManagedIdentity/userAssigne
 }
 //
 
+// Enterprise applications
+//
+
 // RBAC role Assignments
 module azureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignments/.bicep/nested_rbac_rg.bicep' = if (createAibCustomRole && createAibManagedIdentity) {
+    name: 'Azure-Image-Builder-RoleAssign-${time}'
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
+    params: {
+        roleDefinitionIdOrName: createAibCustomRole ? azureImageBuilderRole.outputs.resourceId : ''
+        principalId: imageBuilderManagedIdentity.outputs.principalId
+    }
+    dependsOn: [
+        azureImageBuilderRole
+        imageBuilderManagedIdentity
+    ]
+}
+
+module azureImageBuilderRoleAssignExisting '../arm/Microsoft.Authorization/roleAssignments/.bicep/nested_rbac_rg.bicep' = if (!createAibCustomRole && createAibManagedIdentity) {
     name: 'Azure-Image-Builder-RoleAssign-${time}'
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     params: {
@@ -409,7 +501,6 @@ module startVMonConnectRoleAssign '../arm/Microsoft.Authorization/roleAssignment
         startVMonConnectRole
     ]
 }
-//
 
 // Custom images: Azure Image Buider deployment. Azure Compute Gallery --> Image Template Definition --> Image Template --> Build and Publish Template --> Create VMs
 
@@ -498,30 +589,226 @@ module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.b
     ]
 }
 
-/*
-module imageDefinitionTemplate 'Modules/template-image-definition.bicep' = {
-    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedAibRgName}')
-    name: 'Image-Definition-TemplateSpec-${time}'
+// Key vaults
+module avdWrklKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep' = {
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
+    name: 'AVD-Workload-KeyVault-${time}'
     params: {
-      templateSpecName: imageDefinitionsTemSpecName
-      location: location
-      templateSpecDisplayName: 'Image Builder Definition ${avdOsImage}'
-      buildDefinition: avdOsImage
-      imageId: avdOsImageDefinitions[2].outputs.imageId
-      imageRegions: avdImageRegionsReplicas
-      managedIdentityId: imageBuilderManagedIdentity.outputs.principalId
-      scriptUri: ''
+        name: avdWrklKvName
+        location: location
+        enableRbacAuthorization: false
+        softDeleteRetentionInDays: 7
+        networkAcls: {
+            bypass: 'AzureServices'
+            defaultAction: 'Deny'
+            virtualNetworkRules: []
+            ipRules: []
+        }
+        privateEndpoints: [
+            {
+                subnetResourceId: createAvdVnet ? '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}' : '${existingVnetResourceId}/subnets/${existingVnetSubnetName}'
+                service: 'vault'
+            }
+        ]
+        secrets: {
+            secureList: [
+                {
+                    name: 'AVD-Local-Admin-User-${deploymentPrefix}'
+                    value: avdVmLocalUserName
+                    contentType: 'Session host local credentials'
+                }
+                {
+                    name: 'AVD-Local-User-Password-${deploymentPrefix}'
+                    value: avdVmLocalUserPassword
+                    contentType: 'Session host local credentials'
+                }
+                {
+                    name: 'Domain-Join-User-Name-${deploymentPrefix}'
+                    value: avdDomainJoinUserName
+                    contentType: 'Domain join credentials'
+                }
+                {
+                    name: 'Domain-Join-User-Password-${deploymentPrefix}'
+                    value: avdDomainJoinUserPassword
+                    contentType: 'Domain join credentials'
+                }
+            ]
+        }
+        accessPolicies: [
+            {
+                objectId: avdWrklSecretAccess
+                permissions: {
+                    secrets: [
+                        'get'
+                        'list'
+                    ]
+                }
+            }
+        ]
     }
-  }
+    dependsOn: [
+        avdComputeObjectsRg
+    ]
+}
+
+module avdSharedServicesKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep' = {
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
+    name: 'AVD-Shared-Services-KeyVault-${time}'
+    params: {
+        name: avdSharedServicesKvName
+        location: location
+        enableRbacAuthorization: false
+        softDeleteRetentionInDays: 7
+        networkAcls: {
+            bypass: 'AzureServices'
+            defaultAction: 'Deny'
+            virtualNetworkRules: []
+            ipRules: []
+        }
+    }
+    dependsOn: [
+        avdSharedResourcesRg
+    ]
+}
 //
+
+// Storage
+module fslogixStorage '../arm/Microsoft.Storage/storageAccounts/deploy.bicep' = {
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdStorageObjectsRgName}')
+    name: 'AVD-Fslogix-Storage-${time}'
+    params: {
+        name: avdFslogixStorageName
+        location: location
+        storageAccountSku: 'Premium_LRS'
+        allowBlobPublicAccess: false
+        //azureFilesIdentityBasedAuthentication:
+        storageAccountKind: 'FileStorage'
+        storageAccountAccessTier: 'Hot'
+        networkAcls: {
+            bypass: 'AzureServices'
+            defaultAction: 'Deny'
+            virtualNetworkRules: []
+            ipRules: []
+        }
+        fileServices: {
+            shares: [
+                {
+                    name: avdFslogixFileShareName
+                    shareQuota: avdFslogixFileShareQuotaSize
+                    //roleAssgnments:
+                }
+            ]
+        }
+        privateEndpoints: [
+            {
+                subnetResourceId: createAvdVnet ? '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}' : '${existingVnetResourceId}/subnets/${existingVnetSubnetName}'
+                service: 'file'
+            }
+        ]
+    }
+    dependsOn: [
+        avdStorageObjectsRg
+    ]
+}
+
+module avdSharedServicesStorage '../arm/Microsoft.Storage/storageAccounts/deploy.bicep' = {
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
+    name: 'AVD-Shared-Services-Storage-${time}'
+    params: {
+        name: avdSharedSResourcesStorageName
+        location: location
+        storageAccountSku: 'Standard_LRS'
+        storageAccountKind: 'StorageV2'
+        blobServices: {
+            containers: [
+                {
+                    name: avdSharedSResourcesAibContainerName
+                    publicAccess: 'None'
+                }
+                {
+                    name: avdSharedSResourcesScriptsContainerName
+                    publicAccess: 'None'
+                }
+            ]
+        }
+    }
+    dependsOn: [
+        avdSharedResourcesRg
+    ]
+}
+//
+
+// Session hosts
+/*
+module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' = [for i in range(0, avdDeploySessionHostsCount): if(avdDeploySessionHosts) {
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
+    name: 'AVD-Session-Host-${i}-${time}'
+    params: {
+        name:'${avdSessionHostNamePrefix}-${i}'
+        location: location
+        systemAssignedIdentity: true
+        osType: 'Windows'
+        imageReference: {
+            publisher:
+            offer:
+            sku:
+            version:
+        }
+        osDisk: {
+            createOption: 'fromImage'
+            deleteOption: 'Delete'
+            diskSizeGB: 128
+            managedDisk: {
+                storageAccountType: avdSessionHostDiskType
+            }
+        }
+        adminUsername: {
+            reference: {
+                KeyVault: {
+                    id: avdWrklKeyVault.outputs.resourceId
+                }
+                secretName: 'AVD-Local-Admin-User-${deploymentPrefix}'
+            }
+        }
+        adminPassword: {
+            reference: {
+                KeyVault: {
+                    id: avdWrklKeyVault.outputs.resourceId
+                }
+                secretName: 'AVD-Local-User-Password-${deploymentPrefix}'
+            }
+        }
+        nicConfigurations: [
+            {
+                nicSuffix: '-nic-01'
+                deleteOption: 'Delete'
+                ipConfigurations: {
+                    name: 'ipconfig01'
+                    subnetId: createAvdVnet ? '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}': '${existingVnetResourceId}/subnets/${existingVnetSubnetName}'
+
+                }
+            }
+        ]
+        extensionMonitoringAgentConfig: {
+            enabled: true
+        }
+        extensionCustomScriptConfig: {
+        }
+
+    }
+    dependsOn: [
+        avdComputeObjectsRg
+        avdWrklKeyVault
+    ]
+  }
+]
 */
-// Azure Compute Gallery
 //
 
 // ======= //
 // Outputs //
 // ======= //
-
+/*
 output avdSharedResourcesRgId string = avdSharedResourcesRg.outputs.resourceId
 output avdServiceObjectsRgId string = avdServiceObjectsRg.outputs.resourceId
 output adNetworkObjectsRgId string = avdNetworkObjectsRg.outputs.resourceId
@@ -533,3 +820,5 @@ output azureImageBuilderRoleId string = azureImageBuilderRole.outputs.resourceId
 output aibManagedIdentityNameId string = imageBuilderManagedIdentity.outputs.principalId
 output avdVirtualNetworkId string = avdVirtualNetwork.outputs.resourceId
 output avdNetworksecurityGroupId string = avdNetworksecurityGroup.outputs.resourceId
+output fslogixStorageId string = fslogixStorage.outputs.resourceId
+*/
