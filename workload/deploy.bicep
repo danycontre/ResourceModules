@@ -489,7 +489,7 @@ module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.b
         azPowerShellVersion: '6.2'
         cleanupPreference: 'OnSuccess'
         userAssignedIdentities: {
-            '${imageBuilderManagedIdentity.outputs.principalId}': {}
+            '${imageBuilderManagedIdentity.outputs.resourceId}': {}
         }
         scriptContent: imageTemplate.outputs.runThisCommand
     }
