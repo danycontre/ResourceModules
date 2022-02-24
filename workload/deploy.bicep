@@ -470,6 +470,7 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
         }
         name: imageDefinitionsTemSpecName
         userMsiName: imageBuilderManagedIdentity.outputs.name
+        userMsiResourceGroup: imageBuilderManagedIdentity.outputs.resourceGroupName
         location: aiblocation
         imageReplicationRegions: avdImageRegionsReplicas
         sigImageDefinitionId: avdImageTemplataDefinition.outputs.resourceId
