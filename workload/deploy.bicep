@@ -49,13 +49,11 @@ param avdFslogixFileShareQuotaSize string = '51200'
 param createStartVmOnConnectCustomRole bool = true
 
 @description('Required. AVD session host local credentials')
-@secure()
 param avdVmLocalUserName string = 'danycontreras'
 @secure()
 param avdVmLocalUserPassword string = 'Fkljhysdgtfsd10324786'
 
 @description('Required. AVD session host domain join credentials')
-@secure()
 param avdDomainJoinUserName string = 'danycontreras'
 @secure()
 param avdDomainJoinUserPassword string = 'Fkljhysdgtfsd10324786'
@@ -546,22 +544,12 @@ module avdWrklKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep' = {
         secrets: {
             secureList: [
                 {
-                    name: 'AVD-Local-Admin-User-${deploymentPrefix}'
-                    value: avdVmLocalUserName
-                    contentType: 'Session host local credentials'
-                }
-                {
-                    name: 'AVD-Local-User-Password-${deploymentPrefix}'
+                    name: avdVmLocalUserName
                     value: avdVmLocalUserPassword
-                    contentType: 'Session host local credentials'
+                    contentType: 'Session host local user credentials'
                 }
                 {
-                    name: 'Domain-Join-User-Name-${deploymentPrefix}'
-                    value: avdDomainJoinUserName
-                    contentType: 'Domain join credentials'
-                }
-                {
-                    name: 'Domain-Join-User-Password-${deploymentPrefix}'
+                    name: avdDomainJoinUserName
                     value: avdDomainJoinUserPassword
                     contentType: 'Domain join credentials'
                 }
@@ -699,21 +687,17 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                 storageAccountType: avdSessionHostDiskType
             }
         }
-        adminUsername: avdVmLocalUserName  //{
-        //    reference: {
+        adminUsername: avdVmLocalUserName
+        adminPassword: '${avdWrklKeyVault.outputs.uri}/$
+        //adminPassword:  {
+        //    reference: [
+        //        {
         //        KeyVault: {
         //            id: avdWrklKeyVault.outputs.resourceId
         //        }
-        //        secretName: 'AVD-Local-Admin-User-${deploymentPrefix}'
-        //    }
-        //}
-        adminPassword: avdVmLocalUserPassword //{
-        //    reference: {
-        //        KeyVault: {
-        //            id: avdWrklKeyVault.outputs.resourceId
+        //        secretName: avdVmLocalUserName
         //        }
-        //        secretName: 'AVD-Local-User-Password-${deploymentPrefix}'
-        //    }
+        //    ]
         //}
         nicConfigurations: [
             {
