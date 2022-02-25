@@ -9,13 +9,13 @@ param avdShrdlSubscriptionId string = ''
 @description('Required. AVD wrokload subscription ID')
 param avdWrklSubscriptionId string = ''
 
+@minLength(2)
+@maxLength(4)
 @description('Required. The name of the resource group to deploy')
 param deploymentPrefix string = 'App1'
 
 @description('Required. The location to deploy into')
 param location string = deployment().location
-
-param aiblocation string = 'eastus2'
 
 @allowed([
     'Personal'
@@ -66,23 +66,46 @@ param avdWrklSecretAccess string = ''
 @description('Deploy new session hosts (defualt: false)')
 param avdDeploySessionHosts bool = true
 
+@minValue(1)
+@maxValue(500)
 @description('Cuantity of session hosts to deploy')
 param avdDeploySessionHostsCount int = 1
 
 @description('Optional. Creates an availability zone and adds the VMs to it. Cannot be used in combination with availability set nor scale set. (Defualt: true)')
-param avdUseAvailabilityZones bool = true
+param avdUseAvailabilityZones bool = false
 
-@description('Optional. If set to 1, 2 or 3, the availability zone for all VMs is hardcoded to that value. If zero, then the automatic algorithm will be used to give every VM in a different zone (up to three zones). Cannot be used in combination with availability set nor scale set.')
+@description('Optional. If set to 1, 2 or 3, the availability zone for all VMs is hardcoded to that value. If zero, availability zone option will be disabled (up to three zones). Cannot be used in combination with availability set nor scale set.')
 @allowed([
-  0
   1
   2
   3
 ])
 param avdAvailabilityZone int = 1
 
+@description('Session host VM size (Defualt: Standard_D2ads_v5) ')
+param avdSessionHostsSize string = 'Standard_D2ads_v5'
+
 @description('OS disk type for session host (Defualt: Standard_LRS) ')
 param avdSessionHostDiskType string = 'Standard_LRS'
+
+@allowed([
+    'eastus'
+    'eastus2'
+    'westcentralus'
+    'westus'
+    'westus2'
+    'westus3'
+    'southcentralus'
+    'northeurope'
+    'westeurope'
+    'southeastasia'
+    'australiasoutheast'
+    'australiaeast'
+    'uksouth'
+    'ukwest'
+])
+@description('Azure image builder location (Defualt: eastus2)')
+param aiblocation string = 'eastus2'
 
 @description('Create custom azure image builder role')
 param createAibCustomRole bool = true
@@ -96,10 +119,9 @@ param createAibCustomRole bool = true
 @description('Optional. AVD OS image source')
 param avdOsImage string = 'win10-21h2'
 
-@description('Regions to replicate AVD images')
+@description('Regions to replicate AVD images (Defualt: eastus2)')
 param avdImageRegionsReplicas array = [
-    'EastUs'
-    'CanadaCentral'
+    'eastus2'
 ]
 
 @description('Create azure image Builder managed identity')
@@ -167,7 +189,7 @@ var avdApplicationGroupName = 'avdag-${deploymentPrefixLowercase}'
 var aibManagedIdentityName = 'uai-avd-aib'
 var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
 var imageTemplateBuildName = 'AVD-Image-Template-Build'
-var avdEnterpriseApplicationId = '82205950-fef1-4f88-8801-86e60c2e9318' // needs to be queried.
+var avdEnterpriseApplicationId = '486795c7-d929-4b48-a99e-3c5329d4ce86' // needs to be queried.
 var avdOsImageDefinitions = {
     'win10-21h2-office': {
         name: 'Windows10_21H2_Office'
@@ -496,7 +518,7 @@ module azureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignmen
         imageBuilderManagedIdentity
     ]
 }
-
+/*
 module azureImageBuilderRoleAssignExisting '../arm/Microsoft.Authorization/roleAssignments/.bicep/nested_rbac_rg.bicep' = if (!createAibCustomRole && createAibManagedIdentity) {
     name: 'Azure-Image-Builder-RoleAssign-${time}'
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
@@ -509,7 +531,7 @@ module azureImageBuilderRoleAssignExisting '../arm/Microsoft.Authorization/roleA
         imageBuilderManagedIdentity
     ]
 }
-
+*/
 module startVMonConnectRoleAssign '../arm/Microsoft.Authorization/roleAssignments/.bicep/nested_rbac_rg.bicep' = if (createStartVmOnConnectCustomRole) {
     name: 'Start-VM-OnConnect-RoleAssign-${time}'
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
@@ -555,6 +577,7 @@ module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/dep
     }
     dependsOn: [
         azureComputeGallery
+        avdSharedResourcesRg
     ]
 }
 //
@@ -562,8 +585,14 @@ module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/dep
 // Create Image Template
 module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deploy.bicep' = {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
-    name: 'Deploy-Image-Template-${time}'
+    name: 'AVD-Deploy-Image-Template-${time}'
     params: {
+        name: imageDefinitionsTemSpecName
+        userMsiName: imageBuilderManagedIdentity.outputs.name
+        userMsiResourceGroup: imageBuilderManagedIdentity.outputs.resourceGroupName
+        location: aiblocation
+        imageReplicationRegions: avdImageRegionsReplicas
+        sigImageDefinitionId: avdImageTemplataDefinition.outputs.resourceId
         customizationSteps: [
             {
                 type: 'WindowsUpdate'
@@ -582,16 +611,12 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
             sku: avdOsImageDefinitions[avdOsImage].sku
             version: 'latest'
         }
-        name: imageDefinitionsTemSpecName
-        userMsiName: imageBuilderManagedIdentity.outputs.name
-        userMsiResourceGroup: imageBuilderManagedIdentity.outputs.resourceGroupName
-        location: aiblocation
-        imageReplicationRegions: avdImageRegionsReplicas
-        sigImageDefinitionId: avdImageTemplataDefinition.outputs.resourceId
     }
     dependsOn: [
         avdImageTemplataDefinition
         azureComputeGallery
+        avdSharedResourcesRg
+        azureImageBuilderRoleAssign
     ]
 }
 //
@@ -599,7 +624,7 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
 // Build Image Template
 module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.bicep' = {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
-    name: 'Build-Image-Template-${time}'
+    name: 'AVD-Build-Image-Template-${time}'
     params: {
         name: 'imageTemplateBuildName-${avdOsImage}'
         location: aiblocation
@@ -612,6 +637,8 @@ module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.b
     }
     dependsOn: [
         imageTemplate
+        avdSharedResourcesRg
+        azureImageBuilderRoleAssign
     ]
 }
 //
@@ -712,7 +739,6 @@ module fslogixStorage '../arm/Microsoft.Storage/storageAccounts/deploy.bicep' = 
                 {
                     name: avdFslogixFileShareName
                     shareQuota: avdFslogixFileShareQuotaSize
-                    //roleAssgnments:
                 }
             ]
         }
@@ -764,10 +790,9 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         location: location
         systemAssignedIdentity: true
         encryptionAtHost: false
-        //zones: useAvailabilityZone ? array(availabilityZone) : null
-        useAvailabilityZone: avdUseAvailabilityZones
-        availabilityZone: avdAvailabilityZone
+        availabilityZone: avdUseAvailabilityZones ? avdAvailabilityZone: 0
         osType: 'Windows'
+        vmSize: avdSessionHostsSize
         imageReference: {
             publisher: 'MicrosoftWindowsDesktop'
             offer: 'windows-11'
@@ -784,16 +809,6 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         }
         adminUsername: avdVmLocalUserName
         adminPassword: avdVmLocalUserPassword
-        //adminPassword:  {
-        //    reference: [
-        //        {
-        //        KeyVault: {
-        //            id: avdWrklKeyVault.outputs.resourceId
-        //        }
-        //        secretName: avdVmLocalUserName
-        //        }
-        //    ]
-        //}
         nicConfigurations: [
             {
                 nicSuffix: '-nic-01'
