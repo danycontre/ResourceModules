@@ -688,7 +688,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
             }
         }
         adminUsername: avdVmLocalUserName
-        adminPassword: '${avdWrklKeyVault.outputs.uri}/$
+        adminPassword: avdVmLocalUserPassword
         //adminPassword:  {
         //    reference: [
         //        {
