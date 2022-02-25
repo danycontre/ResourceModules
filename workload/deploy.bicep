@@ -164,13 +164,10 @@ var avdVNetworkPeeringName = '${uniqueString(deploymentPrefixLowercase, location
 var avdWorkSpaceName = 'avdws-${deploymentPrefixLowercase}'
 var avdHostPoolName = 'avdhp-${deploymentPrefixLowercase}'
 var avdApplicationGroupName = 'avdag-${deploymentPrefixLowercase}'
-// azure image builder
 var aibManagedIdentityName = 'uai-avd-aib'
 var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
 var imageTemplateBuildName = 'AVD-Image-Template-Build'
-//var avdDefaulOstImage = json(loadTextContent('./Parameters/${avdOsImage}.json'))
 var avdEnterpriseApplicationId = '82205950-fef1-4f88-8801-86e60c2e9318' // needs to be queried.
-
 var avdOsImageDefinitions = {
     'win10-21h2-office': {
         name: 'Windows10_21H2_Office'
@@ -205,7 +202,6 @@ var avdOsImageDefinitions = {
         sku: 'win11-21h2-avd'
     }
 }
-//
 var avdFslogixStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}fslogix${deploymentPrefixLowercase}'
 var avdFslogixFileShareName = 'fslogix-${deploymentPrefixLowercase}'
 var avdSharedSResourcesStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}avdshared'
@@ -527,21 +523,23 @@ module startVMonConnectRoleAssign '../arm/Microsoft.Authorization/roleAssignment
     ]
 }
 
-// Custom images: Azure Image Buider deployment. Azure Compute Gallery --> Image Template Definition --> Image Template --> Build and Publish Template --> Create VMs
-
+// Custom images: Azure Image Builder deployment. Azure Compute Gallery --> Image Template Definition --> Image Template --> Build and Publish Template --> Create VMs
 // Azure Compute Gallery
-
 module azureComputeGallery '../arm/Microsoft.Compute/galleries/deploy.bicep' = {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     name: 'Deploy-Azure-Compute-Gallery-${time}'
     params: {
         name: imageGalleryName
         location: location
+        galleryDescription: 'Azure Virtual Desktops Images'
     }
+    dependsOn: [
+        avdSharedResourcesRg
+    ]
 }
+//
 
 // Image Template Definition
-
 module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/deploy.bicep' = {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     name: 'Deploy-AVD-Image-Template-Definition-${time}'
@@ -559,9 +557,9 @@ module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/dep
         azureComputeGallery
     ]
 }
+//
 
 // Create Image Template
-
 module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deploy.bicep' = {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     name: 'Deploy-Image-Template-${time}'
@@ -591,11 +589,14 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
         imageReplicationRegions: avdImageRegionsReplicas
         sigImageDefinitionId: avdImageTemplataDefinition.outputs.resourceId
     }
-    dependsOn: []
+    dependsOn: [
+        avdImageTemplataDefinition
+        azureComputeGallery
+    ]
 }
+//
 
 // Build Image Template
-
 module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.bicep' = {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     name: 'Build-Image-Template-${time}'
@@ -613,6 +614,7 @@ module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.b
         imageTemplate
     ]
 }
+//
 
 // Key vaults
 module avdWrklKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep' = {
