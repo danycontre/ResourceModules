@@ -1,4 +1,4 @@
-targetScope = 'managementGroup'
+targetScope = 'subscription'
 
 // ========== //
 // Parameters //
@@ -14,6 +14,8 @@ param deploymentPrefix string = 'App1'
 
 @description('Required. The location to deploy into')
 param location string = deployment().location
+
+param aiblocation string = 'eastus2'
 
 @allowed([
     'Personal'
@@ -84,7 +86,7 @@ param avdSessionHostDiskType string = 'Standard_LRS'
 
 @description('Create custom azure image builder role')
 param createAibCustomRole bool = true
-/*
+
 @allowed([
     'win10-21h2-office'
     'win10-21h2'
@@ -93,10 +95,11 @@ param createAibCustomRole bool = true
 ])
 @description('Optional. AVD OS image source')
 param avdOsImage string = 'win10-21h2'
-*/
+
 @description('Regions to replicate AVD images')
 param avdImageRegionsReplicas array = [
     'EastUs'
+    'CanadaCentral'
 ]
 
 @description('Create azure image Builder managed identity')
@@ -129,13 +132,10 @@ param avdVnetworkSubnetAddressPrefix string = '10.0.0.0/23'
 param customDnsAvailable bool = false
 
 @description('custom DNS servers IPs (defualt: 10.10.10.5, 10.10.10.6)')
-param customDnsIps array = [
-    '10.10.10.5'
-    '10.10.10.6'
-]
+param customDnsIps array = []
 
 @description('Provide existing virtual network hub URI')
-param hubVnetId string = ''
+param hubVnetId string = '/subscriptions/4f6c98e1-04a4-49f0-abce-6240b1726c3f/resourceGroups/AzurelabCACN-VNET/providers/Microsoft.Network/virtualNetworks/azurelabcacn-avd-vnet'
 
 @description('Does the hub contains a virtual network gateway (defualt: false)')
 param vNetworkGatewayOnHub bool = false
@@ -153,6 +153,7 @@ var avdNetworkObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLow
 var avdComputeObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-pool-compute' // max length limit 90 characters
 var avdStorageObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-storage' // max length limit 90 characters
 var avdSharedResourcesRgName = 'rg-${locationLowercase}-avd-shared-resources'
+var imageGalleryName = 'avdGgallery${locationLowercase}'
 var existingVnetResourceId = '/subscriptions/${existingVnetSubscriptionId}/resourceGroups/${existingVnetRgName}/providers/Microsoft.Network/virtualNetworks/${existingVnetName}'
 var avdVnetworkName = 'vnet-${locationLowercase}-avd-${deploymentPrefixLowercase}'
 var avdVnetworkSubnetName = 'avd-${deploymentPrefixLowercase}'
@@ -163,6 +164,48 @@ var avdVNetworkPeeringName = '${uniqueString(deploymentPrefixLowercase, location
 var avdWorkSpaceName = 'avdws-${deploymentPrefixLowercase}'
 var avdHostPoolName = 'avdhp-${deploymentPrefixLowercase}'
 var avdApplicationGroupName = 'avdag-${deploymentPrefixLowercase}'
+// azure image builder
+var aibManagedIdentityName = 'uai-avd-aib'
+var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
+var imageTemplateBuildName = 'AVD-Image-Template-Build'
+//var avdDefaulOstImage = json(loadTextContent('./Parameters/${avdOsImage}.json'))
+var avdEnterpriseApplicationId = '82205950-fef1-4f88-8801-86e60c2e9318' // needs to be queried.
+
+var avdOsImageDefinitions = {
+    'win10-21h2-office': {
+        name: 'Windows10_21H2_Office'
+        osType: 'Windows'
+        osState: 'Generalized'
+        offer: 'office-365'
+        publisher: 'MicrosoftWindowsDesktop'
+        sku: 'win10-21h2-avd-m365'
+    }
+    'win10-21h2': {
+        name: 'Windows10_21H2'
+        osType: 'Windows'
+        osState: 'Generalized'
+        offer: 'Windows-10'
+        publisher: 'MicrosoftWindowsDesktop'
+        sku: '21h1-evd'
+    }
+    'win11-21h2-office': {
+        name: 'Windows11_21H2'
+        osType: 'Windows'
+        osState: 'Generalized'
+        offer: 'windows-11'
+        publisher: 'MicrosoftWindowsDesktop'
+        sku: 'win11-21h2-avd-m365'
+    }
+    'win11-21h2': {
+        name: 'Windows11_21H2'
+        osType: 'Windows'
+        osState: 'Generalized'
+        offer: 'windows-11'
+        publisher: 'MicrosoftWindowsDesktop'
+        sku: 'win11-21h2-avd'
+    }
+}
+//
 var avdFslogixStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}fslogix${deploymentPrefixLowercase}'
 var avdFslogixFileShareName = 'fslogix-${deploymentPrefixLowercase}'
 var avdSharedSResourcesStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}avdshared'
@@ -171,19 +214,6 @@ var avdSharedSResourcesScriptsContainerName = 'scripts-${deploymentPrefixLowerca
 var avdSharedServicesKvName = 'avd-${uniqueString(deploymentPrefixLowercase, locationLowercase)}-shared' // max length limit 24 characters
 var avdWrklKvName = 'avd-${uniqueString(deploymentPrefixLowercase, locationLowercase)}-${deploymentPrefixLowercase}' // max length limit 24 characters
 var avdSessionHostNamePrefix = 'avdsh-${deploymentPrefix}'
-// azure image builder
-    var aibManagedIdentityName = 'uai-avd-aib'
-    var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
-    //var avdDefaulOstImage = json(loadTextContent('./Parameters/${avdOsImage}.json'))
-    var avdEnterpriseApplicationId = '486795c7-d929-4b48-a99e-3c5329d4ce86'
-    var avdOsImage = json(loadTextContent('./Parameters/image-win10-21h2.json'))
-    var avdOsImageDefinitions = [
-        json(loadTextContent('./Parameters/image-win10-21h2-office.json'))
-        json(loadTextContent('./Parameters/image-win10-21h2.json'))
-        json(loadTextContent('./Parameters/image-win11-21h2-office.json'))
-        json(loadTextContent('./Parameters/image-win11-21h2.json'))
-    ]
-//
 
 // =========== //
 // Deployments //
@@ -470,7 +500,7 @@ module azureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignmen
         imageBuilderManagedIdentity
     ]
 }
-/*
+
 module azureImageBuilderRoleAssignExisting '../arm/Microsoft.Authorization/roleAssignments/.bicep/nested_rbac_rg.bicep' = if (!createAibCustomRole && createAibManagedIdentity) {
     name: 'Azure-Image-Builder-RoleAssign-${time}'
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
@@ -483,10 +513,9 @@ module azureImageBuilderRoleAssignExisting '../arm/Microsoft.Authorization/roleA
         imageBuilderManagedIdentity
     ]
 }
-*/
-/*
+
 module startVMonConnectRoleAssign '../arm/Microsoft.Authorization/roleAssignments/.bicep/nested_rbac_rg.bicep' = if (createStartVmOnConnectCustomRole) {
-    name: 'Satrt-VM-OnConnect-RoleAssign-${time}'
+    name: 'Start-VM-OnConnect-RoleAssign-${time}'
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
     params: {
         roleDefinitionIdOrName: createStartVmOnConnectCustomRole ? startVMonConnectRole.outputs.resourceId : ''
@@ -497,28 +526,93 @@ module startVMonConnectRoleAssign '../arm/Microsoft.Authorization/roleAssignment
         startVMonConnectRole
     ]
 }
-*/
-//
-/*
-// Azure Image Builder
-module imageDefinitionTemplate 'Modules/template-image-definition.bicep' = {
-    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedAibRgName}')
-    name: 'Image-Definition-TemplateSpec-${time}'
-    params: {
-      templateSpecName: imageDefinitionsTemSpecName
-      location: location
-      templateSpecDisplayName: 'Image Builder Definition ${avdOsImage}'
-      buildDefinition: avdOsImage
-      imageId: avdOsImageDefinitions[2].outputs.imageId
-      imageRegions: avdImageRegionsReplicas
-      managedIdentityId: imageBuilderManagedIdentity.outputs.principalId
-      scriptUri: ''
-    }
-  }
-//
-*/
+
+// Custom images: Azure Image Buider deployment. Azure Compute Gallery --> Image Template Definition --> Image Template --> Build and Publish Template --> Create VMs
+
 // Azure Compute Gallery
-//
+
+module azureComputeGallery '../arm/Microsoft.Compute/galleries/deploy.bicep' = {
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
+    name: 'Deploy-Azure-Compute-Gallery-${time}'
+    params: {
+        name: imageGalleryName
+        location: location
+    }
+}
+
+// Image Template Definition
+
+module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/deploy.bicep' = {
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
+    name: 'Deploy-AVD-Image-Template-Definition-${time}'
+    params: {
+        galleryName: azureComputeGallery.outputs.name
+        name: imageDefinitionsTemSpecName
+        osState: avdOsImageDefinitions[avdOsImage].osState
+        osType: avdOsImageDefinitions[avdOsImage].osType
+        publisher: avdOsImageDefinitions[avdOsImage].publisher
+        offer: avdOsImageDefinitions[avdOsImage].offer
+        sku: avdOsImageDefinitions[avdOsImage].sku
+        location: aiblocation
+    }
+    dependsOn: [
+        azureComputeGallery
+    ]
+}
+
+// Create Image Template
+
+module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deploy.bicep' = {
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
+    name: 'Deploy-Image-Template-${time}'
+    params: {
+        customizationSteps: [
+            {
+                type: 'WindowsUpdate'
+                searchCriteria: 'IsInstalled=0'
+                filters: [
+                    'exclude:$_.Title -like \'*Preview*\''
+                    'include:$true'
+                ]
+                updateLimit: 40
+            }
+        ]
+        imageSource: {
+            type: 'PlatformImage'
+            publisher: avdOsImageDefinitions[avdOsImage].publisher
+            offer: avdOsImageDefinitions[avdOsImage].offer
+            sku: avdOsImageDefinitions[avdOsImage].sku
+            version: 'latest'
+        }
+        name: imageDefinitionsTemSpecName
+        userMsiName: imageBuilderManagedIdentity.outputs.name
+        userMsiResourceGroup: imageBuilderManagedIdentity.outputs.resourceGroupName
+        location: aiblocation
+        imageReplicationRegions: avdImageRegionsReplicas
+        sigImageDefinitionId: avdImageTemplataDefinition.outputs.resourceId
+    }
+    dependsOn: []
+}
+
+// Build Image Template
+
+module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.bicep' = {
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
+    name: 'Build-Image-Template-${time}'
+    params: {
+        name: 'imageTemplateBuildName-${avdOsImage}'
+        location: aiblocation
+        azPowerShellVersion: '6.2'
+        cleanupPreference: 'OnSuccess'
+        userAssignedIdentities: {
+            '${imageBuilderManagedIdentity.outputs.resourceId}': {}
+        }
+        scriptContent: imageTemplate.outputs.runThisCommand
+    }
+    dependsOn: [
+        imageTemplate
+    ]
+}
 
 // Key vaults
 module avdWrklKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep' = {
@@ -537,7 +631,7 @@ module avdWrklKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep' = {
         }
         privateEndpoints: [
             {
-                subnetResourceId: createAvdVnet ? '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}': '${existingVnetResourceId}/subnets/${existingVnetSubnetName}'
+                subnetResourceId: createAvdVnet ? '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}' : '${existingVnetResourceId}/subnets/${existingVnetSubnetName}'
                 service: 'vault'
             }
         ]
@@ -593,7 +687,6 @@ module avdSharedServicesKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep'
 }
 //
 
-
 // Storage
 module fslogixStorage '../arm/Microsoft.Storage/storageAccounts/deploy.bicep' = {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdStorageObjectsRgName}')
@@ -623,7 +716,7 @@ module fslogixStorage '../arm/Microsoft.Storage/storageAccounts/deploy.bicep' = 
         }
         privateEndpoints: [
             {
-                subnetResourceId: createAvdVnet ? '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}': '${existingVnetResourceId}/subnets/${existingVnetSubnetName}'
+                subnetResourceId: createAvdVnet ? '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}' : '${existingVnetResourceId}/subnets/${existingVnetSubnetName}'
                 service: 'file'
             }
         ]
