@@ -70,7 +70,7 @@ resource networkInterface 'Microsoft.Network/networkInterfaces@2021-03-01' = {
         primary: ((index == 0) ? true : false)
         applicationSecurityGroups: !empty(networkSecurityGroupId) ? [
           {
-            id: networkSecurityGroupId
+            id: applicationSecurityGroupId
           }
         ] : null
         privateIPAllocationMethod: contains(ipConfiguration, 'privateIPAllocationMethod') ? (!empty(ipConfiguration.privateIPAllocationMethod) ? ipConfiguration.privateIPAllocationMethod : null) : null
