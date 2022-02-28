@@ -787,11 +787,11 @@ module avdSharedServicesStorage '../arm/Microsoft.Storage/storageAccounts/deploy
 //
 
 // Session hosts
-module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' = [for i in range(0, avdDeploySessionHostsCount): if(avdDeploySessionHosts) {
+module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' = [for i in range(0, avdDeploySessionHostsCount): if (avdDeploySessionHosts) {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
     name: 'AVD-Session-Host-${i}-${time}'
     params: {
-        name:'${avdSessionHostNamePrefix}-${i}'
+        name: '${avdSessionHostNamePrefix}-${i}'
         location: location
         systemAssignedIdentity: true
         encryptionAtHost: false
@@ -819,14 +819,13 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
             {
                 nicSuffix: '-nic-01'
                 deleteOption: 'Delete'
-                applicationSecurityGroups: avdApplicationGroupName
+                asgId: avdApplicationGroup.outputs.resourceId
                 ipConfigurations: [
                     {
                         name: 'ipconfig01'
-                        subnetId: createAvdVnet ? '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}': '${existingVnetResourceId}/subnets/${existingVnetSubnetName}'
+                        subnetId: createAvdVnet ? '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}' : '${existingVnetResourceId}/subnets/${existingVnetSubnetName}'
                     }
                 ]
-
             }
         ]
         //extensionMonitoringAgentConfig: {
@@ -839,7 +838,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         avdComputeObjectsRg
         avdWrklKeyVault
     ]
-  }]
+}]
 //
 
 // ======= //
