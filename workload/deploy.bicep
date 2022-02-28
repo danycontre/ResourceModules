@@ -74,6 +74,7 @@ param avdDeploySessionHostsCount int = 1
 @description('Optional. Creates an availability zone and adds the VMs to it. Cannot be used in combination with availability set nor scale set. (Defualt: true)')
 param avdUseAvailabilityZones bool = false
 
+/*
 @description('Optional. If set to 1, 2 or 3, the availability zone for all VMs is hardcoded to that value. If zero, availability zone option will be disabled (up to three zones). Cannot be used in combination with availability set nor scale set.')
 @allowed([
   1
@@ -81,6 +82,9 @@ param avdUseAvailabilityZones bool = false
   3
 ])
 param avdAvailabilityZone int = 1
+*/
+@description('Optional. If set to 1, 2 or 3, the availability zone for all VMs is hardcoded to that value. If zero, availability zone option will be disabled (up to three zones). Cannot be used in combination with availability set nor scale set.')
+param avdAvailabilityZones array = []
 
 @description('Session host VM size (Defualt: Standard_D2ads_v5) ')
 param avdSessionHostsSize string = 'Standard_D2ads_v5'
@@ -151,7 +155,7 @@ param avdVnetworkAddressPrefixes array = [
 param avdVnetworkSubnetAddressPrefix string = '10.0.0.0/23'
 
 @description('Are custom DNS servers accessible form the hub (defualt: true)')
-param customDnsAvailable bool = false
+param customDnsAvailable bool = true
 
 @description('custom DNS servers IPs (defualt: 10.10.10.5, 10.10.10.6)')
 param customDnsIps array = []
@@ -159,8 +163,8 @@ param customDnsIps array = []
 @description('Provide existing virtual network hub URI')
 param hubVnetId string = '/subscriptions/4f6c98e1-04a4-49f0-abce-6240b1726c3f/resourceGroups/AzurelabCACN-VNET/providers/Microsoft.Network/virtualNetworks/azurelabcacn-avd-vnet'
 
-@description('Does the hub contains a virtual network gateway (defualt: false)')
-param vNetworkGatewayOnHub bool = false
+@description('Does the hub contains a virtual network gateway (defualt: true)')
+param vNetworkGatewayOnHub bool = true
 
 @description('Do not modify, used to set unique value for resource deployment')
 param time string = utcNow()
@@ -232,6 +236,7 @@ var avdSharedSResourcesScriptsContainerName = 'scripts-${deploymentPrefixLowerca
 var avdSharedServicesKvName = 'avd-${uniqueString(deploymentPrefixLowercase, locationLowercase)}-shared' // max length limit 24 characters
 var avdWrklKvName = 'avd-${uniqueString(deploymentPrefixLowercase, locationLowercase)}-${deploymentPrefixLowercase}' // max length limit 24 characters
 var avdSessionHostNamePrefix = 'avdsh-${deploymentPrefix}'
+var allAvailabilityZones = pickZones('Microsoft.Compute', 'virtualMachines', location, 3)
 
 // =========== //
 // Deployments //
@@ -790,7 +795,8 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         location: location
         systemAssignedIdentity: true
         encryptionAtHost: false
-        availabilityZone: avdUseAvailabilityZones ? avdAvailabilityZone: 0
+        //availabilityZone: avdUseAvailabilityZones ? avdAvailabilityZone: 0
+        //availabilityZone: avdAvailabilityZones == '' ? take(skip(allAvailabilityZones,i % length(allAvailabilityZones)),1) : array(avdAvailabilityZones)
         osType: 'Windows'
         vmSize: avdSessionHostsSize
         imageReference: {
