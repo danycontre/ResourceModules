@@ -236,6 +236,7 @@ var avdSharedSResourcesScriptsContainerName = 'scripts-${deploymentPrefixLowerca
 var avdSharedServicesKvName = 'avd-${uniqueString(deploymentPrefixLowercase, locationLowercase)}-shared' // max length limit 24 characters
 var avdWrklKvName = 'avd-${uniqueString(deploymentPrefixLowercase, locationLowercase)}-${deploymentPrefixLowercase}' // max length limit 24 characters
 var avdSessionHostNamePrefix = 'avdsh-${deploymentPrefix}'
+var avdAvailabilitySetName = 'avdas-${deploymentPrefix}'
 var allAvailabilityZones = pickZones('Microsoft.Compute', 'virtualMachines', location, 3)
 
 // =========== //
@@ -786,6 +787,23 @@ module avdSharedServicesStorage '../arm/Microsoft.Storage/storageAccounts/deploy
 }
 //
 
+// Availability set
+module avdAvailabilitySet '../arm/Microsoft.Compute/availabilitySets/deploy.bicep' = if (!avdUseAvailabilityZones) {
+    name: 'AVD-Availability-Set-${time}'
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
+    params: {
+        name: avdAvailabilitySetName
+        location: location
+        availabilitySetFaultDomain: 3
+        availabilitySetUpdateDomain: 5
+    }
+    dependsOn: [
+        avdComputeObjectsRg
+    ]
+}
+
+//
+
 // Session hosts
 module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' = [for i in range(0, avdDeploySessionHostsCount): if (avdDeploySessionHosts) {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
@@ -797,6 +815,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         encryptionAtHost: false
         //availabilityZone: avdUseAvailabilityZones ? avdAvailabilityZone: 0
         //availabilityZone: avdAvailabilityZones == '' ? take(skip(allAvailabilityZones,i % length(allAvailabilityZones)),1) : array(avdAvailabilityZones)
+        availabilitySetName: !avdUseAvailabilityZones ? avdAvailabilitySet.outputs.name : ''
         osType: 'Windows'
         vmSize: avdSessionHostsSize
         imageReference: {
@@ -819,7 +838,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
             {
                 nicSuffix: '-nic-01'
                 deleteOption: 'Delete'
-                asgId: avdApplicationGroup.outputs.resourceId
+                asgId: avdApplicationsecurityGroup.outputs.resourceId
                 ipConfigurations: [
                     {
                         name: 'ipconfig01'
