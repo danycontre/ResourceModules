@@ -68,7 +68,7 @@ resource networkInterface 'Microsoft.Network/networkInterfaces@2021-03-01' = {
       name: !empty(ipConfiguration.name) ? ipConfiguration.name : null
       properties: {
         primary: ((index == 0) ? true : false)
-        applicationSecurityGroups: !empty(networkSecurityGroupId) ? [
+        applicationSecurityGroups: !empty(applicationSecurityGroupId) ? [
           {
             id: applicationSecurityGroupId
           }

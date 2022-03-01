@@ -304,7 +304,7 @@ module avdNetworksecurityGroup '../arm/Microsoft.Network/networkSecurityGroups/d
     ]
 }
 
-module avdApplicationsecurityGroup '../arm/Microsoft.Network/applicationSecurityGroups/deploy.bicep' = if (createAvdVnet) {
+module avdApplicationSecurityGroup '../arm/Microsoft.Network/applicationSecurityGroups/deploy.bicep' = if (createAvdVnet) {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdNetworkObjectsRgName}')
     name: 'AVD-ASG-${time}'
     params: {
@@ -368,7 +368,7 @@ module avdVirtualNetwork '../arm/Microsoft.Network/virtualNetworks/deploy.bicep'
     dependsOn: [
         avdNetworkObjectsRg
         avdNetworksecurityGroup
-        avdApplicationsecurityGroup
+        avdApplicationSecurityGroup
         avdRouteTable
     ]
 }
@@ -838,7 +838,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
             {
                 nicSuffix: '-nic-01'
                 deleteOption: 'Delete'
-                asgId: avdApplicationsecurityGroup.outputs.resourceId
+                asgId: avdApplicationSecurityGroup.outputs.resourceId
                 ipConfigurations: [
                     {
                         name: 'ipconfig01'
