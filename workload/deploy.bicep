@@ -74,15 +74,14 @@ param avdDeploySessionHostsCount int = 1
 @description('Optional. Creates an availability zone and adds the VMs to it. Cannot be used in combination with availability set nor scale set. (Defualt: true)')
 param avdUseAvailabilityZones bool = false
 
-/*
 @description('Optional. If set to 1, 2 or 3, the availability zone for all VMs is hardcoded to that value. If zero, availability zone option will be disabled (up to three zones). Cannot be used in combination with availability set nor scale set.')
 @allowed([
-  1
-  2
-  3
+    1
+    2
+    3
 ])
 param avdAvailabilityZone int = 1
-*/
+
 @description('Optional. If set to 1, 2 or 3, the availability zone for all VMs is hardcoded to that value. If zero, availability zone option will be disabled (up to three zones). Cannot be used in combination with availability set nor scale set.')
 param avdAvailabilityZones array = []
 
@@ -813,7 +812,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         location: location
         systemAssignedIdentity: true
         encryptionAtHost: false
-        //availabilityZone: avdUseAvailabilityZones ? avdAvailabilityZone: 0
+        availabilityZone: avdUseAvailabilityZones ? avdAvailabilityZone : 0
         //availabilityZone: avdAvailabilityZones == '' ? take(skip(allAvailabilityZones,i % length(allAvailabilityZones)),1) : array(avdAvailabilityZones)
         availabilitySetName: !avdUseAvailabilityZones ? avdAvailabilitySet.outputs.name : ''
         osType: 'Windows'
