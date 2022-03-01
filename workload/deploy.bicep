@@ -812,8 +812,8 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         location: location
         systemAssignedIdentity: true
         encryptionAtHost: false
-        availabilityZone: avdUseAvailabilityZones ? avdAvailabilityZone : 0
-        //availabilityZone: avdAvailabilityZones == '' ? take(skip(allAvailabilityZones,i % length(allAvailabilityZones)),1) : array(avdAvailabilityZones)
+        //availabilityZone: avdUseAvailabilityZones ? avdAvailabilityZone : 0
+        availabilityZone: avdUseAvailabilityZones ? take(skip(allAvailabilityZones, i % length(allAvailabilityZones)), 1) : array(avdAvailabilityZone)
         availabilitySetName: !avdUseAvailabilityZones ? avdAvailabilitySet.outputs.name : ''
         osType: 'Windows'
         vmSize: avdSessionHostsSize
