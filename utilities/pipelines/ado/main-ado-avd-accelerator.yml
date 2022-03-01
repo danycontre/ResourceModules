@@ -23,6 +23,8 @@ variables:
     value: 4f6c98e1-04a4-49f0-abce-6240b1726c3f
   - name: avdWrklSubscriptionId
     value: 4f6c98e1-04a4-49f0-abce-6240b1726c3f
+  - name: avdWrklSecretAccess
+    value: 8e23a491-5178-4c69-9fce-1377e52a29c6
 
 stages:
   - stage: Deploy_AVD_Accelerator
@@ -39,3 +41,4 @@ stages:
             - avdShrdlSubscriptionId $(avdShrdlSubscriptionId)
             - avdWrklSubscriptionId $(avdWrklSubscriptionId)
             - location $(deploymentRegion)
+            - avdWrklSecretAccess $(avdWrklSecretAccess)
