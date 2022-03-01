@@ -32,7 +32,7 @@ param avdHostPoolType string = 'Pooled'
 param avdHostPoolloadBalancerType string = 'BreadthFirst'
 
 @description('Optional. AVD host pool start VM on Connect (Default: true)')
-param avdStartVMOnConnect bool = true
+param avdStartVMOnConnect bool = false
 
 @allowed([
     'Desktop'
@@ -72,7 +72,7 @@ param avdDeploySessionHosts bool = true
 param avdDeploySessionHostsCount int = 1
 
 @description('Optional. Creates an availability zone and adds the VMs to it. Cannot be used in combination with availability set nor scale set. (Defualt: true)')
-param avdUseAvailabilityZones bool = false
+param avdUseAvailabilityZones bool = true
 
 @description('Optional. If set to 1, 2 or 3, the availability zone for all VMs is hardcoded to that value. If zero, availability zone option will be disabled (up to three zones). Cannot be used in combination with availability set nor scale set.')
 @allowed([
@@ -82,8 +82,8 @@ param avdUseAvailabilityZones bool = false
 ])
 param avdAvailabilityZone int = 1
 
-@description('Optional. If set to 1, 2 or 3, the availability zone for all VMs is hardcoded to that value. If zero, availability zone option will be disabled (up to three zones). Cannot be used in combination with availability set nor scale set.')
-param avdAvailabilityZones array = []
+//@description('Optional. If set to 1, 2 or 3, the availability zone for all VMs is hardcoded to that value. If zero, availability zone option will be disabled (up to three zones). Cannot be used in combination with availability set nor scale set.')
+//param avdAvailabilityZones array = []
 
 @description('Session host VM size (Defualt: Standard_D2ads_v5) ')
 param avdSessionHostsSize string = 'Standard_D2ads_v5'
