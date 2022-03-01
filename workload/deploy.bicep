@@ -86,7 +86,7 @@ param avdAvailabilityZone int = 1
 //param avdAvailabilityZones array = []
 
 @description('Session host VM size (Defualt: Standard_D2ads_v5) ')
-param avdSessionHostsSize string = 'Standard_D2ads_v5'
+param avdSessionHostsSize string = 'Standard_B4ms'
 
 @description('OS disk type for session host (Defualt: Standard_LRS) ')
 param avdSessionHostDiskType string = 'Standard_LRS'
