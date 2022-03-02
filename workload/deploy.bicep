@@ -122,7 +122,7 @@ param createAibCustomRole bool = true
     'win11-21h2'
 ])
 @description('Optional. AVD OS image source')
-param avdOsImage string = 'win10-21h2'
+param avdOsImage string
 
 @description('Set to deploy image from Azure Compute Gallery')
 param useSharedImage bool
