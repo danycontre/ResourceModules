@@ -19,8 +19,6 @@ $osOptURL = 'https://raw.githubusercontent.com/The-Virtual-Desktop-Team/Virtual-
 $osOptURLexe = 'optimize.ps1'
 Invoke-WebRequest -Uri $osOptURL -OutFile $osOptURLexe
 
-
-
 # Patch: overide the Win10_VirtualDesktop_Optimize.ps1 - setting 'Set-NetAdapterAdvancedProperty'(see readme.md)
 Write-Host 'Patch: Disabling Set-NetAdapterAdvancedProperty'
 $updatePath = 'C:\optimize\Virtual-Desktop-Optimization-Tool-master\Win10_VirtualDesktop_Optimize.ps1'
@@ -40,10 +38,45 @@ for ($i = 0; $i -lt $file.count; $i++) {
 $insert | ForEach-Object { $file.insert($_, "                 Write-Host 'Patch closing handles and runnng GC before reg unload' `n              `$newKey.Handle.close()` `n              [gc]::collect() `n                Start-Sleep -Seconds 15 ") }
 Set-Content $updatePath $file
 
-
-
 # run script
 # .\optimize -WindowsVersion 2004 -Verbose
-.\Win10_VirtualDesktop_Optimize.ps1 -WindowsVersion 2004 -Verbose
+.\Win10_VirtualDesktop_Optimize.ps1 -Verbose
 Write-Host 'AIB Customization: Finished OS Optimizations script'
+
+
+
+### Setting the RDP Shortpath.
+Write-Host 'Configuring RDP ShortPath'
+
+$WinstationsKey = 'HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations'
+
+if (Test-Path $WinstationsKey) {
+    New-ItemProperty -Path $WinstationsKey -Name 'fUseUdpPortRedirector' -ErrorAction:SilentlyContinue -PropertyType:dword -Value 1 -Force
+    New-ItemProperty -Path $WinstationsKey -Name 'UdpPortNumber' -ErrorAction:SilentlyContinue -PropertyType:dword -Value 3390 -Force
+}
+
+New-NetFirewallRule
+-DisplayName 'Remote Desktop - Shortpath (UDP-In)' `
+    -Action Allow `
+    -Description 'Inbound rule for the Remote Desktop service to allow RDP traffic. [UDP 3390]' `
+    -Group '@FirewallAPI.dll,-28752' `
+    -Name 'RemoteDesktop-UserMode-In-Shortpath-UDP'  `
+    -PolicyStore PersistentStore `
+    -Profile Domain, Private `
+    -Service TermService `
+    -Protocol udp `
+    -LocalPort 3390 `
+    -Program '%SystemRoot%\system32\svchost.exe' `
+    -Enabled:True
+
+### Setting the Screen Protection
+
+Write-Host 'Configuring Screen Protection'
+
+$WinstationsKey = 'HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations'
+
+if (Test-Path $WinstationsKey) {
+    New-ItemProperty -Path $WinstationsKey -Name 'fEnableScreenCaptureProtect' -ErrorAction:SilentlyContinue -PropertyType:dword -Value 1 -Force
+}
+
 

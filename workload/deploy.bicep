@@ -263,6 +263,7 @@ var marketPlaceGalleyWindows = {
     }
 }
 
+var baseScriptUri = 'https://raw.githubusercontent.com/nataliakon/ResourceModules/AVD-Accelerator/workload/'
 var avdFslogixStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}fslogix${deploymentPrefixLowercase}'
 var avdFslogixFileShareName = 'fslogix-${deploymentPrefixLowercase}'
 var avdSharedSResourcesStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}avdshared'
@@ -640,7 +641,13 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
                 name: 'OptimizeOS'
                 runElevated: true
                 runAsSystem: true
-                scriptUri: 'https://raw.githubusercontent.com/danielsollondon/azvmimagebuilder/master/solutions/14_Building_Images_WVD/1_Optimize_OS_for_WVD.ps1'
+                scriptUri: '${baseScriptUri}Scripts/Optimize_OS_for_AVD.ps1' // need to update value to accelerator githib after
+            }
+
+            {
+                type: 'WindowsRestart'
+                restartCheckCommand: 'write-host "restarting post Optimizations"'
+                restartTimeout: '5m'
             }
 
             {
