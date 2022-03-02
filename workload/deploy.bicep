@@ -636,6 +636,14 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
         sigImageDefinitionId: avdImageTemplataDefinition.outputs.resourceId
         customizationSteps: [
             {
+                type: 'PowerShell'
+                name: 'OptimizeOS'
+                runElevated: true
+                runAsSystem: true
+                scriptUri: 'https://raw.githubusercontent.com/danielsollondon/azvmimagebuilder/master/solutions/14_Building_Images_WVD/1_Optimize_OS_for_WVD.ps1'
+            }
+
+            {
                 type: 'WindowsUpdate'
                 searchCriteria: 'IsInstalled=0'
                 filters: [
