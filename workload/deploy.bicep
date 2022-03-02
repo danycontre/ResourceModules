@@ -108,6 +108,7 @@ param avdSessionHostDiskType string = 'Standard_LRS'
     'uksouth'
     'ukwest'
 ])
+
 @description('Azure image builder location (Defualt: eastus2)')
 param aiblocation string = 'eastus2'
 
@@ -122,6 +123,9 @@ param createAibCustomRole bool = true
 ])
 @description('Optional. AVD OS image source')
 param avdOsImage string = 'win10-21h2'
+
+@description('Set to deploy image from Azure Compute Gallery')
+param useSharedImage bool
 
 @description('Regions to replicate AVD images (Defualt: eastus2)')
 param avdImageRegionsReplicas array = [
@@ -209,7 +213,7 @@ var avdOsImageDefinitions = {
         osState: 'Generalized'
         offer: 'Windows-10'
         publisher: 'MicrosoftWindowsDesktop'
-        sku: '21h1-evd'
+        sku: '21h2-evd'
     }
     'win11-21h2-office': {
         name: 'Windows11_21H2'
@@ -228,6 +232,37 @@ var avdOsImageDefinitions = {
         sku: 'win11-21h2-avd'
     }
 }
+
+var marketPlaceGalleyWindows = {
+    'win10-21h2-office': {
+        publisher: 'MicrosoftWindowsDesktop'
+        offer: 'office-365'
+        sku: 'win10-21h2-avd-m365'
+        version: 'latest'
+    }
+
+    'win10-21h2': {
+        publisher: 'MicrosoftWindowsDesktop'
+        offer: 'Windows-10'
+        sku: '21h2-evd'
+        version: 'latest'
+    }
+
+    'win11-21h2-office': {
+        publisher: 'MicrosoftWindowsDesktop'
+        offer: 'office-365'
+        sku: 'win11-21h2-avd-m365'
+        version: 'latest'
+    }
+
+    'win11-21h2': {
+        publisher: 'MicrosoftWindowsDesktop'
+        offer: 'Windows-11'
+        sku: 'win11-21h2-avd'
+        version: 'latest'
+    }
+}
+
 var avdFslogixStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}fslogix${deploymentPrefixLowercase}'
 var avdFslogixFileShareName = 'fslogix-${deploymentPrefixLowercase}'
 var avdSharedSResourcesStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}avdshared'
@@ -818,12 +853,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         availabilitySetName: !avdUseAvailabilityZones ? avdAvailabilitySet.outputs.name : ''
         osType: 'Windows'
         vmSize: avdSessionHostsSize
-        imageReference: {
-            publisher: 'MicrosoftWindowsDesktop'
-            offer: 'windows-11'
-            sku: 'win11-21h2-avd'
-            version: '22000.438.220116'
-        }
+        imageReference: useSharedImage ? imageTemplate.outputs.resourceId : marketPlaceGalleyWindows[avdOsImage]
         osDisk: {
             createOption: 'fromImage'
             deleteOption: 'Delete'
@@ -856,6 +886,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
     dependsOn: [
         avdComputeObjectsRg
         avdWrklKeyVault
+        imageTemplateBuild
     ]
 }]
 //
