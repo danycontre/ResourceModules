@@ -43,4 +43,4 @@ stages:
             - location $(deploymentRegion)
             - avdWrklSecretAccess $(avdWrklSecretAccess)
             - useSharedImage true
-            - avdOsImage win11-21h2
+            - avdOsImage win10-21h2-office
