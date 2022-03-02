@@ -852,6 +852,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         availabilityZone: avdUseAvailabilityZones ? take(skip(allAvailabilityZones, i % length(allAvailabilityZones)), 1) : avdAvailabilityZones
         availabilitySetName: !avdUseAvailabilityZones ? avdAvailabilitySet.outputs.name : ''
         osType: 'Windows'
+        licenseType: 'Windows_Client'
         vmSize: avdSessionHostsSize
         imageReference: useSharedImage ? imageTemplate.outputs.resourceId : marketPlaceGalleyWindows[avdOsImage]
         osDisk: {
