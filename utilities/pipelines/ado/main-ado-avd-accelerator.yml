@@ -42,3 +42,4 @@ stages:
             - avdWrklSubscriptionId $(avdWrklSubscriptionId)
             - location $(deploymentRegion)
             - avdWrklSecretAccess $(avdWrklSecretAccess)
+            - useSharedImage true
