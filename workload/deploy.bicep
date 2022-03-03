@@ -4,10 +4,10 @@ targetScope = 'subscription'
 // Parameters //
 // ========== //
 @description('Required. AVD shared services subscription ID')
-param avdShrdlSubscriptionId string
+param avdShrdlSubscriptionId string = ''
 
 @description('Required. AVD wrokload subscription ID')
-param avdWrklSubscriptionId string
+param avdWrklSubscriptionId string = ''
 
 @minLength(2)
 @maxLength(4)
@@ -51,20 +51,20 @@ param avdFslogixFileShareQuotaSize string = '51200'
 param createStartVmOnConnectCustomRole bool = true
 
 @description('Required. AVD session host local credentials')
-param avdVmLocalUserName string
+param avdVmLocalUserName string = ''
 @secure()
-param avdVmLocalUserPassword string
+param avdVmLocalUserPassword string = ''
 
 @description('Required. AVD session host domain join credentials')
-param avdDomainJoinUserName string
+param avdDomainJoinUserName string = ''
 @secure()
-param avdDomainJoinUserPassword string
+param avdDomainJoinUserPassword string = ''
 
 @description('Optional. OU path to join AVd VMs')
 param avdOuPath string = ''
 
 @description('Id to grant access to on AVD workload key vault secrets')
-param avdWrklSecretAccess string
+param avdWrklSecretAccess string = ''
 
 @description('Deploy new session hosts (defualt: false)')
 param avdDeploySessionHosts bool = true
@@ -127,8 +127,8 @@ param createAibCustomRole bool = true
     'win11-21h2-office'
     'win11-21h2'
 ])
-@description('Required. AVD OS image source')
-param avdOsImage string
+@description('Required. AVD OS image source (Default: win10-21h2)')
+param avdOsImage string = 'win10-21h2'
 
 @description('Set to deploy image from Azure Compute Gallery')
 param useSharedImage bool
@@ -145,25 +145,25 @@ param createAibManagedIdentity bool = true
 param createAvdVnet bool
 
 @description('Existing virtual network subscription')
-param existingVnetSubscriptionId string
+param existingVnetSubscriptionId string = ''
 
 @description('Existing virtual network resource group')
-param existingVnetRgName string
+param existingVnetRgName string = ''
 
 @description('Existing virtual network')
-param existingVnetName string
+param existingVnetName string = ''
 
 @description('Existing hub virtual network subscription')
 param existingHubVnetSubscriptionId string
 
 @description('Existing hub virtual network resource group')
-param existingHubVnetRgName string
+param existingHubVnetRgName string = ''
 
 @description('Existing hub virtual network')
-param existingHubVnetName string
+param existingHubVnetName string = ''
 
 @description('Existing virtual network subnet (subnet requires PrivateEndpointNetworkPolicies property to be disabled)')
-param existingVnetSubnetName string
+param existingVnetSubnetName string = ''
 
 @description('AVD virtual network address prefixes (Default: 10.0.0.0/23)')
 param avdVnetworkAddressPrefixes array = [
@@ -863,7 +863,7 @@ module avdAvailabilitySet '../arm/Microsoft.Compute/availabilitySets/deploy.bice
 }
 
 //
-
+/*
 // Session hosts
 module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' = [for i in range(0, avdDeploySessionHostsCount): if (avdDeploySessionHosts) {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
@@ -904,7 +904,6 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                 ]
             }
         ]
-        /*
         allowExtensionOperations: true
         extensionDomainJoinPassword: avdDomainJoinUserPassword
         extensionDomainJoinConfig: {
@@ -918,7 +917,6 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                 //options: '3'
             }
         }
-        */
         //extensionMonitoringAgentConfig: {
         //    enabled: true
         //}
@@ -931,6 +929,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
     ]
 }]
 //
+*/
 
 // ======= //
 // Outputs //
