@@ -46,7 +46,7 @@ variables:
   - name: existingVnetSubnetName
     value: PR01-SUB
   - name: avdDomainJoinUserName
-    value: azadmin@azureminilab.com
+    value: 'azadmin@azureminilab.com'
   - name: avdDomainJoinUserPassword
     value: '!V0ipc@123'
   - name: avdVmLocalUserName
