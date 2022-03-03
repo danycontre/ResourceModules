@@ -865,6 +865,14 @@ module avdAvailabilitySet '../arm/Microsoft.Compute/availabilitySets/deploy.bice
 //
 
 // Session hosts
+
+// Call on the KV.
+
+resource keyvault 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = {
+    name: avdWrklKvName
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
+}
+
 module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' = [for i in range(0, avdDeploySessionHostsCount): if (avdDeploySessionHosts) {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
     name: 'AVD-Session-Host-${i}-${time}'
@@ -879,7 +887,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         licenseType: 'Windows_Client'
         vmSize: avdSessionHostsSize
         // imageReference: useSharedImage ? json('{\'id\': \'${imageTemplate.outputs.resourceId}\'}') : marketPlaceGalleyWindows[avdOsImage]
-        imageReference: marketPlaceGalleyWindows[avdOsImage]
+        imageReference: marketPlaceGalleyWindows[avdOsImage] // temp. As the AIB is commented out.
         osDisk: {
             createOption: 'fromImage'
             deleteOption: 'Delete'
@@ -903,9 +911,9 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                 ]
             }
         ]
-        /*
+
         allowExtensionOperations: true
-        extensionDomainJoinPassword: avdDomainJoinUserPassword
+        extensionDomainJoinPassword: keyvault.getSecret('avdDomainJoinUserPassword')
         extensionDomainJoinConfig: {
             enabled: true
             settings: {
@@ -917,7 +925,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                 //options: '3'
             }
         }
-        */
+
         //extensionMonitoringAgentConfig: {
         //    enabled: true
         //}
