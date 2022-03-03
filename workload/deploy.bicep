@@ -531,7 +531,7 @@ module azureImageBuilderRole '../arm/Microsoft.Authorization/roleDefinitions/sub
 //
 
 // Managed identities
-module imageBuilderManagedIdentity '../arm/Microsoft.ManagedIdentity/userAssignedIdentities/deploy.bicep' = if (createAibManagedIdentity && useSharedImage) {
+module imageBuilderManagedIdentity '../arm/Microsoft.ManagedIdentity/userAssignedIdentities/deploy.bicep' = if (createAibManagedIdentity) {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     name: 'image-Builder-Managed-Identity-${time}'
     params: {
@@ -548,11 +548,11 @@ module imageBuilderManagedIdentity '../arm/Microsoft.ManagedIdentity/userAssigne
 //
 
 // RBAC role Assignments
-module azureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignments/resourceGroup/deploy.bicep' = if (createAibCustomRole && createAibManagedIdentity && useSharedImage) {
+module azureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignments/resourceGroup/deploy.bicep' = if (createAibCustomRole && createAibManagedIdentity) {
     name: 'Azure-Image-Builder-RoleAssign-${time}'
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     params: {
-        roleDefinitionIdOrName: (createAibCustomRole && useSharedImage) ? azureImageBuilderRole.outputs.resourceId : ''
+        roleDefinitionIdOrName: createAibCustomRole ? azureImageBuilderRole.outputs.resourceId : ''
         principalId: imageBuilderManagedIdentity.outputs.principalId
     }
     dependsOn: [
