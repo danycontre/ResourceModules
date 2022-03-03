@@ -42,5 +42,5 @@ stages:
             - avdWrklSubscriptionId $(avdWrklSubscriptionId)
             - location $(deploymentRegion)
             - avdWrklSecretAccess $(avdWrklSecretAccess)
-            - useSharedImage true
+            - useSharedImage false
             - avdOsImage win10-21h2-office
