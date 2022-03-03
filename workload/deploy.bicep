@@ -61,7 +61,7 @@ param avdDomainJoinUserName string
 param avdDomainJoinUserPassword string
 
 @description('Optional. OU path to join AVd VMs')
-param avdOuPath string
+param avdOuPath string = ''
 
 @description('Id to grant access to on AVD workload key vault secrets')
 param avdWrklSecretAccess string
@@ -177,7 +177,7 @@ param avdVnetworkSubnetAddressPrefix string = '10.0.0.0/23'
 param customDnsAvailable bool = true
 
 @description('custom DNS servers IPs (defualt: 10.10.10.5, 10.10.10.6)')
-param customDnsIps array
+param customDnsIps array = []
 
 @description('Does the hub contains a virtual network gateway (defualt: true)')
 param vNetworkGatewayOnHub bool = true
