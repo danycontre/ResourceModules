@@ -4,10 +4,10 @@ targetScope = 'subscription'
 // Parameters //
 // ========== //
 @description('Required. AVD shared services subscription ID')
-param avdShrdlSubscriptionId string = ''
+param avdShrdlSubscriptionId string
 
 @description('Required. AVD wrokload subscription ID')
-param avdWrklSubscriptionId string = ''
+param avdWrklSubscriptionId string
 
 @minLength(2)
 @maxLength(4)
@@ -51,20 +51,20 @@ param avdFslogixFileShareQuotaSize string = '51200'
 param createStartVmOnConnectCustomRole bool = true
 
 @description('Required. AVD session host local credentials')
-param avdVmLocalUserName string = ''
+param avdVmLocalUserName string
 @secure()
-param avdVmLocalUserPassword string = ''
+param avdVmLocalUserPassword string
 
 @description('Required. AVD session host domain join credentials')
-param avdDomainJoinUserName string = ''
+param avdDomainJoinUserName string
 @secure()
-param avdDomainJoinUserPassword string = ''
+param avdDomainJoinUserPassword string
 
 @description('Optional. OU path to join AVd VMs')
-param avdOuPath string = ''
+param avdOuPath string
 
 @description('Id to grant access to on AVD workload key vault secrets')
-param avdWrklSecretAccess string = ''
+param avdWrklSecretAccess string
 
 @description('Deploy new session hosts (defualt: false)')
 param avdDeploySessionHosts bool = true
@@ -77,13 +77,10 @@ param avdDeploySessionHostsCount int = 1
 @description('Optional. Creates an availability zone and adds the VMs to it. Cannot be used in combination with availability set nor scale set. (Defualt: true)')
 param avdUseAvailabilityZones bool = true
 
-
-/*
-=======
 @description('Optional. This property can be used by user in the request to enable or disable the Host Encryption for the virtual machine. This will enable the encryption for all the disks including Resource/Temp disk at host itself. For security reasons, it is recommended to set encryptionAtHost to True. Restrictions: Cannot be enabled if Azure Disk Encryption (guest-VM encryption using bitlocker/DM-Crypt) is enabled on your VMs.')
 param encryptionAtHost bool = false
 
-
+/* =======
 @description('Optional. If set to 1, 2 or 3, the availability zone for all VMs is hardcoded to that value. If zero, availability zone option will be disabled (up to three zones). Cannot be used in combination with availability set nor scale set.')
 @allowed([
     1
@@ -95,7 +92,7 @@ param avdAvailabilityZone int = 1 */
 @description('Optional. If set to 1, 2 or 3, the availability zone for all VMs is hardcoded to that value. If zero, availability zone option will be disabled (up to three zones). Cannot be used in combination with availability set nor scale set.')
 param avdAvailabilityZones array = []
 
-@description('Session host VM size (Defualt: Standard_D2ads_v5) ')
+@description('Session host VM size (Defualt: Standard_D2s_v4) ')
 param avdSessionHostsSize string = 'Standard_D2s_v4'
 
 @description('OS disk type for session host (Defualt: Standard_LRS) ')
@@ -148,16 +145,16 @@ param createAibManagedIdentity bool = true
 param createAvdVnet bool = true
 
 @description('Existing virtual network subscription')
-param existingVnetSubscriptionId string = ''
+param existingVnetSubscriptionId string
 
 @description('Existing virtual network resource group')
-param existingVnetRgName string = ''
+param existingVnetRgName string
 
 @description('Existing virtual network')
-param existingVnetName string = ''
+param existingVnetName string
 
 @description('Existing virtual network subnet (subnet requires PrivateEndpointNetworkPolicies property to be disabled)')
-param existingVnetSubnetName string = ''
+param existingVnetSubnetName string
 
 @description('AVD virtual network address prefixes (Default: 10.0.0.0/23)')
 param avdVnetworkAddressPrefixes array = [
@@ -171,7 +168,7 @@ param avdVnetworkSubnetAddressPrefix string = '10.0.0.0/23'
 param customDnsAvailable bool = true
 
 @description('custom DNS servers IPs (defualt: 10.10.10.5, 10.10.10.6)')
-param customDnsIps array = []
+param customDnsIps array
 
 @description('Provide existing virtual network hub URI')
 param hubVnetId string = '/subscriptions/947a3882-0d71-45e4-9a84-ede9dccd19fe/resourceGroups/d2l-network-eastus-is01/providers/Microsoft.Network/virtualNetworks/d2l-default-eastus'
@@ -471,7 +468,7 @@ module avdApplicationGroup '../arm/Microsoft.DesktopVirtualization/applicationgr
 //
 
 // RBAC Roles
-module startVMonConnectRole '../arm/Microsoft.Authorization/roleDefinitions/.bicep/nested_roleDefinitions_sub.bicep' = if (createStartVmOnConnectCustomRole) {
+module startVMonConnectRole '../arm/Microsoft.Authorization/roleDefinitions/subscription/deploy.bicep' = if (createStartVmOnConnectCustomRole) {
     scope: subscription(avdWrklSubscriptionId)
     name: 'Start-VM-on-Connect-Role-${time}'
     params: {
@@ -488,7 +485,7 @@ module startVMonConnectRole '../arm/Microsoft.Authorization/roleDefinitions/.bic
     }
 }
 
-module azureImageBuilderRole '../arm/Microsoft.Authorization/roleDefinitions/.bicep/nested_roleDefinitions_sub.bicep' = if (createAibCustomRole) {
+module azureImageBuilderRole '../arm/Microsoft.Authorization/roleDefinitions/subscription/deploy.bicep' = if (createAibCustomRole) {
     scope: subscription(avdShrdlSubscriptionId)
     name: 'Azure-Image-Builder-Role-${time}'
     params: {
@@ -544,7 +541,7 @@ module imageBuilderManagedIdentity '../arm/Microsoft.ManagedIdentity/userAssigne
 //
 
 // RBAC role Assignments
-module azureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignments/.bicep/nested_rbac_rg.bicep' = if (createAibCustomRole && createAibManagedIdentity) {
+module azureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignments/resourceGroup/deploy.bicep' = if (createAibCustomRole && createAibManagedIdentity) {
     name: 'Azure-Image-Builder-RoleAssign-${time}'
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     params: {
@@ -570,7 +567,7 @@ module azureImageBuilderRoleAssignExisting '../arm/Microsoft.Authorization/roleA
     ]
 }
 */
-module startVMonConnectRoleAssign '../arm/Microsoft.Authorization/roleAssignments/.bicep/nested_rbac_rg.bicep' = if (createStartVmOnConnectCustomRole) {
+module startVMonConnectRoleAssign '../arm/Microsoft.Authorization/roleAssignments/resourceGroup/deploy.bicep' = if (createStartVmOnConnectCustomRole) {
     name: 'Start-VM-OnConnect-RoleAssign-${time}'
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
     params: {
