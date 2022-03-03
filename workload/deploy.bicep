@@ -372,7 +372,7 @@ module avdVirtualNetwork '../arm/Microsoft.Network/virtualNetworks/deploy.bicep'
         location: location
         addressPrefixes: avdVnetworkAddressPrefixes
         dnsServers: customDnsAvailable ? customDnsIps : []
-        /*   virtualNetworkPeerings: [
+        virtualNetworkPeerings: [
             {
                 remoteVirtualNetworkId: hubVnetId
                 name: avdVNetworkPeeringName
@@ -389,7 +389,7 @@ module avdVirtualNetwork '../arm/Microsoft.Network/virtualNetworks/deploy.bicep'
                 remotePeeringDoNotVerifyRemoteGateways: true
                 remotePeeringUseRemoteGateways: false
             }
-        ] */
+        ]
         subnets: [
             {
                 name: avdVnetworkSubnetName
