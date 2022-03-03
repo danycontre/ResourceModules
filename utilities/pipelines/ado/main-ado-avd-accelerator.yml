@@ -43,8 +43,17 @@ variables:
     value: AzurelabCACN-VNET
   - name: existingVnetName
     value: azurelabcacn-avd-vnet
-  - name: existingsubnetName
+  - name: existingVnetSubnetName
     value: PR01-SUB
+  - name: avdDomainJoinUserName
+    value: azadmin@azureminilab.com
+  - name: avdDomainJoinUserPassword
+    value: '!V0ipc@123'
+  - name: avdVmLocalUserName
+    value: azadmin
+  - name: avdVmLocalUserPassword
+    value: '!R37fallacy1505'
+
 
 stages:
   - stage: Deploy_AVD_Accelerator
@@ -71,3 +80,8 @@ stages:
             - existingHubVnetName $(existingVnetName)
             - existingHubVnetRgName $(existingVnetRgName)
             - existingHubVnetSubscriptionId $(existingVnetSubscriptionId)
+            - avdDomainJoinUserName $(avdDomainJoinUserName)
+            - avdDomainJoinUserPassword $(avdDomainJoinUserPassword)
+            - avdVmLocalUserName $(avdVmLocalUserName)
+            - avdVmLocalUserPassword $(avdVmLocalUserPassword)
+
