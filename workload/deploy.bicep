@@ -355,7 +355,7 @@ module avdNetworksecurityGroup '../arm/Microsoft.Network/networkSecurityGroups/d
     ]
 }
 
-module avdApplicationSecurityGroup '../arm/Microsoft.Network/applicationSecurityGroups/deploy.bicep' = if (createAvdVnet) {
+module avdApplicationSecurityGroup '../arm/Microsoft.Network/applicationSecurityGroups/deploy.bicep' = /*if (createAvdVnet) */ {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdNetworkObjectsRgName}')
     name: 'AVD-ASG-${time}'
     params: {
