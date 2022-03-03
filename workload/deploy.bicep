@@ -61,7 +61,7 @@ param avdDomainJoinUserName string
 param avdDomainJoinUserPassword string
 
 @description('Optional. OU path to join AVd VMs')
-param avdOuPath string
+param avdOuPath string = ''
 
 @description('Id to grant access to on AVD workload key vault secrets')
 param avdWrklSecretAccess string
@@ -142,7 +142,7 @@ param avdImageRegionsReplicas array = [
 param createAibManagedIdentity bool = true
 
 @description('Create new virtual network (Default: true)')
-param createAvdVnet bool = true
+param createAvdVnet bool
 
 @description('Existing virtual network subscription')
 param existingVnetSubscriptionId string
@@ -152,6 +152,15 @@ param existingVnetRgName string
 
 @description('Existing virtual network')
 param existingVnetName string
+
+@description('Existing hub virtual network subscription')
+param existingHubVnetSubscriptionId string
+
+@description('Existing hub virtual network resource group')
+param existingHubVnetRgName string
+
+@description('Existing hub virtual network')
+param existingHubVnetName string
 
 @description('Existing virtual network subnet (subnet requires PrivateEndpointNetworkPolicies property to be disabled)')
 param existingVnetSubnetName string
@@ -167,11 +176,8 @@ param avdVnetworkSubnetAddressPrefix string = '10.0.0.0/23'
 @description('Are custom DNS servers accessible form the hub (defualt: true)')
 param customDnsAvailable bool = true
 
-@description('custom DNS servers IPs')
-param customDnsIps array
-
-@description('Provide existing virtual network hub URI')
-param hubVnetId string = '/subscriptions/947a3882-0d71-45e4-9a84-ede9dccd19fe/resourceGroups/d2l-network-eastus-is01/providers/Microsoft.Network/virtualNetworks/d2l-default-eastus'
+@description('custom DNS servers IPs (defualt: 10.10.10.5, 10.10.10.6)')
+param customDnsIps array = []
 
 @description('Does the hub contains a virtual network gateway (defualt: true)')
 param vNetworkGatewayOnHub bool = true
@@ -193,6 +199,7 @@ var avdStorageObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLow
 var avdSharedResourcesRgName = 'rg-${locationLowercase}-avd-shared-resources'
 var imageGalleryName = 'avd-gallery-${locationLowercase}'
 var existingVnetResourceId = '/subscriptions/${existingVnetSubscriptionId}/resourceGroups/${existingVnetRgName}/providers/Microsoft.Network/virtualNetworks/${existingVnetName}'
+var hubVnetId = '/subscriptions/${existingHubVnetSubscriptionId}/resourceGroups/${existingHubVnetRgName}/providers/Microsoft.Network/virtualNetworks/${existingHubVnetName}'
 var avdVnetworkName = 'vnet-${locationLowercase}-avd-${deploymentPrefixLowercase}'
 var avdVnetworkSubnetName = 'avd-${deploymentPrefixLowercase}'
 var avdNetworksecurityGroupName = 'nsg-${locationLowercase}-avd-${deploymentPrefixLowercase}'
@@ -252,7 +259,7 @@ var marketPlaceGalleyWindows = {
     'win10-21h2': {
         publisher: 'MicrosoftWindowsDesktop'
         offer: 'Windows-10'
-        sku: '21h2-evd'
+        sku: '21h2-avd'
         version: 'latest'
     }
 
@@ -348,7 +355,7 @@ module avdNetworksecurityGroup '../arm/Microsoft.Network/networkSecurityGroups/d
     ]
 }
 
-module avdApplicationSecurityGroup '../arm/Microsoft.Network/applicationSecurityGroups/deploy.bicep' = if (createAvdVnet) {
+module avdApplicationSecurityGroup '../arm/Microsoft.Network/applicationSecurityGroups/deploy.bicep' = /*if (createAvdVnet) */ {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdNetworkObjectsRgName}')
     name: 'AVD-ASG-${time}'
     params: {
@@ -716,12 +723,22 @@ module avdWrklKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep' = {
         secrets: {
             secureList: [
                 {
-                    name: avdVmLocalUserName
+                    name: 'avdVmLocalUserPassword'
                     value: avdVmLocalUserPassword
                     contentType: 'Session host local user credentials'
                 }
                 {
-                    name: avdDomainJoinUserName
+                    name: 'avdVmLocalUserName'
+                    value: avdVmLocalUserName
+                    contentType: 'Session host local user credentials'
+                }
+                {
+                    name: 'avdDomainJoinUserName'
+                    value: avdDomainJoinUserName
+                    contentType: 'Domain join credentials'
+                }
+                {
+                    name: 'avdDomainJoinUserPassword'
                     value: avdDomainJoinUserPassword
                     contentType: 'Domain join credentials'
                 }
@@ -911,7 +928,6 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
     dependsOn: [
         avdComputeObjectsRg
         avdWrklKeyVault
-        imageTemplateBuild
     ]
 }]
 //
