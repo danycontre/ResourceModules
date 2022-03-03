@@ -869,7 +869,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         osType: 'Windows'
         licenseType: 'Windows_Client'
         vmSize: avdSessionHostsSize
-        imageReference: useSharedImage ? imageTemplate.outputs.resourceId : marketPlaceGalleyWindows[avdOsImage]
+        imageReference: useSharedImage ? '"id": ${imageTemplate.outputs.resourceId}' : marketPlaceGalleyWindows[avdOsImage]
         osDisk: {
             createOption: 'fromImage'
             deleteOption: 'Delete'

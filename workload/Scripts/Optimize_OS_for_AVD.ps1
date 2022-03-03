@@ -5,7 +5,7 @@ $drive = 'C:\'
 New-Item -Path $drive -Name $appName -ItemType Directory -ErrorAction SilentlyContinue
 $LocalPath = $drive + '\' + $appName
 Set-Location $LocalPath
-$osOptURL = 'https://github.com/The-Virtual-Desktop-Team/Virtual-Desktop-Optimization-Tool/archive/master.zip'
+$osOptURL = 'https://github.com/The-Virtual-Desktop-Team/Virtual-Desktop-Optimization-Tool/archive/refs/heads/main.zip'
 $osOptURLexe = 'Windows_10_VDI_Optimize-master.zip'
 $outputPath = $LocalPath + '\' + $osOptURLexe
 Invoke-WebRequest -Uri $osOptURL -OutFile $outputPath
@@ -55,19 +55,8 @@ if (Test-Path $WinstationsKey) {
     New-ItemProperty -Path $WinstationsKey -Name 'UdpPortNumber' -ErrorAction:SilentlyContinue -PropertyType:dword -Value 3390 -Force
 }
 
-New-NetFirewallRule
--DisplayName 'Remote Desktop - Shortpath (UDP-In)' `
-    -Action Allow `
-    -Description 'Inbound rule for the Remote Desktop service to allow RDP traffic. [UDP 3390]' `
-    -Group '@FirewallAPI.dll,-28752' `
-    -Name 'RemoteDesktop-UserMode-In-Shortpath-UDP'  `
-    -PolicyStore PersistentStore `
-    -Profile Domain, Private `
-    -Service TermService `
-    -Protocol udp `
-    -LocalPort 3390 `
-    -Program '%SystemRoot%\system32\svchost.exe' `
-    -Enabled:True
+Write-Host 'Settin up the Windows Firewall Rue for RDP ShortPath'
+New-NetFirewallRule -DisplayName 'Remote Desktop - Shortpath (UDP-In)' -Action Allow -Description 'Inbound rule for the Remote Desktop service to allow RDP traffic. [UDP 3390]' -Group '@FirewallAPI.dll,-28752' -Name 'RemoteDesktop-UserMode-In-Shortpath-UDP' -PolicyStore PersistentStore -Profile Domain, Private -Service TermService -Protocol udp -LocalPort 3390 -Program '%SystemRoot%\system32\svchost.exe' -Enabled:True
 
 ### Setting the Screen Protection
 
