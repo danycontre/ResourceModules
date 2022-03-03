@@ -6,13 +6,13 @@ New-Item -Path $drive -Name $appName -ItemType Directory -ErrorAction SilentlyCo
 $LocalPath = $drive + '\' + $appName
 Set-Location $LocalPath
 $osOptURL = 'https://github.com/The-Virtual-Desktop-Team/Virtual-Desktop-Optimization-Tool/archive/refs/heads/main.zip'
-$osOptURLexe = 'Windows_10_VDI_Optimize-master.zip'
+$osOptURLexe = 'Windows_10_VDI_Optimize-main.zip'
 $outputPath = $LocalPath + '\' + $osOptURLexe
 Invoke-WebRequest -Uri $osOptURL -OutFile $outputPath
 Write-Host 'AIB Customization: Starting OS Optimizations script'
 Expand-Archive -LiteralPath 'C:\\Optimize\\Windows_10_VDI_Optimize-master.zip' -DestinationPath $Localpath -Force -Verbose
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Force -Verbose
-Set-Location -Path C:\\Optimize\\Virtual-Desktop-Optimization-Tool-master
+Set-Location -Path C:\\Optimize\\Virtual-Desktop-Optimization-Tool-main
 
 # instrumentation
 $osOptURL = 'https://raw.githubusercontent.com/The-Virtual-Desktop-Team/Virtual-Desktop-Optimization-Tool/master/Win10_VirtualDesktop_Optimize.ps1'
