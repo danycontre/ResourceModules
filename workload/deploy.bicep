@@ -556,8 +556,8 @@ module azureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignmen
         principalId: imageBuilderManagedIdentity.outputs.principalId
     }
     dependsOn: [
-        azureImageBuilderRole
-        imageBuilderManagedIdentity
+        //    azureImageBuilderRole
+        //  imageBuilderManagedIdentity
     ]
 }
 /*
