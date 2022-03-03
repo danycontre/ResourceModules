@@ -142,7 +142,7 @@ param avdImageRegionsReplicas array = [
 param createAibManagedIdentity bool = true
 
 @description('Create new virtual network (Default: true)')
-param createAvdVnet bool = true
+param createAvdVnet bool
 
 @description('Existing virtual network subscription')
 param existingVnetSubscriptionId string
@@ -152,6 +152,15 @@ param existingVnetRgName string
 
 @description('Existing virtual network')
 param existingVnetName string
+
+@description('Existing hub virtual network subscription')
+param existingHubVnetSubscriptionId string
+
+@description('Existing hub virtual network resource group')
+param existingHubVnetRgName string
+
+@description('Existing hub virtual network')
+param existingHubVnetName string
 
 @description('Existing virtual network subnet (subnet requires PrivateEndpointNetworkPolicies property to be disabled)')
 param existingVnetSubnetName string
@@ -169,9 +178,6 @@ param customDnsAvailable bool = true
 
 @description('custom DNS servers IPs (defualt: 10.10.10.5, 10.10.10.6)')
 param customDnsIps array
-
-@description('Provide existing virtual network hub URI')
-param hubVnetId string = '/subscriptions/947a3882-0d71-45e4-9a84-ede9dccd19fe/resourceGroups/d2l-network-eastus-is01/providers/Microsoft.Network/virtualNetworks/d2l-default-eastus'
 
 @description('Does the hub contains a virtual network gateway (defualt: true)')
 param vNetworkGatewayOnHub bool = true
@@ -193,6 +199,7 @@ var avdStorageObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLow
 var avdSharedResourcesRgName = 'rg-${locationLowercase}-avd-shared-resources'
 var imageGalleryName = 'avdGgallery${locationLowercase}'
 var existingVnetResourceId = '/subscriptions/${existingVnetSubscriptionId}/resourceGroups/${existingVnetRgName}/providers/Microsoft.Network/virtualNetworks/${existingVnetName}'
+var hubVnetId = '/subscriptions/${existingHubVnetSubscriptionId}/resourceGroups/${existingHubVnetRgName}/providers/Microsoft.Network/virtualNetworks/${existingHubVnetName}'
 var avdVnetworkName = 'vnet-${locationLowercase}-avd-${deploymentPrefixLowercase}'
 var avdVnetworkSubnetName = 'avd-${deploymentPrefixLowercase}'
 var avdNetworksecurityGroupName = 'nsg-${locationLowercase}-avd-${deploymentPrefixLowercase}'
