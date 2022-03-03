@@ -25,6 +25,26 @@ variables:
     value: 4f6c98e1-04a4-49f0-abce-6240b1726c3f
   - name: avdWrklSecretAccess
     value: 8e23a491-5178-4c69-9fce-1377e52a29c6
+  - name: createAvdVnet
+    value: false
+  - name: useSharedImage
+    value: false
+  - name: avdOsImage
+    value: win10-21h2-office
+  - name: existingHubVnetSubscriptionId
+    value: a127444e-1844-4c1e-a359-c9ba98cf5160
+  - name: existingHubVnetRgName
+    value: azureminilab-vnet
+  - name: existingHubVnetName
+    value: azureminilab-cac-vnet1
+  - name: existingVnetSubscriptionId
+    value: 4f6c98e1-04a4-49f0-abce-6240b1726c3f
+  - name: existingVnetRgName
+    value: AzurelabCACN-VNET
+  - name: existingVnetName
+    value: azurelabcacn-avd-vnet
+  - name: existingsubnetName
+    value: PR01-SUB
 
 stages:
   - stage: Deploy_AVD_Accelerator
@@ -42,5 +62,12 @@ stages:
             - avdWrklSubscriptionId $(avdWrklSubscriptionId)
             - location $(deploymentRegion)
             - avdWrklSecretAccess $(avdWrklSecretAccess)
-            - useSharedImage true
-            - avdOsImage win10-21h2-office
+            - useSharedImage $(useSharedImage)
+            - avdOsImage $(avdOsImage)
+            - createAvdVnet $(createAvdVnet)
+            - existingVnetName $(existingVnetName)
+            - existingVnetRgName $(existingVnetRgName)
+            - existingVnetSubscriptionId $(existingVnetSubscriptionId)
+            - existingHubVnetName $(existingVnetName)
+            - existingHubVnetRgName $(existingVnetRgName)
+            - existingHubVnetSubscriptionId $(existingVnetSubscriptionId)
