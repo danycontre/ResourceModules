@@ -851,6 +851,8 @@ module avdAvailabilitySet '../arm/Microsoft.Compute/availabilitySets/deploy.bice
 module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' = [for i in range(0, avdDeploySessionHostsCount): if (avdDeploySessionHosts) {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
     name: 'AVD-Session-Host-${i}-${time}'
+    //wait: 30
+    //retry: 5
     params: {
         name: '${avdSessionHostNamePrefix}-${i}'
         location: location
