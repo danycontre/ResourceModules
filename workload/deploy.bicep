@@ -492,7 +492,7 @@ module startVMonConnectRole '../arm/Microsoft.Authorization/roleDefinitions/subs
     }
 }
 
-module azureImageBuilderRole '../arm/Microsoft.Authorization/roleDefinitions/subscription/deploy.bicep' = if (createAibCustomRole) {
+module azureImageBuilderRole '../arm/Microsoft.Authorization/roleDefinitions/subscription/deploy.bicep' = if (createAibCustomRole && useSharedImage) {
     scope: subscription(avdShrdlSubscriptionId)
     name: 'Azure-Image-Builder-Role-${time}'
     params: {
@@ -531,7 +531,7 @@ module azureImageBuilderRole '../arm/Microsoft.Authorization/roleDefinitions/sub
 //
 
 // Managed identities
-module imageBuilderManagedIdentity '../arm/Microsoft.ManagedIdentity/userAssignedIdentities/deploy.bicep' = if (createAibManagedIdentity) {
+module imageBuilderManagedIdentity '../arm/Microsoft.ManagedIdentity/userAssignedIdentities/deploy.bicep' = if (createAibManagedIdentity && useSharedImage) {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     name: 'image-Builder-Managed-Identity-${time}'
     params: {
@@ -548,7 +548,7 @@ module imageBuilderManagedIdentity '../arm/Microsoft.ManagedIdentity/userAssigne
 //
 
 // RBAC role Assignments
-module azureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignments/resourceGroup/deploy.bicep' = if (createAibCustomRole && createAibManagedIdentity) {
+module azureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignments/resourceGroup/deploy.bicep' = if (createAibCustomRole && createAibManagedIdentity && useSharedImage) {
     name: 'Azure-Image-Builder-RoleAssign-${time}'
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     params: {
@@ -589,7 +589,7 @@ module startVMonConnectRoleAssign '../arm/Microsoft.Authorization/roleAssignment
 
 // Custom images: Azure Image Builder deployment. Azure Compute Gallery --> Image Template Definition --> Image Template --> Build and Publish Template --> Create VMs
 // Azure Compute Gallery
-module azureComputeGallery '../arm/Microsoft.Compute/galleries/deploy.bicep' = {
+module azureComputeGallery '../arm/Microsoft.Compute/galleries/deploy.bicep' = if (useSharedImage) {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     name: 'Deploy-Azure-Compute-Gallery-${time}'
     params: {
@@ -604,7 +604,7 @@ module azureComputeGallery '../arm/Microsoft.Compute/galleries/deploy.bicep' = {
 //
 
 // Image Template Definition
-module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/deploy.bicep' = {
+module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/deploy.bicep' = if (useSharedImage) {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     name: 'Deploy-AVD-Image-Template-Definition-${time}'
     params: {
@@ -625,7 +625,7 @@ module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/dep
 //
 
 // Create Image Template
-module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deploy.bicep' = {
+module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deploy.bicep' = if (useSharedImage) {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     name: 'AVD-Deploy-Image-Template-${time}'
     params: {
@@ -678,7 +678,7 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
 //
 
 // Build Image Template
-module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.bicep' = {
+module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.bicep' = if (useSharedImage) {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     name: 'AVD-Build-Image-Template-${time}'
     params: {
