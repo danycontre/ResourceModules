@@ -51,14 +51,17 @@ param avdFslogixFileShareQuotaSize string = '51200'
 param createStartVmOnConnectCustomRole bool = true
 
 @description('Required. AVD session host local credentials')
-param avdVmLocalUserName string = 'danycontreras'
+param avdVmLocalUserName string = ''
 @secure()
-param avdVmLocalUserPassword string = 'Fkljhysdgtfsd10324786'
+param avdVmLocalUserPassword string = ''
 
 @description('Required. AVD session host domain join credentials')
-param avdDomainJoinUserName string = 'danycontreras'
+param avdDomainJoinUserName string = ''
 @secure()
-param avdDomainJoinUserPassword string = 'Fkljhysdgtfsd10324786'
+param avdDomainJoinUserPassword string = ''
+
+@description('Optional. OU path to join AVd VMs')
+param avdOuPath string = ''
 
 @description('Id to grant access to on AVD workload key vault secrets')
 param avdWrklSecretAccess string = ''
@@ -74,7 +77,13 @@ param avdDeploySessionHostsCount int = 1
 @description('Optional. Creates an availability zone and adds the VMs to it. Cannot be used in combination with availability set nor scale set. (Defualt: true)')
 param avdUseAvailabilityZones bool = true
 
+
 /*
+=======
+@description('Optional. This property can be used by user in the request to enable or disable the Host Encryption for the virtual machine. This will enable the encryption for all the disks including Resource/Temp disk at host itself. For security reasons, it is recommended to set encryptionAtHost to True. Restrictions: Cannot be enabled if Azure Disk Encryption (guest-VM encryption using bitlocker/DM-Crypt) is enabled on your VMs.')
+param encryptionAtHost bool = false
+
+
 @description('Optional. If set to 1, 2 or 3, the availability zone for all VMs is hardcoded to that value. If zero, availability zone option will be disabled (up to three zones). Cannot be used in combination with availability set nor scale set.')
 @allowed([
     1
@@ -165,7 +174,7 @@ param customDnsAvailable bool = true
 param customDnsIps array = []
 
 @description('Provide existing virtual network hub URI')
-param hubVnetId string = '/subscriptions/4f6c98e1-04a4-49f0-abce-6240b1726c3f/resourceGroups/AzurelabCACN-VNET/providers/Microsoft.Network/virtualNetworks/azurelabcacn-avd-vnet'
+param hubVnetId string = '/subscriptions/947a3882-0d71-45e4-9a84-ede9dccd19fe/resourceGroups/d2l-network-eastus-is01/providers/Microsoft.Network/virtualNetworks/d2l-default-eastus'
 
 @description('Does the hub contains a virtual network gateway (defualt: true)')
 param vNetworkGatewayOnHub bool = true
@@ -178,6 +187,8 @@ param time string = utcNow()
 // =========== //
 var deploymentPrefixLowercase = toLower(deploymentPrefix)
 var locationLowercase = toLower(location)
+var avdDomainJoinUserPasswordSecretName = split(avdDomainJoinUserName, '@')
+var Domain = last(split(avdDomainJoinUserName, '@'))
 var avdServiceObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-service-objects' // max length limit 90 characters
 var avdNetworkObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-network' // max length limit 90 characters
 var avdComputeObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-pool-compute' // max length limit 90 characters
@@ -437,21 +448,6 @@ module avdHostPool '../arm/Microsoft.DesktopVirtualization/hostpools/deploy.bice
         startVMOnConnect: avdStartVMOnConnect
         loadBalancerType: avdHostPoolloadBalancerType
         customRdpProperty: avdHostPoolRdpProperty
-        //vmTemplate: {
-        //    domain: avdDomainToJoin
-        //    galleryImageOffer: avdVmImageOffer
-        //    galleryImagePublisher: avdVmImagePublisher
-        //    galleryImageSKU: avdVmImageSku
-        //    imageType: avdVmImageType
-        //    imageUri: avdVmImageUri
-        //    customImageId: avdVmImageId
-        //    namePrefix: deploymentPrefixLowercase
-        //    osDiskType: avdVmDiskType
-        //    useManagedDisks: true
-        //    vmSize: {
-        //        id: avdVmSize
-        //    }
-        //}
     }
     dependsOn: [
         avdServiceObjectsRg
@@ -862,9 +858,8 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         name: '${avdSessionHostNamePrefix}-${i}'
         location: location
         systemAssignedIdentity: true
-        encryptionAtHost: false
-        //availabilityZone: avdUseAvailabilityZones ? avdAvailabilityZone : 0
         availabilityZone: avdUseAvailabilityZones ? take(skip(allAvailabilityZones, i % length(allAvailabilityZones)), 1) : avdAvailabilityZones
+        encryptionAtHost: encryptionAtHost
         availabilitySetName: !avdUseAvailabilityZones ? avdAvailabilitySet.outputs.name : ''
         osType: 'Windows'
         licenseType: 'Windows_Client'
@@ -879,7 +874,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
             }
         }
         adminUsername: avdVmLocalUserName
-        adminPassword: avdVmLocalUserPassword
+        adminPassword: avdVmLocalUserPassword // need to update to get value from KV
         nicConfigurations: [
             {
                 nicSuffix: '-nic-01'
@@ -893,6 +888,19 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                 ]
             }
         ]
+        allowExtensionOperations: true
+        extensionDomainJoinPassword: avdDomainJoinUserPassword
+        extensionDomainJoinConfig: {
+            enabled: true
+            settings: {
+                domainJoinUser: avdDomainJoinUserName
+                domain: Domain
+                ouPath: !empty(avdOuPath) ? avdOuPath : null
+                //user: avdDomainJoinUserName
+                //restart: 'true'
+                //options: '3'
+            }
+        }
         //extensionMonitoringAgentConfig: {
         //    enabled: true
         //}
