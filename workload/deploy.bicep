@@ -419,7 +419,7 @@ module avdVirtualNetwork '../arm/Microsoft.Network/virtualNetworks/deploy.bicep'
     dependsOn: [
         avdNetworkObjectsRg
         avdNetworksecurityGroup
-        avdApplicationSecurityGroup
+        //avdApplicationSecurityGroup
         avdRouteTable
     ]
 }
