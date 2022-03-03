@@ -358,7 +358,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-07-01' = {
       } : null
     }
     storageProfile: {
-      imageReference: imageReference
+      imageReference: json(imageReference)
       osDisk: {
         name: '${name}-disk-os-01'
         createOption: osDisk.createOption
