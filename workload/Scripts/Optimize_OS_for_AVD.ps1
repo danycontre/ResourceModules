@@ -5,9 +5,11 @@ $drive = 'C:\'
 New-Item -Path $drive -Name $appName -ItemType Directory -ErrorAction SilentlyContinue
 $LocalPath = $drive + '\' + $appName
 Set-Location $LocalPath
+Write-Host 'Created the loca directory'
 $osOptURL = 'https://github.com/The-Virtual-Desktop-Team/Virtual-Desktop-Optimization-Tool/archive/refs/heads/main.zip'
 $osOptURLexe = 'Windows_10_VDI_Optimize-main.zip'
 $outputPath = $LocalPath + '\' + $osOptURLexe
+Write-Host 'Loading up the repo to local folder'
 Invoke-WebRequest -Uri $osOptURL -OutFile $outputPath
 Write-Host 'AIB Customization: Starting OS Optimizations script'
 Expand-Archive -LiteralPath 'C:\\Optimize\\Windows_10_VDI_Optimize-master.zip' -DestinationPath $Localpath -Force -Verbose
