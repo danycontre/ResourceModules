@@ -32,7 +32,7 @@ param avdHostPoolType string = 'Pooled'
 param avdHostPoolloadBalancerType string = 'BreadthFirst'
 
 @description('Optional. AVD host pool start VM on Connect (Default: true)')
-param avdStartVMOnConnect bool = true
+param avdStartVMOnConnect bool = false
 
 @allowed([
     'Desktop'
@@ -75,10 +75,14 @@ param avdDeploySessionHosts bool = true
 param avdDeploySessionHostsCount int = 1
 
 @description('Optional. Creates an availability zone and adds the VMs to it. Cannot be used in combination with availability set nor scale set. (Defualt: true)')
-param avdUseAvailabilityZones bool = false
+param avdUseAvailabilityZones bool = true
 
+
+/*
+=======
 @description('Optional. This property can be used by user in the request to enable or disable the Host Encryption for the virtual machine. This will enable the encryption for all the disks including Resource/Temp disk at host itself. For security reasons, it is recommended to set encryptionAtHost to True. Restrictions: Cannot be enabled if Azure Disk Encryption (guest-VM encryption using bitlocker/DM-Crypt) is enabled on your VMs.')
 param encryptionAtHost bool = false
+
 
 @description('Optional. If set to 1, 2 or 3, the availability zone for all VMs is hardcoded to that value. If zero, availability zone option will be disabled (up to three zones). Cannot be used in combination with availability set nor scale set.')
 @allowed([
@@ -86,13 +90,13 @@ param encryptionAtHost bool = false
     2
     3
 ])
-param avdAvailabilityZone int = 1
+param avdAvailabilityZone int = 1 */
 
 @description('Optional. If set to 1, 2 or 3, the availability zone for all VMs is hardcoded to that value. If zero, availability zone option will be disabled (up to three zones). Cannot be used in combination with availability set nor scale set.')
 param avdAvailabilityZones array = []
 
 @description('Session host VM size (Defualt: Standard_D2ads_v5) ')
-param avdSessionHostsSize string = 'Standard_D2ads_v5'
+param avdSessionHostsSize string = 'Standard_D2s_v4'
 
 @description('OS disk type for session host (Defualt: Standard_LRS) ')
 param avdSessionHostDiskType string = 'Standard_LRS'
@@ -113,6 +117,7 @@ param avdSessionHostDiskType string = 'Standard_LRS'
     'uksouth'
     'ukwest'
 ])
+
 @description('Azure image builder location (Defualt: eastus2)')
 param aiblocation string = 'eastus2'
 
@@ -126,7 +131,10 @@ param createAibCustomRole bool = true
     'win11-21h2'
 ])
 @description('Optional. AVD OS image source')
-param avdOsImage string = 'win10-21h2'
+param avdOsImage string
+
+@description('Set to deploy image from Azure Compute Gallery')
+param useSharedImage bool
 
 @description('Regions to replicate AVD images (Defualt: eastus2)')
 param avdImageRegionsReplicas array = [
@@ -216,7 +224,7 @@ var avdOsImageDefinitions = {
         osState: 'Generalized'
         offer: 'Windows-10'
         publisher: 'MicrosoftWindowsDesktop'
-        sku: '21h1-evd'
+        sku: '21h2-evd'
     }
     'win11-21h2-office': {
         name: 'Windows11_21H2'
@@ -235,6 +243,38 @@ var avdOsImageDefinitions = {
         sku: 'win11-21h2-avd'
     }
 }
+
+var marketPlaceGalleyWindows = {
+    'win10-21h2-office': {
+        publisher: 'MicrosoftWindowsDesktop'
+        offer: 'office-365'
+        sku: 'win10-21h2-avd-m365'
+        version: 'latest'
+    }
+
+    'win10-21h2': {
+        publisher: 'MicrosoftWindowsDesktop'
+        offer: 'Windows-10'
+        sku: '21h2-evd'
+        version: 'latest'
+    }
+
+    'win11-21h2-office': {
+        publisher: 'MicrosoftWindowsDesktop'
+        offer: 'office-365'
+        sku: 'win11-21h2-avd-m365'
+        version: 'latest'
+    }
+
+    'win11-21h2': {
+        publisher: 'MicrosoftWindowsDesktop'
+        offer: 'Windows-11'
+        sku: 'win11-21h2-avd'
+        version: 'latest'
+    }
+}
+
+var baseScriptUri = 'https://raw.githubusercontent.com/nataliakon/ResourceModules/AVD-Accelerator/workload/'
 var avdFslogixStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}fslogix${deploymentPrefixLowercase}'
 var avdFslogixFileShareName = 'fslogix-${deploymentPrefixLowercase}'
 var avdSharedSResourcesStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}avdshared'
@@ -593,6 +633,20 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
         sigImageDefinitionId: avdImageTemplataDefinition.outputs.resourceId
         customizationSteps: [
             {
+                type: 'PowerShell'
+                name: 'OptimizeOS'
+                runElevated: true
+                runAsSystem: true
+                scriptUri: '${baseScriptUri}Scripts/Optimize_OS_for_AVD.ps1' // need to update value to accelerator githib after
+            }
+
+            {
+                type: 'WindowsRestart'
+                restartCheckCommand: 'write-host "restarting post Optimizations"'
+                restartTimeout: '5m'
+            }
+
+            {
                 type: 'WindowsUpdate'
                 searchCriteria: 'IsInstalled=0'
                 filters: [
@@ -804,18 +858,13 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         name: '${avdSessionHostNamePrefix}-${i}'
         location: location
         systemAssignedIdentity: true
+        availabilityZone: avdUseAvailabilityZones ? take(skip(allAvailabilityZones, i % length(allAvailabilityZones)), 1) : avdAvailabilityZones
         encryptionAtHost: encryptionAtHost
-        availabilityZone: avdUseAvailabilityZones ? avdAvailabilityZone : 0
-        //availabilityZone: avdAvailabilityZones == '' ? take(skip(allAvailabilityZones,i % length(allAvailabilityZones)),1) : array(avdAvailabilityZones)
         availabilitySetName: !avdUseAvailabilityZones ? avdAvailabilitySet.outputs.name : ''
         osType: 'Windows'
+        licenseType: 'Windows_Client'
         vmSize: avdSessionHostsSize
-        imageReference: {
-            publisher: 'MicrosoftWindowsDesktop'
-            offer: 'windows-11'
-            sku: 'win11-21h2-avd'
-            version: '22000.438.220116'
-        }
+        imageReference: useSharedImage ? json('{\'id\': \'${imageTemplate.outputs.resourceId}\'}') : marketPlaceGalleyWindows[avdOsImage]
         osDisk: {
             createOption: 'fromImage'
             deleteOption: 'Delete'
@@ -861,6 +910,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
     dependsOn: [
         avdComputeObjectsRg
         avdWrklKeyVault
+        imageTemplateBuild
     ]
 }]
 //
