@@ -552,7 +552,7 @@ module azureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignmen
     name: 'Azure-Image-Builder-RoleAssign-${time}'
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     params: {
-        roleDefinitionIdOrName: createAibCustomRole && useSharedImage ? azureImageBuilderRole.outputs.resourceId : ''
+        roleDefinitionIdOrName: (createAibCustomRole && useSharedImage) ? azureImageBuilderRole.outputs.resourceId : ''
         principalId: imageBuilderManagedIdentity.outputs.principalId
     }
     dependsOn: [
