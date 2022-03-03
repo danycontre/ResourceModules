@@ -492,7 +492,7 @@ module startVMonConnectRole '../arm/Microsoft.Authorization/roleDefinitions/subs
     }
 }
 
-module azureImageBuilderRole '../arm/Microsoft.Authorization/roleDefinitions/subscription/deploy.bicep' = if (createAibCustomRole && useSharedImage) {
+module azureImageBuilderRole '../arm/Microsoft.Authorization/roleDefinitions/subscription/deploy.bicep' = if (createAibCustomRole) {
     scope: subscription(avdShrdlSubscriptionId)
     name: 'Azure-Image-Builder-Role-${time}'
     params: {
