@@ -916,7 +916,6 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
     dependsOn: [
         avdComputeObjectsRg
         avdWrklKeyVault
-        imageTemplateBuild
     ]
 }]
 //
