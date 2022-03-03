@@ -355,7 +355,7 @@ module avdNetworksecurityGroup '../arm/Microsoft.Network/networkSecurityGroups/d
     ]
 }
 
-module avdApplicationSecurityGroup '../arm/Microsoft.Network/applicationSecurityGroups/deploy.bicep' = /*if (createAvdVnet) */ {
+module avdApplicationSecurityGroup '../arm/Microsoft.Network/applicationSecurityGroups/deploy.bicep' = if (createAvdVnet) {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdNetworkObjectsRgName}')
     name: 'AVD-ASG-${time}'
     params: {
@@ -589,7 +589,7 @@ module startVMonConnectRoleAssign '../arm/Microsoft.Authorization/roleAssignment
 
 // Custom images: Azure Image Builder deployment. Azure Compute Gallery --> Image Template Definition --> Image Template --> Build and Publish Template --> Create VMs
 // Azure Compute Gallery
-module azureComputeGallery '../arm/Microsoft.Compute/galleries/deploy.bicep' = {
+module azureComputeGallery '../arm/Microsoft.Compute/galleries/deploy.bicep' = if (useSharedImage) {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     name: 'Deploy-Azure-Compute-Gallery-${time}'
     params: {
@@ -604,7 +604,7 @@ module azureComputeGallery '../arm/Microsoft.Compute/galleries/deploy.bicep' = {
 //
 
 // Image Template Definition
-module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/deploy.bicep' = {
+/* module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/deploy.bicep' = if (useSharedImage) {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     name: 'Deploy-AVD-Image-Template-Definition-${time}'
     params: {
@@ -625,7 +625,7 @@ module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/dep
 //
 
 // Create Image Template
-module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deploy.bicep' = {
+module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deploy.bicep' = if (useSharedImage) {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     name: 'AVD-Deploy-Image-Template-${time}'
     params: {
@@ -641,7 +641,7 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
                 name: 'OptimizeOS'
                 runElevated: true
                 runAsSystem: true
-                scriptUri: '${baseScriptUri}Scripts/Optimize_OS_for_AVD.ps1' // need to update value to accelerator githib after
+                scriptUri: '${baseScriptUri}Scripts/Optimize_OS_for_AVD.ps1' // need to update value to accelerator github after
             }
 
             {
@@ -678,7 +678,7 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
 //
 
 // Build Image Template
-module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.bicep' = {
+module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.bicep' = if (useSharedImage) {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     name: 'AVD-Build-Image-Template-${time}'
     params: {
@@ -698,7 +698,7 @@ module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.b
     ]
 }
 //
-
+*/
 // Key vaults
 module avdWrklKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep' = {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
@@ -865,6 +865,14 @@ module avdAvailabilitySet '../arm/Microsoft.Compute/availabilitySets/deploy.bice
 //
 /*
 // Session hosts
+
+// Call on the KV.
+
+resource keyvault 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = {
+    name: avdWrklKvName
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
+}
+
 module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' = [for i in range(0, avdDeploySessionHostsCount): if (avdDeploySessionHosts) {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
     name: 'AVD-Session-Host-${i}-${time}'
@@ -880,7 +888,8 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         osType: 'Windows'
         licenseType: 'Windows_Client'
         vmSize: avdSessionHostsSize
-        imageReference: useSharedImage ? json('{\'id\': \'${imageTemplate.outputs.resourceId}\'}') : marketPlaceGalleryWindows[avdOsImage]
+        // imageReference: useSharedImage ? json('{\'id\': \'${imageTemplate.outputs.resourceId}\'}') : marketPlaceGalleryWindows[avdOsImage]
+        imageReference: marketPlaceGalleryWindows[avdOsImage] // temp. As the AIB is commented out.
         osDisk: {
             createOption: 'fromImage'
             deleteOption: 'Delete'
@@ -895,7 +904,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
             {
                 nicSuffix: '-nic-01'
                 deleteOption: 'Delete'
-                asgId: avdApplicationSecurityGroup.outputs.resourceId
+                asgId: createAvdVnet ? '${avdApplicationSecurityGroup.outputs.resourceId}' : null
                 ipConfigurations: [
                     {
                         name: 'ipconfig01'
@@ -905,16 +914,15 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
             }
         ]
         allowExtensionOperations: true
-        extensionDomainJoinPassword: avdDomainJoinUserPassword
+        extensionDomainJoinPassword: keyvault.getSecret('avdDomainJoinUserPassword')
         extensionDomainJoinConfig: {
             enabled: true
             settings: {
-                domainJoinUser: avdDomainJoinUserName
-                domain: Domain
+                name: Domain
                 ouPath: !empty(avdOuPath) ? avdOuPath : null
-                //user: avdDomainJoinUserName
-                //restart: 'true'
-                //options: '3'
+                user: avdDomainJoinUserName
+                restart: 'true'
+                options: '3'
             }
         }
         //extensionMonitoringAgentConfig: {
