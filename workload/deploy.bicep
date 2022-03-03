@@ -127,7 +127,7 @@ param createAibCustomRole bool = true
     'win11-21h2-office'
     'win11-21h2'
 ])
-@description('Optional. AVD OS image source')
+@description('Required. AVD OS image source')
 param avdOsImage string
 
 @description('Set to deploy image from Azure Compute Gallery')
@@ -167,7 +167,7 @@ param avdVnetworkSubnetAddressPrefix string = '10.0.0.0/23'
 @description('Are custom DNS servers accessible form the hub (defualt: true)')
 param customDnsAvailable bool = true
 
-@description('custom DNS servers IPs (defualt: 10.10.10.5, 10.10.10.6)')
+@description('custom DNS servers IPs')
 param customDnsIps array
 
 @description('Provide existing virtual network hub URI')
@@ -221,7 +221,7 @@ var avdOsImageDefinitions = {
         osState: 'Generalized'
         offer: 'Windows-10'
         publisher: 'MicrosoftWindowsDesktop'
-        sku: '21h2-evd'
+        sku: '21h2-avd'
     }
     'win11-21h2-office': {
         name: 'Windows11_21H2'
@@ -885,6 +885,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                 ]
             }
         ]
+        /*
         allowExtensionOperations: true
         extensionDomainJoinPassword: avdDomainJoinUserPassword
         extensionDomainJoinConfig: {
@@ -898,6 +899,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                 //options: '3'
             }
         }
+        */
         //extensionMonitoringAgentConfig: {
         //    enabled: true
         //}
