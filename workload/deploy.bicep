@@ -604,7 +604,7 @@ module azureComputeGallery '../arm/Microsoft.Compute/galleries/deploy.bicep' = i
 //
 
 // Image Template Definition
-/* module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/deploy.bicep' = if (useSharedImage) {
+module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/deploy.bicep' = if (useSharedImage) {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     name: 'Deploy-AVD-Image-Template-Definition-${time}'
     params: {
@@ -698,7 +698,7 @@ module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.b
     ]
 }
 //
-*/
+
 // Key vaults
 module avdWrklKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep' = {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
@@ -887,8 +887,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         osType: 'Windows'
         licenseType: 'Windows_Client'
         vmSize: avdSessionHostsSize
-        // imageReference: useSharedImage ? json('{\'id\': \'${imageTemplate.outputs.resourceId}\'}') : marketPlaceGalleryWindows[avdOsImage]
-        imageReference: marketPlaceGalleryWindows[avdOsImage] // temp. As the AIB is commented out.
+        imageReference: useSharedImage ? json('{\'id\': \'${imageTemplate.outputs.resourceId}\'}') : marketPlaceGalleryWindows[avdOsImage]
         osDisk: {
             createOption: 'fromImage'
             deleteOption: 'Delete'
