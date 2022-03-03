@@ -197,7 +197,7 @@ var avdNetworkObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLow
 var avdComputeObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-pool-compute' // max length limit 90 characters
 var avdStorageObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-storage' // max length limit 90 characters
 var avdSharedResourcesRgName = 'rg-${locationLowercase}-avd-shared-resources'
-var imageGalleryName = 'avd-gallery-${locationLowercase}'
+var imageGalleryName = 'avdgallery${locationLowercase}'
 var existingVnetResourceId = '/subscriptions/${existingVnetSubscriptionId}/resourceGroups/${existingVnetRgName}/providers/Microsoft.Network/virtualNetworks/${existingVnetName}'
 var hubVnetId = '/subscriptions/${existingHubVnetSubscriptionId}/resourceGroups/${existingHubVnetRgName}/providers/Microsoft.Network/virtualNetworks/${existingHubVnetName}'
 var avdVnetworkName = 'vnet-${locationLowercase}-avd-${deploymentPrefixLowercase}'
@@ -248,7 +248,7 @@ var avdOsImageDefinitions = {
     }
 }
 
-var marketPlaceGalleyWindows = {
+var marketPlaceGalleryWindows = {
     'win10-21h2-office': {
         publisher: 'MicrosoftWindowsDesktop'
         offer: 'office-365'
@@ -880,7 +880,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         osType: 'Windows'
         licenseType: 'Windows_Client'
         vmSize: avdSessionHostsSize
-        imageReference: useSharedImage ? json('{\'id\': \'${imageTemplate.outputs.resourceId}\'}') : marketPlaceGalleyWindows[avdOsImage]
+        imageReference: useSharedImage ? json('{\'id\': \'${imageTemplate.outputs.resourceId}\'}') : marketPlaceGalleryWindows[avdOsImage]
         osDisk: {
             createOption: 'fromImage'
             deleteOption: 'Delete'
