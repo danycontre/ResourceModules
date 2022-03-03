@@ -723,12 +723,22 @@ module avdWrklKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep' = {
         secrets: {
             secureList: [
                 {
-                    name: avdVmLocalUserName
+                    name: 'avdVmLocalUserPassword'
                     value: avdVmLocalUserPassword
                     contentType: 'Session host local user credentials'
                 }
                 {
-                    name: avdDomainJoinUserName
+                    name: 'avdVmLocalUserName'
+                    value: avdVmLocalUserName
+                    contentType: 'Session host local user credentials'
+                }
+                {
+                    name: 'avdDomainJoinUserName'
+                    value: avdDomainJoinUserName
+                    contentType: 'Domain join credentials'
+                }
+                {
+                    name: 'avdDomainJoinUserPassword'
                     value: avdDomainJoinUserPassword
                     contentType: 'Domain join credentials'
                 }
