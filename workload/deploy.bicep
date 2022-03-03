@@ -917,12 +917,11 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         extensionDomainJoinConfig: {
             enabled: true
             settings: {
-                domainJoinUser: avdDomainJoinUserName
-                domain: Domain
+                name: Domain
                 ouPath: !empty(avdOuPath) ? avdOuPath : null
-                //user: avdDomainJoinUserName
-                //restart: 'true'
-                //options: '3'
+                user: avdDomainJoinUserName
+                restart: 'true'
+                options: '3'
             }
         }
 
