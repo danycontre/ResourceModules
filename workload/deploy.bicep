@@ -80,18 +80,6 @@ param avdUseAvailabilityZones bool = true
 @description('Optional. This property can be used by user in the request to enable or disable the Host Encryption for the virtual machine. This will enable the encryption for all the disks including Resource/Temp disk at host itself. For security reasons, it is recommended to set encryptionAtHost to True. Restrictions: Cannot be enabled if Azure Disk Encryption (guest-VM encryption using bitlocker/DM-Crypt) is enabled on your VMs.')
 param encryptionAtHost bool = false
 
-/* =======
-@description('Optional. If set to 1, 2 or 3, the availability zone for all VMs is hardcoded to that value. If zero, availability zone option will be disabled (up to three zones). Cannot be used in combination with availability set nor scale set.')
-@allowed([
-    1
-    2
-    3
-])
-param avdAvailabilityZone int = 1 */
-
-@description('Optional. If set to 1, 2 or 3, the availability zone for all VMs is hardcoded to that value. If zero, availability zone option will be disabled (up to three zones). Cannot be used in combination with availability set nor scale set.')
-param avdAvailabilityZones array = []
-
 @description('Session host VM size (Defualt: Standard_D2s_v4) ')
 param avdSessionHostsSize string = 'Standard_D2s_v4'
 
@@ -213,6 +201,7 @@ var aibManagedIdentityName = 'avd-uai-aib'
 var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
 var imageTemplateBuildName = 'AVD-Image-Template-Build'
 var avdEnterpriseApplicationId = '486795c7-d929-4b48-a99e-3c5329d4ce86' // needs to be queried.
+var hyperVGeneration = 'V2'
 var avdOsImageDefinitions = {
     'win10-21h2-office': {
         name: 'Windows10_21H2_Office'
@@ -576,7 +565,7 @@ module azureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignmen
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     params: {
         roleDefinitionIdOrName: createAibCustomRole ? azureImageBuilderRole.outputs.resourceId : ''
-        principalId: imageBuilderManagedIdentity.outputs.principalId
+        principalId: createAibManagedIdentity ? imageBuilderManagedIdentity.outputs.principalId : ''
     }
     dependsOn: [
         azureImageBuilderRole
@@ -618,6 +607,7 @@ module azureComputeGallery '../arm/Microsoft.Compute/galleries/deploy.bicep' = i
     params: {
         name: imageGalleryName
         location: location
+
         galleryDescription: 'Azure Virtual Desktops Images'
     }
     dependsOn: [
@@ -627,11 +617,11 @@ module azureComputeGallery '../arm/Microsoft.Compute/galleries/deploy.bicep' = i
 //
 
 // Image Template Definition
-/* module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/deploy.bicep' = if (useSharedImage) {
+module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/deploy.bicep' = if (useSharedImage) {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     name: 'Deploy-AVD-Image-Template-Definition-${time}'
     params: {
-        galleryName: azureComputeGallery.outputs.name
+        galleryName: useSharedImage ? azureComputeGallery.outputs.name : ''
         name: imageDefinitionsTemSpecName
         osState: avdOsImageDefinitions[avdOsImage].osState
         osType: avdOsImageDefinitions[avdOsImage].osType
@@ -639,6 +629,7 @@ module azureComputeGallery '../arm/Microsoft.Compute/galleries/deploy.bicep' = i
         offer: avdOsImageDefinitions[avdOsImage].offer
         sku: avdOsImageDefinitions[avdOsImage].sku
         location: aiblocation
+        hyperVGeneration: hyperVGeneration
     }
     dependsOn: [
         azureComputeGallery
@@ -653,11 +644,11 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
     name: 'AVD-Deploy-Image-Template-${time}'
     params: {
         name: imageDefinitionsTemSpecName
-        userMsiName: imageBuilderManagedIdentity.outputs.name
-        userMsiResourceGroup: imageBuilderManagedIdentity.outputs.resourceGroupName
+        userMsiName: createAibManagedIdentity ? imageBuilderManagedIdentity.outputs.name : ''
+        userMsiResourceGroup: createAibManagedIdentity ? imageBuilderManagedIdentity.outputs.resourceGroupName : ''
         location: aiblocation
         imageReplicationRegions: avdImageRegionsReplicas
-        sigImageDefinitionId: avdImageTemplataDefinition.outputs.resourceId
+        sigImageDefinitionId: useSharedImage ? avdImageTemplataDefinition.outputs.resourceId : ''
         customizationSteps: [
             {
                 type: 'PowerShell'
@@ -709,10 +700,10 @@ module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.b
         location: aiblocation
         azPowerShellVersion: '6.2'
         cleanupPreference: 'OnSuccess'
-        userAssignedIdentities: {
+        userAssignedIdentities: createAibManagedIdentity ? {
             '${imageBuilderManagedIdentity.outputs.resourceId}': {}
-        }
-        scriptContent: imageTemplate.outputs.runThisCommand
+        } : {}
+        scriptContent: useSharedImage ? imageTemplate.outputs.runThisCommand : ''
     }
     dependsOn: [
         imageTemplate
@@ -721,7 +712,7 @@ module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.b
     ]
 }
 //
-*/
+
 // Key vaults
 module avdWrklKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep' = {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
@@ -812,7 +803,7 @@ module fslogixStorage '../arm/Microsoft.Storage/storageAccounts/deploy.bicep' = 
     params: {
         name: avdFslogixStorageName
         location: location
-        storageAccountSku: 'Premium_LRS'
+        storageAccountSku: avdUseAvailabilityZones ? 'Premium_ZRS' : 'Premium_LRS'
         allowBlobPublicAccess: false
         //azureFilesIdentityBasedAuthentication:
         storageAccountKind: 'FileStorage'
@@ -849,7 +840,7 @@ module avdSharedServicesStorage '../arm/Microsoft.Storage/storageAccounts/deploy
     params: {
         name: avdSharedSResourcesStorageName
         location: location
-        storageAccountSku: 'Standard_LRS'
+        storageAccountSku: avdUseAvailabilityZones ? 'Standard_ZRS' : 'Standard_LRS'
         storageAccountKind: 'StorageV2'
         blobServices: {
             containers: [
@@ -871,7 +862,7 @@ module avdSharedServicesStorage '../arm/Microsoft.Storage/storageAccounts/deploy
 //
 
 // Availability set
-module avdAvailabilitySet '../arm/Microsoft.Compute/availabilitySets/deploy.bicep' = if (!avdUseAvailabilityZones) {
+module avdAvailabilitySet '../arm/Microsoft.Compute/availabilitySets/deploy.bicep' = if (!avdUseAvailabilityZones && avdDeploySessionHosts) {
     name: 'AVD-Availability-Set-${time}'
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
     params: {
@@ -885,13 +876,13 @@ module avdAvailabilitySet '../arm/Microsoft.Compute/availabilitySets/deploy.bice
     ]
 }
 
-//
 
 // Session hosts
 
-// Call on the KV.
 
-resource keyvault 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = {
+// Session hosts
+// Call on the KV.
+resource avdWrklKeyVaultget 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = if (avdDeploySessionHosts) {
     name: avdWrklKvName
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
 }
@@ -909,14 +900,14 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         name: '${avdSessionHostNamePrefix}-${i}'
         location: location
         systemAssignedIdentity: true
-        availabilityZone: avdUseAvailabilityZones ? take(skip(allAvailabilityZones, i % length(allAvailabilityZones)), 1) : avdAvailabilityZones
+        //availabilityZone: avdUseAvailabilityZones ? take(skip(allAvailabilityZones, i % length(allAvailabilityZones)), 1) : avdAvailabilityZones
+        availabilityZone: avdUseAvailabilityZones ? take(skip(allAvailabilityZones, i % length(allAvailabilityZones)), 1) : []
         encryptionAtHost: encryptionAtHost
-        availabilitySetName: !avdUseAvailabilityZones ? avdAvailabilitySet.outputs.name : ''
+        availabilitySetName: !avdUseAvailabilityZones ? (avdDeploySessionHosts ? avdAvailabilitySet.outputs.name : '') : ''
         osType: 'Windows'
         licenseType: 'Windows_Client'
         vmSize: avdSessionHostsSize
-        // imageReference: useSharedImage ? json('{\'id\': \'${imageTemplate.outputs.resourceId}\'}') : marketPlaceGalleryWindows[avdOsImage]
-        imageReference: marketPlaceGalleryWindows[avdOsImage] // temp. As the AIB is commented out.
+        imageReference: useSharedImage ? json('{\'id\': \'${imageTemplate.outputs.resourceId}\'}') : marketPlaceGalleryWindows[avdOsImage]
         osDisk: {
             createOption: 'fromImage'
             deleteOption: 'Delete'
@@ -926,7 +917,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
             }
         }
         adminUsername: avdVmLocalUserName
-        adminPassword: avdVmLocalUserPassword // need to update to get value from KV
+        adminPassword: avdWrklKeyVaultget.getSecret('avdVmLocalUserPassword') //avdVmLocalUserPassword // need to update to get value from KV
         nicConfigurations: [
             {
                 nicSuffix: '-nic-01'
@@ -942,7 +933,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         ]
         // Join domain
         allowExtensionOperations: true
-        extensionDomainJoinPassword: keyvault.getSecret('avdDomainJoinUserPassword')
+        extensionDomainJoinPassword: avdWrklKeyVaultget.getSecret('avdDomainJoinUserPassword')
         extensionDomainJoinConfig: {
             enabled: true
             settings: {
@@ -976,7 +967,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
     }
     dependsOn: [
         avdComputeObjectsRg
-        avdWrklKeyVault
+        avdWrklKeyVaultget
     ]
 }]
 // Add session hosts to AVD Host pool.
