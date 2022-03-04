@@ -986,7 +986,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         }
 
         // Configure FsLogix via CustomExtension
-
+        /*
         extensionCustomScriptConfig: {
             enabled: true
             filedata: {
@@ -996,7 +996,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                 commandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Set-FSLogixRegKeys.ps1 -volumeshare ${fslogixSharePath}'
             }
         }
-
+*/
         //extensionMonitoringAgentConfig: {
         //    enabled: true
         //}
