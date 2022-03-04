@@ -989,7 +989,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
 
         extensionCustomScriptConfig: {
             enabled: true
-            settings: {
+            protectedSettings: {
                 fileUris: fslogixScriptUri
                 commandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Set-FSLogixRegKeys.ps1 -volumeshare ${fslogixSharePath}'
             }
