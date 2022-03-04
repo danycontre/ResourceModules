@@ -80,18 +80,6 @@ param avdUseAvailabilityZones bool = true
 @description('Optional. This property can be used by user in the request to enable or disable the Host Encryption for the virtual machine. This will enable the encryption for all the disks including Resource/Temp disk at host itself. For security reasons, it is recommended to set encryptionAtHost to True. Restrictions: Cannot be enabled if Azure Disk Encryption (guest-VM encryption using bitlocker/DM-Crypt) is enabled on your VMs.')
 param encryptionAtHost bool = false
 
-/* =======
-@description('Optional. If set to 1, 2 or 3, the availability zone for all VMs is hardcoded to that value. If zero, availability zone option will be disabled (up to three zones). Cannot be used in combination with availability set nor scale set.')
-@allowed([
-    1
-    2
-    3
-])
-param avdAvailabilityZone int = 1 */
-
-@description('Optional. If set to 1, 2 or 3, the availability zone for all VMs is hardcoded to that value. If zero, availability zone option will be disabled (up to three zones). Cannot be used in combination with availability set nor scale set.')
-param avdAvailabilityZones array = []
-
 @description('Session host VM size (Defualt: Standard_D2s_v4) ')
 param avdSessionHostsSize string = 'Standard_D2s_v4'
 
@@ -213,6 +201,7 @@ var aibManagedIdentityName = 'avd-uai-aib'
 var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
 var imageTemplateBuildName = 'AVD-Image-Template-Build'
 var avdEnterpriseApplicationId = '486795c7-d929-4b48-a99e-3c5329d4ce86' // needs to be queried.
+var hyperVGeneration = 'V2'
 var avdOsImageDefinitions = {
     'win10-21h2-office': {
         name: 'Windows10_21H2_Office'
@@ -595,6 +584,7 @@ module azureComputeGallery '../arm/Microsoft.Compute/galleries/deploy.bicep' = i
     params: {
         name: imageGalleryName
         location: location
+
         galleryDescription: 'Azure Virtual Desktops Images'
     }
     dependsOn: [
@@ -616,6 +606,7 @@ module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/dep
         offer: avdOsImageDefinitions[avdOsImage].offer
         sku: avdOsImageDefinitions[avdOsImage].sku
         location: aiblocation
+        hyperVGeneration: hyperVGeneration
     }
     dependsOn: [
         azureComputeGallery
@@ -789,7 +780,7 @@ module fslogixStorage '../arm/Microsoft.Storage/storageAccounts/deploy.bicep' = 
     params: {
         name: avdFslogixStorageName
         location: location
-        storageAccountSku: 'Premium_LRS'
+        storageAccountSku: avdUseAvailabilityZones ? 'Premium_ZRS' : 'Premium_LRS'
         allowBlobPublicAccess: false
         //azureFilesIdentityBasedAuthentication:
         storageAccountKind: 'FileStorage'
@@ -826,7 +817,7 @@ module avdSharedServicesStorage '../arm/Microsoft.Storage/storageAccounts/deploy
     params: {
         name: avdSharedSResourcesStorageName
         location: location
-        storageAccountSku: 'Standard_LRS'
+        storageAccountSku: avdUseAvailabilityZones ? 'Standard_ZRS' : 'Standard_LRS'
         storageAccountKind: 'StorageV2'
         blobServices: {
             containers: [
@@ -880,7 +871,8 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         name: '${avdSessionHostNamePrefix}-${i}'
         location: location
         systemAssignedIdentity: true
-        availabilityZone: avdUseAvailabilityZones ? take(skip(allAvailabilityZones, i % length(allAvailabilityZones)), 1) : avdAvailabilityZones
+        //availabilityZone: avdUseAvailabilityZones ? take(skip(allAvailabilityZones, i % length(allAvailabilityZones)), 1) : avdAvailabilityZones
+        availabilityZone: avdUseAvailabilityZones ? take(skip(allAvailabilityZones, i % length(allAvailabilityZones)), 1) : []
         encryptionAtHost: encryptionAtHost
         availabilitySetName: !avdUseAvailabilityZones ? (avdDeploySessionHosts ? avdAvailabilitySet.outputs.name : '') : ''
         osType: 'Windows'
