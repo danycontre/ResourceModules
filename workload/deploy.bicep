@@ -953,32 +953,6 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                 options: '3'
             }
         }
-
-        // Call DSC extension to add VMs to Host pool
-        /*
-        extensionDSCConfig: {
-            enabled: true
-            settings: {
-                //moduleUrl: avdAgentPackageLocation
-                configuration: {
-                    //url: avdAgentPackageLocation
-                    module: avdAgentPackageLocation
-                    script: 'Configuration.ps1'
-                    function: 'AddSessionHost'
-                }
-                configurationArguments: {
-                    hostPoolName: avdHostPoolName
-                    registrationInfoToken: '${hostPool.properties.registrationInfo.token}'
-                }
-                // configurationFunction: 'Configuration.ps1\\AddSessionHost'
-                //  properties: {
-                ///  HostPoolName: avdHostPoolName
-                // RegistrationToken: '${hostPool.properties.registrationInfo.token}'
-                // }
-            }
-        }
-
-        */
         // Enable and Configure Microsoft Malware
         extensionAntiMalwareConfig: {
             enabled: true
@@ -999,30 +973,13 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
             }
         }
 
-        // Configure FsLogix via CustomExtension
-        /*
-        extensionCustomScriptConfig: {
-            enabled: true
-            filedata: {
-                uri: fslogixScriptUri
-            }
-            protectedSettings: {
-                commandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Set-FSLogixRegKeys.ps1 -volumeshare ${fslogixSharePath}'
-            }
-        }
-*/
-        //extensionMonitoringAgentConfig: {
-        //    enabled: true
-        //}
-        //extensionCustomScriptConfig: {
-        //}
     }
     dependsOn: [
         avdComputeObjectsRg
         avdWrklKeyVault
     ]
 }]
-
+// Add session hosts to AVD Host pool.
 module addAvdHostsToHostPool '../arm/Microsoft.Compute/virtualMachines/extensions/add-avd-session-hosts.bicep' = [for i in range(0, avdDeploySessionHostsCount): if (avdDeploySessionHosts) {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
     name: 'Add-AVD-Session-Host-${i}-to-HostPool-${time}'
@@ -1038,7 +995,7 @@ module addAvdHostsToHostPool '../arm/Microsoft.Compute/virtualMachines/extension
     ]
 }]
 
-// add the registry keys for Fslogix. Alternatively can be enforced via GPOs
+// Add the registry keys for Fslogix. Alternatively can be enforced via GPOs
 module configureFsLogixForAvdHosts '../arm/Microsoft.Compute/virtualMachines/extensions/configure-fslogix-session-hosts.bicep' = [for i in range(0, avdDeploySessionHostsCount): if (avdDeploySessionHosts) {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
     name: 'Configure-FsLogix-for-${avdSessionHostNamePrefix}-${i}-${time}'
