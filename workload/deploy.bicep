@@ -279,6 +279,8 @@ var marketPlaceGalleryWindows = {
 }
 
 var baseScriptUri = 'https://raw.githubusercontent.com/nataliakon/ResourceModules/AVD-Accelerator/workload/'
+var fslogixScriptUri = '${baseScriptUri}Scripts/Set-FSLogixRegKeys.ps1'
+var fslogixSharePath = '\\${avdFslogixStorageName}.file.${environment().suffixes.storage}\${avdFslogixFileShareName}'
 var avdAgentPackageLocation = 'https://wvdportalstorageblob.blob.${environment().suffixes.storage}/galleryartifacts/Configuration_11-22-2021.zip'
 var avdFslogixStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}fslogix${deploymentPrefixLowercase}'
 var avdFslogixFileShareName = 'fslogix-${deploymentPrefixLowercase}'
@@ -458,7 +460,25 @@ module avdHostPool '../arm/Microsoft.DesktopVirtualization/hostpools/deploy.bice
         avdServiceObjectsRg
     ]
 }
-
+/*
+module hostpoolToken '../arm/Microsoft.Resources/deploymentScripts/deploy.bicep' = if (useSharedImage) {
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdServiceObjectsRgName}')
+    name: 'AVD-Host-Pool-Token-${time}'
+    params: {
+        name: 'imageTemplateBuildName-${avdOsImage}'
+        location: aiblocation
+        azPowerShellVersion: '6.2'
+        cleanupPreference: 'OnSuccess'
+        userAssignedIdentities: {
+            '${imageBuilderManagedIdentity.outputs.resourceId}': {}
+        }
+        scriptContent: ''
+    }
+    dependsOn: [
+        avdHostPool
+    ]
+}
+*/
 module avdApplicationGroup '../arm/Microsoft.DesktopVirtualization/applicationgroups/deploy.bicep' = {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
     name: 'AVD-ApplicationGroup-${time}'
@@ -874,13 +894,10 @@ resource keyvault 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
 }
 
-// Call on the Host pool
-
-resource hostpool 'Microsoft.DesktopVirtualization/hostPools@2021-09-03-preview' existing = {
+resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2021-01-14-preview' existing = {
     name: avdHostPoolName
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
 }
-
 module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' = [for i in range(0, avdDeploySessionHostsCount): if (avdDeploySessionHosts) {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
     name: 'AVD-Session-Host-${i}-${time}'
@@ -944,12 +961,39 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                 configurationFunction: 'Configuration.ps1\\AddSessionHost'
                 properties: {
                     HostPoolName: avdHostPoolName
-                    RegistrationToken: hostpool.properties.registrationInfo.token
+                    RegistrationToken: '${hostPool.properties.registrationInfo.token}'
+                }
+            }
+        }
+        // Enable and Configure Microsoft Malware
+        extensionAntiMalwareConfig: {
+            enabled: true
+            settings: {
+                AntimalwareEnabled: true
+                RealtimeProtectionEnabled: 'true'
+                ScheduledScanSettings: {
+                    isEnabled: 'true'
+                    day: '7' // Day of the week for scheduled scan (1-Sunday, 2-Monday, ..., 7-Saturday)
+                    time: '120' // When to perform the scheduled scan, measured in minutes from midnight (0-1440). For example: 0 = 12AM, 60 = 1AM, 120 = 2AM.
+                    scanType: 'Quick' //Indicates whether scheduled scan setting type is set to Quick or Full (default is Quick)
+                }
+                Exclusions: {
+                    Extensions: '*.vhd;*.vhdx'
+                    Paths: '"%ProgramFiles%\\FSLogix\\Apps\\frxdrv.sys;%ProgramFiles%\\FSLogix\\Apps\\frxccd.sys;%ProgramFiles%\\FSLogix\\Apps\\frxdrvvt.sys;%TEMP%\\*.VHD;%TEMP%\\*.VHDX;%Windir%\\TEMP\\*.VHD;%Windir%\\TEMP\\*.VHDX;\\\\server\\share\\*\\*.VHD;\\\\server\\share\\*\\*.VHDX'
+                    Processes: '%ProgramFiles%\\FSLogix\\Apps\\frxccd.exe;%ProgramFiles%\\FSLogix\\Apps\\frxccds.exe;%ProgramFiles%\\FSLogix\\Apps\\frxsvc.exe'
                 }
             }
         }
 
-        // Enable and Configure Microsoft Malware
+        // Configure FsLogix via CustomExtension
+
+        extensionCustomScriptConfig: {
+            enabled: true
+            settings: {
+                fileUris: fslogixScriptUri
+                commandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Set-FSLogixRegKeys.ps1 -volumeshare ${fslogixSharePath}'
+            }
+        }
 
         //extensionMonitoringAgentConfig: {
         //    enabled: true
