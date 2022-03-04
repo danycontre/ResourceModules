@@ -279,6 +279,7 @@ var marketPlaceGalleyWindows = {
 }
 
 var baseScriptUri = 'https://raw.githubusercontent.com/nataliakon/ResourceModules/AVD-Accelerator/workload/'
+var avdAgentPackageLocation = 'https://wvdportalstorageblob.blob.${environment().suffixes.storage}/galleryartifacts/Configuration_11-22-2021.zip'
 var avdFslogixStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}fslogix${deploymentPrefixLowercase}'
 var avdFslogixFileShareName = 'fslogix-${deploymentPrefixLowercase}'
 var avdSharedSResourcesStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}avdshared'
@@ -873,6 +874,13 @@ resource keyvault 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
 }
 
+// Call on the Host pool
+
+resource hostpool 'Microsoft.DesktopVirtualization/hostPools@2021-09-03-preview' existing = {
+    name: avdHostPoolName
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
+}
+
 module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' = [for i in range(0, avdDeploySessionHostsCount): if (avdDeploySessionHosts) {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
     name: 'AVD-Session-Host-${i}-${time}'
@@ -911,7 +919,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                 ]
             }
         ]
-
+        // Join domain
         allowExtensionOperations: true
         extensionDomainJoinPassword: keyvault.getSecret('avdDomainJoinUserPassword')
         extensionDomainJoinConfig: {
@@ -924,6 +932,22 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                 options: '3'
             }
         }
+
+        // Call DSC extension to add VMs to Host pool
+
+        extensionDSCConfig: {
+            enabled: true
+            settings: {
+                moduleUrl: avdAgentPackageLocation
+                configurationFunction: 'Configuration.ps1\\AddSessionHost'
+                properties: {
+                    HostPoolName: avdHostPoolName
+                    RegistrationToken: hostpool.properties.registrationInfo.token
+                }
+            }
+        }
+
+        // Enable and Configure Microsoft Malware
 
         //extensionMonitoringAgentConfig: {
         //    enabled: true
