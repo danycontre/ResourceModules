@@ -848,7 +848,7 @@ module avdSharedServicesStorage '../arm/Microsoft.Storage/storageAccounts/deploy
 //
 
 // Availability set
-module avdAvailabilitySet '../arm/Microsoft.Compute/availabilitySets/deploy.bicep' = if (!avdUseAvailabilityZones) {
+module avdAvailabilitySet '../arm/Microsoft.Compute/availabilitySets/deploy.bicep' = if (!avdUseAvailabilityZones && avdDeploySessionHosts) {
     name: 'AVD-Availability-Set-${time}'
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
     params: {
@@ -867,7 +867,7 @@ module avdAvailabilitySet '../arm/Microsoft.Compute/availabilitySets/deploy.bice
 // Session hosts
 // Call on the KV.
 
-resource keyvault 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = {
+resource keyvault 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = if (avdDeploySessionHosts) {
     name: avdWrklKvName
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
 }
@@ -883,7 +883,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         systemAssignedIdentity: true
         availabilityZone: avdUseAvailabilityZones ? take(skip(allAvailabilityZones, i % length(allAvailabilityZones)), 1) : avdAvailabilityZones
         encryptionAtHost: encryptionAtHost
-        availabilitySetName: !avdUseAvailabilityZones ? avdAvailabilitySet.outputs.name : ''
+        availabilitySetName: !avdUseAvailabilityZones ? (avdDeploySessionHosts ? avdAvailabilitySet.outputs.name : '') : ''
         osType: 'Windows'
         licenseType: 'Windows_Client'
         vmSize: avdSessionHostsSize
