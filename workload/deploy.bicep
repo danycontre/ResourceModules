@@ -268,6 +268,11 @@ var marketPlaceGalleryWindows = {
 }
 
 var baseScriptUri = 'https://raw.githubusercontent.com/nataliakon/ResourceModules/AVD-Accelerator/workload/'
+var fslogixScriptUri = '${baseScriptUri}Scripts/Set-FSLogixRegKeys.ps1'
+var fsLogixScript = './Set-FSLogixRegKeys.ps1'
+var fslogixSharePath = '\\\\${avdFslogixStorageName}.file.${environment().suffixes.storage}\\${avdFslogixFileShareName}'
+var FsLogixScriptArguments = '-volumeshare ${fslogixSharePath}'
+var avdAgentPackageLocation = 'https://wvdportalstorageblob.blob.${environment().suffixes.storage}/galleryartifacts/Configuration_01-20-2022.zip'
 var avdFslogixStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}fslogix${deploymentPrefixLowercase}'
 var avdFslogixFileShareName = 'fslogix-${deploymentPrefixLowercase}'
 var avdSharedSResourcesStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}avdshared'
@@ -446,7 +451,25 @@ module avdHostPool '../arm/Microsoft.DesktopVirtualization/hostpools/deploy.bice
         avdServiceObjectsRg
     ]
 }
-
+/*
+module hostpoolToken '../arm/Microsoft.Resources/deploymentScripts/deploy.bicep' = if (useSharedImage) {
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdServiceObjectsRgName}')
+    name: 'AVD-Host-Pool-Token-${time}'
+    params: {
+        name: 'imageTemplateBuildName-${avdOsImage}'
+        location: aiblocation
+        azPowerShellVersion: '6.2'
+        cleanupPreference: 'OnSuccess'
+        userAssignedIdentities: {
+            '${imageBuilderManagedIdentity.outputs.resourceId}': {}
+        }
+        scriptContent: ''
+    }
+    dependsOn: [
+        avdHostPool
+    ]
+}
+*/
 module avdApplicationGroup '../arm/Microsoft.DesktopVirtualization/applicationgroups/deploy.bicep' = {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
     name: 'AVD-ApplicationGroup-${time}'
@@ -853,7 +876,9 @@ module avdAvailabilitySet '../arm/Microsoft.Compute/availabilitySets/deploy.bice
     ]
 }
 
-//
+
+// Session hosts
+
 
 // Session hosts
 // Call on the KV.
@@ -862,6 +887,10 @@ resource avdWrklKeyVaultget 'Microsoft.KeyVault/vaults@2021-06-01-preview' exist
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
 }
 
+resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2021-01-14-preview' existing = {
+    name: avdHostPoolName
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
+}
 module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' = [for i in range(0, avdDeploySessionHostsCount): if (avdDeploySessionHosts) {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
     name: 'AVD-Session-Host-${i}-${time}'
@@ -902,6 +931,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                 ]
             }
         ]
+        // Join domain
         allowExtensionOperations: true
         extensionDomainJoinPassword: avdWrklKeyVaultget.getSecret('avdDomainJoinUserPassword')
         extensionDomainJoinConfig: {
@@ -914,17 +944,64 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                 options: '3'
             }
         }
-        //extensionMonitoringAgentConfig: {
-        //    enabled: true
-        //}
-        //extensionCustomScriptConfig: {
-        //}
+        // Enable and Configure Microsoft Malware
+        extensionAntiMalwareConfig: {
+            enabled: true
+            settings: {
+                AntimalwareEnabled: true
+                RealtimeProtectionEnabled: 'true'
+                ScheduledScanSettings: {
+                    isEnabled: 'true'
+                    day: '7' // Day of the week for scheduled scan (1-Sunday, 2-Monday, ..., 7-Saturday)
+                    time: '120' // When to perform the scheduled scan, measured in minutes from midnight (0-1440). For example: 0 = 12AM, 60 = 1AM, 120 = 2AM.
+                    scanType: 'Quick' //Indicates whether scheduled scan setting type is set to Quick or Full (default is Quick)
+                }
+                Exclusions: {
+                    Extensions: '*.vhd;*.vhdx'
+                    Paths: '"%ProgramFiles%\\FSLogix\\Apps\\frxdrv.sys;%ProgramFiles%\\FSLogix\\Apps\\frxccd.sys;%ProgramFiles%\\FSLogix\\Apps\\frxdrvvt.sys;%TEMP%\\*.VHD;%TEMP%\\*.VHDX;%Windir%\\TEMP\\*.VHD;%Windir%\\TEMP\\*.VHDX;\\\\server\\share\\*\\*.VHD;\\\\server\\share\\*\\*.VHDX'
+                    Processes: '%ProgramFiles%\\FSLogix\\Apps\\frxccd.exe;%ProgramFiles%\\FSLogix\\Apps\\frxccds.exe;%ProgramFiles%\\FSLogix\\Apps\\frxsvc.exe'
+                }
+            }
+        }
+
     }
     dependsOn: [
         avdComputeObjectsRg
         avdWrklKeyVaultget
     ]
 }]
+// Add session hosts to AVD Host pool.
+module addAvdHostsToHostPool '../arm/Microsoft.Compute/virtualMachines/extensions/add-avd-session-hosts.bicep' = [for i in range(0, avdDeploySessionHostsCount): if (avdDeploySessionHosts) {
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
+    name: 'Add-AVD-Session-Host-${i}-to-HostPool-${time}'
+    params: {
+        location: location
+        hostPoolToken: '${hostPool.properties.registrationInfo.token}'
+        name: '${avdSessionHostNamePrefix}-${i}'
+        hostPoolName: avdHostPoolName
+        avdAgentPackageLocation: avdAgentPackageLocation
+    }
+    dependsOn: [
+        avdSessionHosts
+    ]
+}]
+
+// Add the registry keys for Fslogix. Alternatively can be enforced via GPOs
+module configureFsLogixForAvdHosts '../arm/Microsoft.Compute/virtualMachines/extensions/configure-fslogix-session-hosts.bicep' = [for i in range(0, avdDeploySessionHostsCount): if (avdDeploySessionHosts) {
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
+    name: 'Configure-FsLogix-for-${avdSessionHostNamePrefix}-${i}-${time}'
+    params: {
+        location: location
+        name: '${avdSessionHostNamePrefix}-${i}'
+        file: fsLogixScript
+        FsLogixScriptArguments: FsLogixScriptArguments
+        baseScriptUri: fslogixScriptUri
+    }
+    dependsOn: [
+        avdSessionHosts
+    ]
+}]
+
 //
 
 // ======= //

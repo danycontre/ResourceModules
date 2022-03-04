@@ -521,7 +521,7 @@ module vm_desiredStateConfigurationExtension 'extensions/deploy.bicep' = if (ext
     name: 'DesiredStateConfiguration'
     publisher: 'Microsoft.Powershell'
     type: 'DSC'
-    typeHandlerVersion: contains(extensionDSCConfig, 'typeHandlerVersion') ? extensionDSCConfig.typeHandlerVersion : '2.77'
+    typeHandlerVersion: contains(extensionDSCConfig, 'typeHandlerVersion') ? extensionDSCConfig.typeHandlerVersion : '2.73'
     autoUpgradeMinorVersion: contains(extensionDSCConfig, 'autoUpgradeMinorVersion') ? extensionDSCConfig.autoUpgradeMinorVersion : true
     enableAutomaticUpgrade: contains(extensionDSCConfig, 'enableAutomaticUpgrade') ? extensionDSCConfig.enableAutomaticUpgrade : false
     settings: contains(extensionDSCConfig, 'settings') ? extensionDSCConfig.settings : {}
