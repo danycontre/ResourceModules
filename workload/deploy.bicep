@@ -961,7 +961,8 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                 configuration: {
                     //url: avdAgentPackageLocation
                     module: avdAgentPackageLocation
-                    function: 'Configuration.ps1\\AddSessionHost'
+                    script: 'Configuration.ps1'
+                    function: 'AddSessionHost'
                 }
                 configurationArguments: {
                     hostPoolName: avdHostPoolName
