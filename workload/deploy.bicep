@@ -867,7 +867,7 @@ module avdAvailabilitySet '../arm/Microsoft.Compute/availabilitySets/deploy.bice
 // Session hosts
 // Call on the KV.
 
-resource keyvault 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = if (avdDeploySessionHosts) {
+resource avdWrklKeyVaultget 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = if (avdDeploySessionHosts) {
     name: avdWrklKvName
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
 }
@@ -897,7 +897,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
             }
         }
         adminUsername: avdVmLocalUserName
-        adminPassword: keyvault.getSecret('avdVmLocalUserPassword') //avdVmLocalUserPassword // need to update to get value from KV
+        adminPassword: avdWrklKeyVaultget.getSecret('avdVmLocalUserPassword') //avdVmLocalUserPassword // need to update to get value from KV
         nicConfigurations: [
             {
                 nicSuffix: '-nic-01'
@@ -912,7 +912,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
             }
         ]
         allowExtensionOperations: true
-        extensionDomainJoinPassword: keyvault.getSecret('avdDomainJoinUserPassword')
+        extensionDomainJoinPassword: avdWrklKeyVaultget.getSecret('avdDomainJoinUserPassword')
         extensionDomainJoinConfig: {
             enabled: true
             settings: {
@@ -931,7 +931,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
     }
     dependsOn: [
         avdComputeObjectsRg
-        avdWrklKeyVault
+        avdWrklKeyVaultget
     ]
 }]
 //
