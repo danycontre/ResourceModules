@@ -1026,9 +1026,8 @@ module addAvdHostsToHostPool '../arm/Microsoft.Compute/virtualMachines/extension
     name: 'Add-AVD-Session-Host-${i}-to-HostPool-${time}'
     params: {
         location: location
-        index: avdDeploySessionHostsCount
         hostPoolToken: '${hostPool.properties.registrationInfo.token}'
-        rdshPrefix: avdSessionHostNamePrefix
+        name: '${avdSessionHostNamePrefix}-${i}'
         hostPoolName: avdHostPoolName
     }
     dependsOn: [

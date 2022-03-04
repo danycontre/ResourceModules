@@ -1,5 +1,4 @@
-param index int
-param rdshPrefix string
+param name string
 param location string
 
 param hostPoolName string
@@ -12,7 +11,7 @@ var avdAgentPackageLocation = 'https://wvdportalstorageblob.blob.${environment()
 /* Add session hosts to Host Pool */
 
 resource addToHostPool 'Microsoft.Compute/virtualMachines/extensions@2021-07-01' = {
-  name: '${rdshPrefix}vm${index}/dscextension'
+  name: '${name}/dscextension'
   location: location
   properties: {
     publisher: 'Microsoft.PowerShell'
