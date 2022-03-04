@@ -960,6 +960,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                 //moduleUrl: avdAgentPackageLocation
                 configuration: {
                     url: avdAgentPackageLocation
+                    module: avdAgentPackageLocation
                     function: 'Configuration.ps1\\AddSessionHost'
                 }
                 configurationArguments: {
