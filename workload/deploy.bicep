@@ -953,7 +953,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         }
 
         // Call DSC extension to add VMs to Host pool
-
+        /*
         extensionDSCConfig: {
             enabled: true
             settings: {
@@ -975,6 +975,8 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                 // }
             }
         }
+
+        */
         // Enable and Configure Microsoft Malware
         extensionAntiMalwareConfig: {
             enabled: true
@@ -1018,6 +1020,22 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         avdWrklKeyVault
     ]
 }]
+
+module addAvdHostsToHostPool '../arm/Microsoft.Compute/virtualMachines/extensions/add-avd-session-hosts.bicep' = [for i in range(0, avdDeploySessionHostsCount): if (avdDeploySessionHosts) {
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
+    name: 'Add-AVD-Session-Host-${i}-to-HostPool-${time}'
+    params: {
+        location: location
+        index: avdDeploySessionHostsCount
+        hostPoolToken: '${hostPool.properties.registrationInfo.token}'
+        rdshPrefix: avdSessionHostNamePrefix
+        hostPoolName: avdHostPoolName
+    }
+    dependsOn: [
+        avdSessionHosts
+    ]
+}]
+
 //
 
 // ======= //
