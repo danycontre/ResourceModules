@@ -4,10 +4,10 @@ targetScope = 'subscription'
 // Parameters //
 // ========== //
 @description('Required. AVD shared services subscription ID')
-param avdShrdlSubscriptionId string
+param avdShrdlSubscriptionId string = ''
 
 @description('Required. AVD wrokload subscription ID')
-param avdWrklSubscriptionId string
+param avdWrklSubscriptionId string = ''
 
 @minLength(2)
 @maxLength(4)
@@ -51,20 +51,20 @@ param avdFslogixFileShareQuotaSize string = '51200'
 param createStartVmOnConnectCustomRole bool = true
 
 @description('Required. AVD session host local credentials')
-param avdVmLocalUserName string
+param avdVmLocalUserName string = ''
 @secure()
-param avdVmLocalUserPassword string
+param avdVmLocalUserPassword string = ''
 
 @description('Required. AVD session host domain join credentials')
-param avdDomainJoinUserName string
+param avdDomainJoinUserName string = ''
 @secure()
-param avdDomainJoinUserPassword string
+param avdDomainJoinUserPassword string = ''
 
 @description('Optional. OU path to join AVd VMs')
 param avdOuPath string = ''
 
 @description('Id to grant access to on AVD workload key vault secrets')
-param avdWrklSecretAccess string
+param avdWrklSecretAccess string = ''
 
 @description('Deploy new session hosts (defualt: false)')
 param avdDeploySessionHosts bool = true
@@ -127,8 +127,8 @@ param createAibCustomRole bool = true
     'win11-21h2-office'
     'win11-21h2'
 ])
-@description('Required. AVD OS image source')
-param avdOsImage string
+@description('Required. AVD OS image source (Default: win10-21h2)')
+param avdOsImage string = 'win10-21h2'
 
 @description('Set to deploy image from Azure Compute Gallery')
 param useSharedImage bool
@@ -145,25 +145,25 @@ param createAibManagedIdentity bool = true
 param createAvdVnet bool
 
 @description('Existing virtual network subscription')
-param existingVnetSubscriptionId string
+param existingVnetSubscriptionId string = ''
 
 @description('Existing virtual network resource group')
-param existingVnetRgName string
+param existingVnetRgName string = ''
 
 @description('Existing virtual network')
-param existingVnetName string
+param existingVnetName string = ''
 
 @description('Existing hub virtual network subscription')
 param existingHubVnetSubscriptionId string
 
 @description('Existing hub virtual network resource group')
-param existingHubVnetRgName string
+param existingHubVnetRgName string = ''
 
 @description('Existing hub virtual network')
-param existingHubVnetName string
+param existingHubVnetName string = ''
 
 @description('Existing virtual network subnet (subnet requires PrivateEndpointNetworkPolicies property to be disabled)')
-param existingVnetSubnetName string
+param existingVnetSubnetName string = ''
 
 @description('AVD virtual network address prefixes (Default: 10.0.0.0/23)')
 param avdVnetworkAddressPrefixes array = [
@@ -197,7 +197,7 @@ var avdNetworkObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLow
 var avdComputeObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-pool-compute' // max length limit 90 characters
 var avdStorageObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-storage' // max length limit 90 characters
 var avdSharedResourcesRgName = 'rg-${locationLowercase}-avd-shared-resources'
-var imageGalleryName = 'avdGgallery${locationLowercase}'
+var imageGalleryName = 'avdgallery${locationLowercase}'
 var existingVnetResourceId = '/subscriptions/${existingVnetSubscriptionId}/resourceGroups/${existingVnetRgName}/providers/Microsoft.Network/virtualNetworks/${existingVnetName}'
 var hubVnetId = '/subscriptions/${existingHubVnetSubscriptionId}/resourceGroups/${existingHubVnetRgName}/providers/Microsoft.Network/virtualNetworks/${existingHubVnetName}'
 var avdVnetworkName = 'vnet-${locationLowercase}-avd-${deploymentPrefixLowercase}'
@@ -209,7 +209,7 @@ var avdVNetworkPeeringName = '${uniqueString(deploymentPrefixLowercase, location
 var avdWorkSpaceName = 'avdws-${deploymentPrefixLowercase}'
 var avdHostPoolName = 'avdhp-${deploymentPrefixLowercase}'
 var avdApplicationGroupName = 'avdag-${deploymentPrefixLowercase}'
-var aibManagedIdentityName = 'uai-avd-aib'
+var aibManagedIdentityName = 'avd-uai-aib'
 var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
 var imageTemplateBuildName = 'AVD-Image-Template-Build'
 var avdEnterpriseApplicationId = '486795c7-d929-4b48-a99e-3c5329d4ce86' // needs to be queried.
@@ -248,7 +248,7 @@ var avdOsImageDefinitions = {
     }
 }
 
-var marketPlaceGalleyWindows = {
+var marketPlaceGalleryWindows = {
     'win10-21h2-office': {
         publisher: 'MicrosoftWindowsDesktop'
         offer: 'office-365'
@@ -642,7 +642,7 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
                 name: 'OptimizeOS'
                 runElevated: true
                 runAsSystem: true
-                scriptUri: '${baseScriptUri}Scripts/Optimize_OS_for_AVD.ps1' // need to update value to accelerator githib after
+                scriptUri: '${baseScriptUri}Scripts/Optimize_OS_for_AVD.ps1' // need to update value to accelerator github after
             }
 
             {
@@ -884,6 +884,8 @@ resource hostpool 'Microsoft.DesktopVirtualization/hostPools@2021-09-03-preview'
 module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' = [for i in range(0, avdDeploySessionHostsCount): if (avdDeploySessionHosts) {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
     name: 'AVD-Session-Host-${i}-${time}'
+    //wait: 30
+    //retry: 5
     params: {
         name: '${avdSessionHostNamePrefix}-${i}'
         location: location
@@ -894,8 +896,8 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         osType: 'Windows'
         licenseType: 'Windows_Client'
         vmSize: avdSessionHostsSize
-        // imageReference: useSharedImage ? json('{\'id\': \'${imageTemplate.outputs.resourceId}\'}') : marketPlaceGalleyWindows[avdOsImage]
-        imageReference: marketPlaceGalleyWindows[avdOsImage] // temp. As the AIB is commented out.
+        // imageReference: useSharedImage ? json('{\'id\': \'${imageTemplate.outputs.resourceId}\'}') : marketPlaceGalleryWindows[avdOsImage]
+        imageReference: marketPlaceGalleryWindows[avdOsImage] // temp. As the AIB is commented out.
         osDisk: {
             createOption: 'fromImage'
             deleteOption: 'Delete'
