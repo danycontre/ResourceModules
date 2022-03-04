@@ -866,7 +866,6 @@ module avdAvailabilitySet '../arm/Microsoft.Compute/availabilitySets/deploy.bice
 
 // Session hosts
 // Call on the KV.
-
 resource avdWrklKeyVaultget 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = if (avdDeploySessionHosts) {
     name: avdWrklKvName
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
