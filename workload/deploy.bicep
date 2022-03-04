@@ -964,8 +964,8 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                     function: 'Configuration.ps1\\AddSessionHost'
                 }
                 configurationArguments: {
-                    HostPoolName: avdHostPoolName
-                    RegistrationToken: '${hostPool.properties.registrationInfo.token}'
+                    hostPoolName: avdHostPoolName
+                    registrationInfoToken: '${hostPool.properties.registrationInfo.token}'
                 }
                 // configurationFunction: 'Configuration.ps1\\AddSessionHost'
                 //  properties: {
