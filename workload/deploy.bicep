@@ -958,6 +958,10 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
             enabled: true
             settings: {
                 moduleUrl: avdAgentPackageLocation
+                configuration: {
+                    url: avdAgentPackageLocation
+                    function: 'Configuration.ps1\\AddSessionHost'
+                }
                 configurationFunction: 'Configuration.ps1\\AddSessionHost'
                 properties: {
                     HostPoolName: avdHostPoolName
