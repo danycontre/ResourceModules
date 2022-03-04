@@ -553,7 +553,7 @@ module azureImageBuilderRoleAssign '../arm/Microsoft.Authorization/roleAssignmen
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     params: {
         roleDefinitionIdOrName: createAibCustomRole ? azureImageBuilderRole.outputs.resourceId : ''
-        principalId: imageBuilderManagedIdentity.outputs.principalId
+        principalId: createAibManagedIdentity ? imageBuilderManagedIdentity.outputs.principalId : ''
     }
     dependsOn: [
         azureImageBuilderRole
@@ -608,7 +608,7 @@ module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/dep
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     name: 'Deploy-AVD-Image-Template-Definition-${time}'
     params: {
-        galleryName: azureComputeGallery.outputs.name
+        galleryName: useSharedImage ? azureComputeGallery.outputs.name : ''
         name: imageDefinitionsTemSpecName
         osState: avdOsImageDefinitions[avdOsImage].osState
         osType: avdOsImageDefinitions[avdOsImage].osType
@@ -630,11 +630,11 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
     name: 'AVD-Deploy-Image-Template-${time}'
     params: {
         name: imageDefinitionsTemSpecName
-        userMsiName: imageBuilderManagedIdentity.outputs.name
-        userMsiResourceGroup: imageBuilderManagedIdentity.outputs.resourceGroupName
+        userMsiName: createAibManagedIdentity ? imageBuilderManagedIdentity.outputs.name : ''
+        userMsiResourceGroup: createAibManagedIdentity ? imageBuilderManagedIdentity.outputs.resourceGroupName : ''
         location: aiblocation
         imageReplicationRegions: avdImageRegionsReplicas
-        sigImageDefinitionId: avdImageTemplataDefinition.outputs.resourceId
+        sigImageDefinitionId: useSharedImage ? avdImageTemplataDefinition.outputs.resourceId : ''
         customizationSteps: [
             {
                 type: 'PowerShell'
@@ -686,10 +686,10 @@ module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.b
         location: aiblocation
         azPowerShellVersion: '6.2'
         cleanupPreference: 'OnSuccess'
-        userAssignedIdentities: {
+        userAssignedIdentities: createAibManagedIdentity ? {
             '${imageBuilderManagedIdentity.outputs.resourceId}': {}
-        }
-        scriptContent: imageTemplate.outputs.runThisCommand
+        } : {}
+        scriptContent: useSharedImage ? imageTemplate.outputs.runThisCommand : ''
     }
     dependsOn: [
         imageTemplate
