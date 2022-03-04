@@ -1,13 +1,10 @@
 param name string
 param location string
-
+param avdAgentPackageLocation string
 param hostPoolName string
 //@secure()
 param hostPoolToken string
 
-// This path might change.
-
-var avdAgentPackageLocation = 'https://wvdportalstorageblob.blob.${environment().suffixes.storage}/galleryartifacts/Configuration_01-20-2022.zip'
 /* Add session hosts to Host Pool */
 
 resource addToHostPool 'Microsoft.Compute/virtualMachines/extensions@2021-07-01' = {

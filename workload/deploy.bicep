@@ -280,7 +280,9 @@ var marketPlaceGalleryWindows = {
 
 var baseScriptUri = 'https://raw.githubusercontent.com/nataliakon/ResourceModules/AVD-Accelerator/workload/'
 var fslogixScriptUri = '${baseScriptUri}Scripts/Set-FSLogixRegKeys.ps1'
+var fsLogixScript = './Set-FSLogixRegKeys.ps1'
 var fslogixSharePath = '\\${avdFslogixStorageName}.file.${environment().suffixes.storage}\${avdFslogixFileShareName}'
+var FsLogixScriptArguments = '-volumeshare ${fslogixSharePath}'
 var avdAgentPackageLocation = 'https://wvdportalstorageblob.blob.${environment().suffixes.storage}/galleryartifacts/Configuration_01-20-2022.zip'
 var avdFslogixStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}fslogix${deploymentPrefixLowercase}'
 var avdFslogixFileShareName = 'fslogix-${deploymentPrefixLowercase}'
@@ -1029,6 +1031,23 @@ module addAvdHostsToHostPool '../arm/Microsoft.Compute/virtualMachines/extension
         hostPoolToken: '${hostPool.properties.registrationInfo.token}'
         name: '${avdSessionHostNamePrefix}-${i}'
         hostPoolName: avdHostPoolName
+        avdAgentPackageLocation: avdAgentPackageLocation
+    }
+    dependsOn: [
+        avdSessionHosts
+    ]
+}]
+
+// add the registry keys for Fslogix. Alternatively can be enforced via GPOs
+module configureFsLogixForAvdHosts '../arm/Microsoft.Compute/virtualMachines/extensions/configure-fslogix-session-hosts.bicep' = [for i in range(0, avdDeploySessionHostsCount): if (avdDeploySessionHosts) {
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
+    name: 'Configure-FsLogix-for-${avdSessionHostNamePrefix}-${i}-${time}'
+    params: {
+        location: location
+        name: '${avdSessionHostNamePrefix}-${i}'
+        file: fsLogixScript
+        FsLogixScriptArguments: FsLogixScriptArguments
+        baseScriptUri: fslogixScriptUri
     }
     dependsOn: [
         avdSessionHosts
