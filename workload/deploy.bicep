@@ -957,16 +957,20 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         extensionDSCConfig: {
             enabled: true
             settings: {
-                moduleUrl: avdAgentPackageLocation
+                //moduleUrl: avdAgentPackageLocation
                 configuration: {
                     url: avdAgentPackageLocation
                     function: 'Configuration.ps1\\AddSessionHost'
                 }
-                configurationFunction: 'Configuration.ps1\\AddSessionHost'
-                properties: {
+                configurationArguments: {
                     HostPoolName: avdHostPoolName
                     RegistrationToken: '${hostPool.properties.registrationInfo.token}'
                 }
+                // configurationFunction: 'Configuration.ps1\\AddSessionHost'
+                //  properties: {
+                ///  HostPoolName: avdHostPoolName
+                // RegistrationToken: '${hostPool.properties.registrationInfo.token}'
+                // }
             }
         }
         // Enable and Configure Microsoft Malware
