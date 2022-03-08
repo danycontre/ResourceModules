@@ -711,6 +711,62 @@ module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.b
         azureImageBuilderRoleAssign
     ]
 }
+
+// Execute Deployment script to check the status of the image build.
+
+module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/deploy.bicep' = if (useSharedImage) {
+    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
+    name: 'AVD-Build-Image-Template-Check-Build-${time}'
+    params: {
+        name: 'imageTemplateBuildName-${avdOsImage}'
+        location: aiblocation
+        kind: 'AzureCLI'
+        azCliVersion: '2.15.0'
+        cleanupPreference: 'OnSuccess'
+        userAssignedIdentities: createAibManagedIdentity ? {
+            '${imageBuilderManagedIdentity.outputs.resourceId}': {}
+        } : {}
+        environmentVariables: [
+            {
+                name: 'RGDO_imageTemplateRG'
+                value: avdSharedResourcesRgName
+            }
+            {
+                name: 'RGDO_imageTemplateName'
+                value: 'imageTemplateBuildName-${avdOsImage}'
+            }
+        ]
+        scriptContent: useSharedImage ? '''
+            echo \" Checking image build status for $RGDO_imageTemplateName in RG $RGDO_imageTemplateRG \"
+            az image builder wait --name $RGDO_imageTemplateName --resource-group $RGDO_imageTemplateRG --custom "lastRunStatus.runState!='Running'"
+            while true
+            do
+              now=$(date)
+              echo "Status of the run at $now... "
+              STATUS=$(az image builder show --name $RGDO_imageTemplateName --resource-group $RGDO_imageTemplateRG --query lastRunStatus.runState)
+              echo \"Status of template build is ... \"
+              echo $STATUS
+              if [ "$STATUS" = "\""Succeeded"\"" ]; then
+              break
+              fi
+              if [ "$STATUS" = "\""Failed"\"" ]; then
+              echo \"Error messages are ...\"
+              az image builder show --name $RGDO_imageTemplateName --resource-group $RGDO_imageTemplateRG --query lastRunStatus.message
+              break
+              fi
+              echo \Checking the status in 5 min\"
+              sleep 5m
+            done
+        ''' : ''
+    }
+    dependsOn: [
+        imageTemplate
+        avdSharedResourcesRg
+        azureImageBuilderRoleAssign
+        imageTemplateBuild
+    ]
+}
+
 //
 
 // Key vaults
@@ -876,9 +932,7 @@ module avdAvailabilitySet '../arm/Microsoft.Compute/availabilitySets/deploy.bice
     ]
 }
 
-
 // Session hosts
-
 
 // Session hosts
 // Call on the KV.
@@ -963,7 +1017,6 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                 }
             }
         }
-
     }
     dependsOn: [
         avdComputeObjectsRg
