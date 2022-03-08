@@ -536,6 +536,7 @@ module azureImageBuilderRole '../arm/Microsoft.Authorization/roleDefinitions/sub
             'Microsoft.Resources/deploymentScripts/read'
             'Microsoft.Resources/deploymentScripts/write'
             'Microsoft.VirtualMachineImages/imageTemplates/run/action'
+            'Microsoft.VirtualMachineImages/imageTemplates/read'
             'Microsoft.Network/virtualNetworks/read'
             'Microsoft.Network/virtualNetworks/subnets/join/action'
         ]
