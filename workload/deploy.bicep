@@ -736,6 +736,7 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
         [string] [Parameter(Mandatory=$true)] $imageTemplateName
         )
             $ErrorActionPreference = "Stop"
+            Install-Module -Name Az.ImageBuilder -Force
             $DeploymentScriptOutputs = @{}
         $getStatus=$(Get-AzImageBuilderTemplate -ResourceGroupName $resourceGroupName -Name $imageTemplateName)
         $status=$getStatus.LastRunStatusRunState
