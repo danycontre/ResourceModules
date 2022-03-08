@@ -61,6 +61,47 @@ param avdApplicationGroupType string = 'Desktop'
 @description('Optional. AVD host pool Custom RDP properties')
 param avdHostPoolRdpProperty string = 'audiocapturemode:i:1;audiomode:i:0;drivestoredirect:s:;redirectclipboard:i:1;redirectcomports:i:1;redirectprinters:i:1;redirectsmartcards:i:1;screen mode id:i:2'
 
+@description('Create new virtual network (Default: true)')
+param createAvdVnet bool = true
+
+@description('Existing virtual network subscription')
+param existingVnetSubscriptionId string = ''
+
+@description('Existing virtual network resource group')
+param existingVnetRgName string = ''
+
+@description('Existing virtual network')
+param existingVnetName string = ''
+
+@description('Existing hub virtual network subscription')
+param existingHubVnetSubscriptionId string
+
+@description('Existing hub virtual network resource group')
+param existingHubVnetRgName string = ''
+
+@description('Existing hub virtual network')
+param existingHubVnetName string = ''
+
+@description('Existing virtual network subnet (subnet requires PrivateEndpointNetworkPolicies property to be disabled)')
+param existingVnetSubnetName string = ''
+
+@description('AVD virtual network address prefixes (Default: 10.0.0.0/23)')
+param avdVnetworkAddressPrefixes array = [
+    '10.0.0.0/23'
+]
+
+@description('AVD virtual network subnet address prefix (Default: 10.0.0.0/23)')
+param avdVnetworkSubnetAddressPrefix string = '10.0.0.0/23'
+
+@description('Are custom DNS servers accessible form the hub (defualt: true)')
+param customDnsAvailable bool = true
+
+@description('custom DNS servers IPs (defualt: 10.10.10.5, 10.10.10.6)')
+param customDnsIps array = []
+
+@description('Does the hub contains a virtual network gateway (defualt: true)')
+param vNetworkGatewayOnHub bool = true
+
 @description('Optional. Fslogix file share size (Default: 5TB)')
 param avdFslogixFileShareQuotaSize string = '51200'
 
@@ -129,47 +170,6 @@ param avdImageRegionsReplicas array = [
 
 @description('Create azure image Builder managed identity')
 param createAibManagedIdentity bool = true
-
-@description('Create new virtual network (Default: true)')
-param createAvdVnet bool
-
-@description('Existing virtual network subscription')
-param existingVnetSubscriptionId string = ''
-
-@description('Existing virtual network resource group')
-param existingVnetRgName string = ''
-
-@description('Existing virtual network')
-param existingVnetName string = ''
-
-@description('Existing hub virtual network subscription')
-param existingHubVnetSubscriptionId string
-
-@description('Existing hub virtual network resource group')
-param existingHubVnetRgName string = ''
-
-@description('Existing hub virtual network')
-param existingHubVnetName string = ''
-
-@description('Existing virtual network subnet (subnet requires PrivateEndpointNetworkPolicies property to be disabled)')
-param existingVnetSubnetName string = ''
-
-@description('AVD virtual network address prefixes (Default: 10.0.0.0/23)')
-param avdVnetworkAddressPrefixes array = [
-    '10.0.0.0/23'
-]
-
-@description('AVD virtual network subnet address prefix (Default: 10.0.0.0/23)')
-param avdVnetworkSubnetAddressPrefix string = '10.0.0.0/23'
-
-@description('Are custom DNS servers accessible form the hub (defualt: true)')
-param customDnsAvailable bool = true
-
-@description('custom DNS servers IPs (defualt: 10.10.10.5, 10.10.10.6)')
-param customDnsIps array = []
-
-@description('Does the hub contains a virtual network gateway (defualt: true)')
-param vNetworkGatewayOnHub bool = true
 
 @description('Do not modify, used to set unique value for resource deployment')
 param time string = utcNow()
@@ -274,9 +274,9 @@ var fsLogixScript = './Set-FSLogixRegKeys.ps1'
 var fslogixSharePath = '\\\\${avdFslogixStorageName}.file.${environment().suffixes.storage}\\${avdFslogixFileShareName}'
 var FsLogixScriptArguments = '-volumeshare ${fslogixSharePath}'
 var avdAgentPackageLocation = 'https://wvdportalstorageblob.blob.${environment().suffixes.storage}/galleryartifacts/Configuration_01-20-2022.zip'
-var avdFslogixStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}fslogix${deploymentPrefixLowercase}'
+var avdFslogixStorageName = 'fslogix${uniqueString(deploymentPrefixLowercase, locationLowercase)}${deploymentPrefixLowercase}'
 var avdFslogixFileShareName = 'fslogix-${deploymentPrefixLowercase}'
-var avdSharedSResourcesStorageName = '${uniqueString(deploymentPrefixLowercase, locationLowercase)}avdshared'
+var avdSharedSResourcesStorageName = 'avd${uniqueString(deploymentPrefixLowercase, locationLowercase)}shared'
 var avdSharedSResourcesAibContainerName = 'aib-${deploymentPrefixLowercase}'
 var avdSharedSResourcesScriptsContainerName = 'scripts-${deploymentPrefixLowercase}'
 var avdSharedServicesKvName = 'avd-${uniqueString(deploymentPrefixLowercase, locationLowercase)}-shared' // max length limit 24 characters
