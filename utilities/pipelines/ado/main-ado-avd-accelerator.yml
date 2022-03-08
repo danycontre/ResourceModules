@@ -28,7 +28,7 @@ variables:
   - name: createAvdVnet
     value: false
   - name: useSharedImage
-    value: false
+    value: true
   - name: avdOsImage
     value: win10-21h2-office
   - name: existingHubVnetSubscriptionId
