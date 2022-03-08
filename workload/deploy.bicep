@@ -201,7 +201,7 @@ var aibManagedIdentityName = 'avd-uai-aib'
 var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
 var imageTemplateBuildName = 'AVD-Image-Template-Build'
 var avdEnterpriseApplicationId = '486795c7-d929-4b48-a99e-3c5329d4ce86' // needs to be queried.
-var hyperVGeneration = 'V2'
+//var hyperVGeneration = 'V2'
 var avdOsImageDefinitions = {
     'win10-21h2-office': {
         name: 'Windows10_21H2_Office'
@@ -210,6 +210,7 @@ var avdOsImageDefinitions = {
         offer: 'office-365'
         publisher: 'MicrosoftWindowsDesktop'
         sku: 'win10-21h2-avd-m365'
+        hyperVGeneration: 'V1'
     }
     'win10-21h2': {
         name: 'Windows10_21H2'
@@ -218,6 +219,7 @@ var avdOsImageDefinitions = {
         offer: 'Windows-10'
         publisher: 'MicrosoftWindowsDesktop'
         sku: '21h2-avd'
+        hyperVGeneration: 'V1'
     }
     'win11-21h2-office': {
         name: 'Windows11_21H2'
@@ -226,6 +228,7 @@ var avdOsImageDefinitions = {
         offer: 'windows-11'
         publisher: 'MicrosoftWindowsDesktop'
         sku: 'win11-21h2-avd-m365'
+        hyperVGeneration: 'V2'
     }
     'win11-21h2': {
         name: 'Windows11_21H2'
@@ -234,6 +237,7 @@ var avdOsImageDefinitions = {
         offer: 'windows-11'
         publisher: 'MicrosoftWindowsDesktop'
         sku: 'win11-21h2-avd'
+        hyperVGeneration: 'V2'
     }
 }
 
@@ -629,7 +633,7 @@ module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/dep
         offer: avdOsImageDefinitions[avdOsImage].offer
         sku: avdOsImageDefinitions[avdOsImage].sku
         location: aiblocation
-        hyperVGeneration: hyperVGeneration
+        hyperVGeneration: avdOsImageDefinitions[avdOsImage].hyperVGeneration
     }
     dependsOn: [
         azureComputeGallery
