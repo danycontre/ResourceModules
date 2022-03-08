@@ -47,8 +47,8 @@ Write-Host 'AIB Customization: Finished OS Optimizations script'
 
 #Running new file
 
-Write-Host 'Running new AIB Customization script'
-.\Windows_VDOT.ps1 -Verbose
+#Write-Host 'Running new AIB Customization script'
+#.\Windows_VDOT.ps1 -Verbose
 ### Setting the RDP Shortpath.
 Write-Host 'Configuring RDP ShortPath'
 
