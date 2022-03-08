@@ -863,7 +863,7 @@ module fslogixStorage '../arm/Microsoft.Storage/storageAccounts/deploy.bicep' = 
     params: {
         name: avdFslogixStorageName
         location: location
-        storageAccountSku: avdUseAvailabilityZones ? 'Premium_ZRS' : 'Premium_LRS'
+        storageAccountSku: 'Premium_LRS' // ZRS not available everywhere. Change it to Param.
         allowBlobPublicAccess: false
         //azureFilesIdentityBasedAuthentication:
         storageAccountKind: 'FileStorage'
