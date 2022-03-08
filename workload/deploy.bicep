@@ -730,6 +730,7 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
         userAssignedIdentities: createAibManagedIdentity ? {
             '${imageBuilderManagedIdentity.outputs.resourceId}': {}
         } : {}
+        /*
         environmentVariables: [
             {
                 name: 'RGDO_imageTemplateRG'
@@ -740,7 +741,12 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
                 value: 'imageTemplateBuildName-${avdOsImage}'
             }
         ]
+
+        */
+        arguments: 'avdSharedResourcesRgName imageTemplateBuildName-${avdOsImage}'
         scriptContent: useSharedImage ? '''
+            RGDO_imageTemplateRG = $1
+            RGDO_imageTemplateName = $2
             echo " Checking image build status for $RGDO_imageTemplateName in RG $RGDO_imageTemplateRG "
             az image builder wait --name $RGDO_imageTemplateName --resource-group $RGDO_imageTemplateRG --custom "lastRunStatus.runState!='Running'"
             while true
