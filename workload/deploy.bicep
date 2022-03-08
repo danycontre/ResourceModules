@@ -3,19 +3,36 @@ targetScope = 'subscription'
 // ========== //
 // Parameters //
 // ========== //
-@description('Required. AVD shared services subscription ID')
-param avdShrdlSubscriptionId string = ''
-
-@description('Required. AVD wrokload subscription ID')
-param avdWrklSubscriptionId string = ''
+@description('Required. The location to deploy into')
+param location string = deployment().location
 
 @minLength(2)
 @maxLength(4)
 @description('Required. The name of the resource group to deploy')
 param deploymentPrefix string = 'App1'
 
-@description('Required. The location to deploy into')
-param location string = deployment().location
+@description('Required. AVD shared services subscription ID')
+param avdShrdlSubscriptionId string = ''
+
+@description('Required. AVD workload subscription ID')
+param avdWrklSubscriptionId string = ''
+
+@description('Required. AVD session host local credentials')
+param avdVmLocalUserName string = ''
+
+@secure()
+param avdVmLocalUserPassword string = ''
+
+@description('Required. AVD session host domain join credentials')
+param avdDomainJoinUserName string = ''
+@secure()
+param avdDomainJoinUserPassword string = ''
+
+@description('Optional. OU path to join AVd VMs')
+param avdOuPath string = ''
+
+@description('Id to grant access to on AVD workload key vault secrets')
+param avdWrklSecretAccess string = ''
 
 @allowed([
     'Personal'
@@ -49,22 +66,6 @@ param avdFslogixFileShareQuotaSize string = '51200'
 
 @description('Create custom Start VM on connect role')
 param createStartVmOnConnectCustomRole bool = true
-
-@description('Required. AVD session host local credentials')
-param avdVmLocalUserName string = ''
-@secure()
-param avdVmLocalUserPassword string = ''
-
-@description('Required. AVD session host domain join credentials')
-param avdDomainJoinUserName string = ''
-@secure()
-param avdDomainJoinUserPassword string = ''
-
-@description('Optional. OU path to join AVd VMs')
-param avdOuPath string = ''
-
-@description('Id to grant access to on AVD workload key vault secrets')
-param avdWrklSecretAccess string = ''
 
 @description('Deploy new session hosts (defualt: false)')
 param avdDeploySessionHosts bool = true
@@ -876,9 +877,7 @@ module avdAvailabilitySet '../arm/Microsoft.Compute/availabilitySets/deploy.bice
     ]
 }
 
-
 // Session hosts
-
 
 // Session hosts
 // Call on the KV.
@@ -963,7 +962,6 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                 }
             }
         }
-
     }
     dependsOn: [
         avdComputeObjectsRg

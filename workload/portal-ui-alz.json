@@ -1,0 +1,587 @@
+{
+    "$schema": "<relative path to createFormUI.schema.json>",
+    "view": {
+        "kind": "Form",
+        "properties": {
+            "title": "Azure AVD landing zone accelerator",
+            "steps": [
+                {
+                    "name": "basics",
+                    "label": "Deployment location",
+                    "elements": [
+                        {
+                            "name": "resourceScope",
+                            "type": "Microsoft.Common.ResourceScope"
+                        }
+                    ]
+                },
+                {
+                    "name": "avdLzSettings",
+                    "label": "Azure core setup",
+                    "subLabel": {
+                        "preValidation": "Provide deployment prefix for the resource groups and resources that will be created.",
+                        "postValidation": "Done"
+                    },
+                    "bladeTitle": "Deployment prefix",
+                    "elements": [
+                        {
+                            "name": "info",
+                            "type": "Microsoft.Common.InfoBox",
+                            "visible": true,
+                            "options": {
+                                "text": "Azure AVD Landing Zones ARM deployment requires owner access at the subscription scope. Visit this link to get more information on RBAC permissions and scopes.",
+                                "uri": "https://docs.microsoft.com/en-us/azure/role-based-access-control/scope-overview",
+                                "style": "Info"
+                            }
+                        },
+                        {
+                            "name": "avdWorkloadSubscription",
+                            "type": "Microsoft.Common.TextBlock",
+                            "visible": true,
+                            "options": {
+                                "text": "Azure AVD Landing Zones will create the resource group hierarchy under the subscriptions with the prefix provided at this step.",
+                                "link": {
+                                    "label": "Learn more",
+                                    "uri": "https://docs.microsoft.com/azure/cloud-adoption-framework/ready/enterprise-scale/management-group-and-subscription-organization"
+                                }
+                            }
+                        },
+                        {
+                            "name": "avdDeploymentPrefix",
+                            "type": "Microsoft.Common.TextBox",
+                            "label": "Deployment prefix",
+                            "toolTip": "Provide a prefix (max 4 characters) for the resource groups and resources created as part of AVD landing zones.",
+                            "defaultValue": "Example: App1",
+                            "constraints": {
+                                "required": true,
+                                "regex": "^[a-z0-9A-Z-]{1,4}$",
+                                "validationMessage": "The prefix must be 1-4 characters."
+                            }
+                        },
+                        {
+                            "name": "avdSubOrgsOption",
+                            "type": "Microsoft.Common.OptionsGroup",
+                            "label": "Select Multiple subscriptions or single subscription for platform resources",
+                            "defaultValue": "Multiple (recommended)",
+                            "toolTip": "If 'Multiple' is selected, deployment will use two subscriptions (AVD landing zone and AVD shared Services Landing zone).",
+                            "constraints": {
+                                "allowedValues": [
+                                    {
+                                        "label": "Multiple (recommended)",
+                                        "value": "Multiple"
+                                    },
+                                    {
+                                        "label": "Single",
+                                        "value": "Single"
+                                    }
+                                ]
+                            },
+                            "visible": true
+                        },
+                        {
+                            "name": "avdSingleSubSection",
+                            "type": "Microsoft.Common.Section",
+                            "label": "Single subscription deployment",
+                            "elements": [
+                                {
+                                    "name": "subWarning",
+                                    "type": "Microsoft.Common.InfoBox",
+                                    "visible": true,
+                                    "options": {
+                                        "icon": "Warning",
+                                        "text": "Multiple subscriptions are recommended for the various components to ensure scale, sustainability, and segregation of duties. However, a single subscription can also be used in case this is not a concern (e.g., small enterprises).",
+                                        "uri": "https://docs.microsoft.com/azure/cloud-adoption-framework/ready/enterprise-scale/management-group-and-subscription-organization"
+                                    }
+                                },
+                                {
+                                    "name": "singleSubText",
+                                    "type": "Microsoft.Common.TextBlock",
+                                    "visible": true,
+                                    "options": {
+                                        "text": "Select the dedicated, single subscription that will be used for all AVD resources during deployment (AVD workload and shared services resources)."
+                                    }
+                                },
+                                {
+                                    "type": "Microsoft.Common.SubscriptionSelector",
+                                    "name": "avdSingleSub",
+                                    "label": "Single platform subscription"
+                                }
+                            ],
+                            "visible": "[equals(steps('avdLzSettings').avdSubOrgsOption, 'Single')]"
+                        },
+                        {
+                            "name": "avdMultipleSubSection",
+                            "type": "Microsoft.Common.Section",
+                            "label": "Multiple subscriptions deployment",
+                            "elements": [
+                                {
+                                    "name": "multipleSubText",
+                                    "type": "Microsoft.Common.TextBlock",
+                                    "visible": true,
+                                    "options": {
+                                        "text": "Select the subscriptions, AVD Shared Services Landing Zone for shared platform resources (compute gallery, key vaults, storage, etc.) and AVD Landing zone for workload specific resources (VMs, AVD management plane, etc.) ."
+                                    }
+                                },
+                                {
+                                    "name": "avdMultipleSubSectionSharedSub",
+                                    "type": "Microsoft.Common.Section",
+                                    "label": "AVD shared services:",
+                                    "elements": []
+                                },
+                                {
+                                    "type": "Microsoft.Common.SubscriptionSelector",
+                                    "name": "avdMultipleSubShared",
+                                    "label": "Multiple platform subscription AVD shared services",
+                                    "visible": true
+                                },
+                                {
+                                    "name": "avdMultipleSubSectionWorkloadSub",
+                                    "type": "Microsoft.Common.Section",
+                                    "label": "AVD workload:",
+                                    "elements": []
+                                },
+                                {
+                                    "type": "Microsoft.Common.SubscriptionSelector",
+                                    "name": "avdMultipleSubWorkload",
+                                    "label": "Multiple platform subscription AVD workload",
+                                    "visible": true
+                                }
+                            ],
+                            "visible": "[equals(steps('avdLzSettings').avdSubOrgsOption, 'Multiple')]"
+                        }
+                    ]
+                },
+                {
+                    "name": "avdManagementPlane",
+                    "label": "AVD components",
+                    "subLabel": {
+                        "preValidation": "",
+                        "postValidation": ""
+                    },
+                    "bladeTitle": "avdManagementPlane",
+                    "elements": [
+                        {
+                            "name": "hostPoolInfo",
+                            "type": "Microsoft.Common.InfoBox",
+                            "visible": true,
+                            "options": {
+                                "text": "A host pool is a collection of virtual machines deployed from the same base image and governed by the same properties.",
+                                "uri": "https://docs.microsoft.com/en-us/azure/virtual-desktop/environment-setup#host-pools",
+                                "style": "Info"
+                            }
+                        },
+                        {
+                            "name": "avdDeploymentLocations",
+                            "type": "Microsoft.Common.Section",
+                            "label": "Deployment locations",
+                            "elements": [
+                                {
+                                    "name": "avdManagementPlaneLocation",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "label": "Management plane",
+                                    "defaultValue": "",
+                                    "toolTip": "Select region where AVD workspace, host pool and application groups will be created.",
+                                    "constraints": {
+                                        "required": true,
+                                        "allowedValues": [
+                                            {
+                                                "label": "Canada Central",
+                                                "value": "canadacentral"
+                                            },
+                                            {
+                                                "label": "Canada East",
+                                                "value": "canadaeast"
+                                            },
+                                            {
+                                                "label": "Central US",
+                                                "value": "centralus"
+                                            },
+                                            {
+                                                "label": "East US",
+                                                "value": "eastus"
+                                            },
+                                            {
+                                                "label": "East US 2",
+                                                "value": "eastus2"
+                                            },
+                                            {
+                                                "label": "North Central US",
+                                                "value": "northcentralus"
+                                            },
+                                            {
+                                                "label": "North Europe",
+                                                "value": "northeurope"
+                                            },
+                                            {
+                                                "label": "South Central US",
+                                                "value": "southcentralus"
+                                            },
+                                            {
+                                                "label": "UK South",
+                                                "value": "uksouth"
+                                            },
+                                            {
+                                                "label": "UK West",
+                                                "value": "ukwest"
+                                            },
+                                            {
+                                                "label": "West Central US",
+                                                "value": "westcentralus"
+                                            },
+                                            {
+                                                "label": "West Europe",
+                                                "value": "westeurope"
+                                            },
+                                            {
+                                                "label": "West India",
+                                                "value": "westindia"
+                                            },
+                                            {
+                                                "label": "West US",
+                                                "value": "westus"
+                                            },
+                                            {
+                                                "label": "West US 2",
+                                                "value": "westus2"
+                                            }
+                                        ]
+                                    },
+                                    "visible": true
+                                },
+                                {
+                                    "name": "avdSessionHostLocation",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "label": "Session hosts",
+                                    "defaultValue": "",
+                                    "toolTip": "Select region where AVD session hosts (VMs) will be created, this location should be the closest one to the end users.",
+                                    "constraints": {
+                                        "required": true,
+                                        "allowedValues": [
+                                            {
+                                                "label": "Canada Central",
+                                                "value": "canadacentral"
+                                            }
+                                        ]
+                                    },
+                                    "visible": true
+                                }
+                            ]
+                        },
+                        {
+                            "name": "avdManagementPlaneHostPoolSettings",
+                            "type": "Microsoft.Common.Section",
+                            "label": "Host pool settings",
+                            "elements": [
+                                {
+                                    "name": "hostPoolType",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "label": "Host pool type",
+                                    "defaultValue": "Pooled",
+                                    "multiLine": true,
+                                    "toolTip": "",
+                                    "constraints": {
+                                        "required": true,
+                                        "allowedValues": [
+                                            {
+                                                "label": "Pooled",
+                                                "description": "",
+                                                "value": "Pooled"
+                                            },
+                                            {
+                                                "label": "Personal",
+                                                "description": "",
+                                                "value": "Personal"
+                                            }
+                                        ]
+                                    },
+                                    "visible": true
+                                },
+                                {
+                                    "name": "hostPoolTypePooled",
+                                    "type": "Microsoft.Common.Section",
+                                    "label": "Pooled host pool",
+                                    "elements": [
+                                        {
+                                            "name": "pooledHostPool",
+                                            "type": "Microsoft.Common.TextBlock",
+                                            "visible": true,
+                                            "options": {
+                                                "text": "Select the dedicated, single subscription that will be used for all AVD resources during deployment (AVD workload and shared services resources)."
+                                            }
+                                        },
+                                        {
+                                            "type": "Microsoft.Common.SubscriptionSelector",
+                                            "name": "avdSingleSub",
+                                            "label": "Single platform subscription"
+                                        }
+                                    ],
+                                    "visible": "[equals(steps('avdLzSettings').avdSubOrgsOption, 'Single')]"
+                                }
+                            ],
+                            "visible": true
+                        },
+                        {
+                            "name": "loadBalancer",
+                            "type": "Microsoft.Common.DropDown",
+                            "label": "Load balancer",
+                            "defaultValue": "DepthFirst",
+                            "multiLine": true,
+                            "toolTip": "Breadth-first load balancing distributes new user sessions across all available session hosts in the host pool. Depth-first load balancing distributes new user sessions to an available session host with the highest number of connections but has not reached its maximum session limit threshold.",
+                            "constraints": {
+                                "required": true,
+                                "allowedValues": [
+                                    {
+                                        "label": "BreadthFirst",
+                                        "description": "Each new user is placed on the next VM. (Performance Optimized)",
+                                        "value": "BreadthFirst"
+                                    },
+                                    {
+                                        "label": "DepthFirst",
+                                        "description": "Each new user is placed on the same VM until max sessions limit. (Cost Optimized)",
+                                        "value": "DepthFirst"
+                                    }
+                                ]
+                            },
+                            "visible": "[equals(steps('avdComponentsSection').hostPoolType, 'Pooled')]"
+                        },
+                        {
+                            "name": "maxSessions",
+                            "type": "Microsoft.Common.TextBox",
+                            "label": "Max sessions",
+                            "defaultValue": "4",
+                            "toolTip": "The maximum number of users that have concurrent sessions on a session host. When setting a host pool to have depth first load balancing or planning to use Autoscaling, you must set an appropriate max session limit according to the configuration of your deployment and capacity of your VMs.",
+                            "constraints": {
+                                "required": false,
+                                "regex": "",
+                                "validationMessage": ""
+                            },
+                            "visible": "[equals(steps('avdComponentsSection').hostPoolType, 'Pooled')]"
+                        },
+                        {
+                            "name": "assignmentType",
+                            "type": "Microsoft.Common.DropDown",
+                            "label": "Machine assignment",
+                            "defaultValue": "Automatic (Recommended)",
+                            "multiLine": true,
+                            "toolTip": "Automatic assignment – The service will select an available host and assign it to an user. Direct assignment – Admin selects a specific host to assign to an user.",
+                            "constraints": {
+                                "required": true,
+                                "allowedValues": [
+                                    {
+                                        "label": "Automatic (Recommended)",
+                                        "description": "Users are assigned an available VM the first time they connect.",
+                                        "value": "Automatic"
+                                    },
+                                    {
+                                        "label": "Direct",
+                                        "description": "An administrator assigns a VM for each individual user.",
+                                        "value": "Direct"
+                                    }
+                                ]
+                            },
+                            "visible": "[equals(steps('avdComponentsSection').hostPoolType, 'Personal')]"
+                        },
+                        {
+                            "name": "avdManagementPlaneHostPoolScaling",
+                            "type": "Microsoft.Common.Section",
+                            "label": "Session host scaling options",
+                            "elements": [
+                                {
+                                    "name": "startVmOnConnect",
+                                    "type": "Microsoft.Common.OptionsGroup",
+                                    "label": "Start on connect",
+                                    "defaultValue": "Yes (Recommended)",
+                                    "toolTip": "If powered off, start VM once user connects. ",
+                                    "constraints": {
+                                        "required": false,
+                                        "allowedValues": [
+                                            {
+                                                "label": "Yes (Recommended)",
+                                                "value": true
+                                            },
+                                            {
+                                                "label": "No",
+                                                "value": false
+                                            }
+                                        ]
+                                    },
+                                    "visible": true
+                                },
+                                {
+                                    "name": "createVmRole",
+                                    "type": "Microsoft.Common.OptionsGroup",
+                                    "label": "Create start VM on connect role",
+                                    "defaultValue": "Yes (Required if using Start On Connect)",
+                                    "toolTip": "Create custom Azure IAM role for Start VM on Connect",
+                                    "constraints": {
+                                        "required": false,
+                                        "allowedValues": [
+                                            {
+                                                "label": "Yes (Required if using Start On Connect)",
+                                                "value": true
+                                            },
+                                            {
+                                                "label": "No",
+                                                "value": false
+                                            }
+                                        ]
+                                    },
+                                    "visible": "[equals(steps('avdComponentsSection').startVmOnConnect, true)]"
+                                },
+                                {
+                                    "name": "vmRoleWarning",
+                                    "type": "Microsoft.Common.InfoBox",
+                                    "visible": "[equals(steps('avdComponentsSection').createVmRole, false)]",
+                                    "options": {
+                                        "text": "Start VM on Connect will not work without a custom role definition. If you enable start on connect, but do not specify a custom role VM's will not start on-demand. Only select no if this custom role already exists and is assigned to your AVD subscription.",
+                                        "uri": "https://docs.microsoft.com/en-us/azure/virtual-desktop/start-virtual-machine-connect",
+                                        "style": "Warning"
+                                    }
+                                }
+                            ],
+                            "visible": true
+                        },
+                        {
+                            "name": "subWarning",
+                            "type": "Microsoft.Common.InfoBox",
+                            "visible": true,
+                            "options": {
+                                "icon": "Warning",
+                                "text": "Host pool type can not be changed after deployment.",
+                                "uri": "https://docs.microsoft.com/azure/cloud-adoption-framework/ready/enterprise-scale/management-group-and-subscription-organization"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "avdIdentity",
+                    "label": "Identity",
+                    "subLabel": {
+                        "preValidation": "",
+                        "postValidation": ""
+                    },
+                    "bladeTitle": "avdIdentitySettings",
+                    "elements": [
+                        {
+                            "name": "identityInfo",
+                            "type": "Microsoft.Common.InfoBox",
+                            "visible": true,
+                            "options": {
+                                "text": "AVD landing zone accelerator deployment expects identity service to be already available in the current Azure estate.",
+                                "uri": "https://docs.microsoft.com/en-us/azure/virtual-desktop/authentication#identities",
+                                "style": "Info"
+                            }
+                        },
+                        {
+                            "name": "avdIdentityDomainInformation",
+                            "type": "Microsoft.Common.Section",
+                            "label": "Domain information",
+                            "elements": [
+                                {
+                                    "name": "avdIdentityDomainName",
+                                    "type": "Microsoft.Common.TextBox",
+                                    "label": "Domain",
+                                    "toolTip": "Provide username with permissions to join session host to the domain.",
+                                    "defaultValue": "Example: contoso.com",
+                                    "constraints": {
+                                        "required": true
+                                    }
+                                },
+                                {
+                                    "name": "avdIdentityDomainOuPath",
+                                    "type": "Microsoft.Common.TextBox",
+                                    "label": "OU path (Optional)",
+                                    "toolTip": "Provide OU where to locate session hosts, if not provided session hosts will be placed on the default (computers) OU.",
+                                    "defaultValue": "Example: OU:avd;DC:contoso;DC:com",
+                                    "constraints": {}
+                                }
+                            ],
+                            "visible": true
+                        },
+                        {
+                            "name": "avdIdentityDomainCredentials",
+                            "type": "Microsoft.Common.Section",
+                            "label": "Domain join credentials",
+                            "elements": [
+                                {
+                                    "name": "avdIdentityDomainJoinUserName",
+                                    "type": "Microsoft.Common.TextBox",
+                                    "label": "Username",
+                                    "toolTip": "Provide username with permissions to join session host to the domain.",
+                                    "defaultValue": "",
+                                    "constraints": {
+                                        "required": true
+                                    }
+                                },
+                                {
+                                    "name": "avdIdentityDomainJoinUserPassword",
+                                    "type": "Microsoft.Compute.CredentialsCombo",
+                                    "label": {
+                                        "password": "Password",
+                                        "confirmPassword": "Confirm password"
+                                    },
+                                    "toolTip": {
+                                        "password": ""
+                                    },
+                                    "constraints": {
+                                        "required": true
+                                    },
+                                    "options": {
+                                        "hideConfirmation": true
+                                    },
+                                    "osPlatform": "Windows",
+                                    "visible": true
+                                }
+                            ],
+                            "visible": true
+                        },
+                        {
+                            "name": "avdIdentityLocalCredentials",
+                            "type": "Microsoft.Common.Section",
+                            "label": "Session host local admin credentials",
+                            "elements": [
+                                {
+                                    "name": "avdIdentityLocalUserName",
+                                    "type": "Microsoft.Common.TextBox",
+                                    "label": "Username",
+                                    "toolTip": "Provide username for session host local admin account.",
+                                    "defaultValue": "",
+                                    "constraints": {
+                                        "required": true
+                                    }
+                                },
+                                {
+                                    "name": "avdIdentityLocalUserPassword",
+                                    "type": "Microsoft.Compute.CredentialsCombo",
+                                    "label": {
+                                        "password": "Password",
+                                        "confirmPassword": "Confirm password"
+                                    },
+                                    "toolTip": {
+                                        "password": "The password must be alphanumeric, contain at least 12 characters, and have at least 1 letter and 1 number."
+                                    },
+                                    "constraints": {
+                                        "required": true,
+                                        "customPasswordRegex": "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{12,}$",
+                                        "customValidationMessage": "The password must be alphanumeric, contain at least 12 characters, and have at least 1 letter and 1 number."
+                                    },
+                                    "options": {
+                                        "hideConfirmation": false
+                                    },
+                                    "osPlatform": "Windows",
+                                    "visible": true
+                                }
+                            ],
+                            "visible": true
+                        }
+                    ]
+                }
+            ]
+        },
+        "outputs": {
+            "parameters": {},
+            "kind": "Tenant",
+            "location": "[steps('basics').resourceScope.location.name]"
+        }
+    }
+}
