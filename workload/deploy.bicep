@@ -724,49 +724,33 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
     params: {
         name: 'imageTemplateBuildCheckName-${avdOsImage}'
         location: aiblocation
-        kind: 'AzureCLI'
-        azCliVersion: '2.15.0'
+        azPowerShellVersion: '6.2'
         cleanupPreference: 'OnSuccess'
         userAssignedIdentities: createAibManagedIdentity ? {
             '${imageBuilderManagedIdentity.outputs.resourceId}': {}
         } : {}
-        /*
-        environmentVariables: [
-            {
-                name: 'RGDO_imageTemplateRG'
-                value: avdSharedResourcesRgName
-            }
-            {
-                name: 'RGDO_imageTemplateName'
-                value: 'imageTemplateBuildName-${avdOsImage}'
-            }
-        ]
-
-        */
-        arguments: '${avdSharedResourcesRgName} imageTemplateBuildName-${avdOsImage}'
+        arguments: '-resourceGroupName \'${avdSharedResourcesRgName}\' -imageTemplateName \'${imageTemplate.outputs.name}\''
         scriptContent: useSharedImage ? '''
-            RGDO_imageTemplateRG = $1
-            RGDO_imageTemplateName = $2
-            echo " Checking image build status for $RGDO_imageTemplateName in RG $RGDO_imageTemplateRG "
-            az image builder wait --name $RGDO_imageTemplateName --resource-group $RGDO_imageTemplateRG --custom "lastRunStatus.runState!='Running'"
-            while true
-            do
-              now=$(date)
-              echo "Status of the run at $now... "
-              STATUS=$(az image builder show --name $RGDO_imageTemplateName --resource-group $RGDO_imageTemplateRG --query lastRunStatus.runState)
-              echo "Status of template build is ... "
-              echo $STATUS
-              if [ "$STATUS" = "\""Succeeded"\"" ]; then
-              break
-              fi
-              if [ "$STATUS" = "\""Failed"\"" ]; then
-              echo \"Error messages are ...\"
-              az image builder show --name $RGDO_imageTemplateName --resource-group $RGDO_imageTemplateRG --query lastRunStatus.message
-              break
-              fi
-              echo "Checking the status in 5 min"
-              sleep 5m
-            done
+        param(
+        [string] [Parameter(Mandatory=$true)] $resourceGroupName,
+        [string] [Parameter(Mandatory=$true)] $imageTemplateName
+        )
+            $ErrorActionPreference = "Stop"
+            $DeploymentScriptOutputs = @{}
+        $getStatus=$(Get-AzImageBuilderTemplate -ResourceGroupName $resourceGroupName -Name $imageTemplateName)
+        $status=$getStatus.LastRunStatusRunState
+        $statusMessage=$getStatus.LastRunStatusMessage
+            do {
+            $now=Get-Date
+            $getStatus=$(Get-AzImageBuilderTemplate -ResourceGroupName $resourceGroupName -Name $imageTemplateName)
+            $status=$getStatus.LastRunStatusRunState
+            # Sleep for 5 minutes
+            $DeploymentScriptOutputs=$now
+            $DeploymentScriptOutputs=$status
+            $DeploymentScriptOutputs="Sleeping for 5 minutes"
+            Start-Sleep 300
+        }
+        until ($status -eq "Succeeded")
         ''' : ''
     }
     dependsOn: [
