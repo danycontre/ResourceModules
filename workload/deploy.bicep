@@ -725,7 +725,7 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
     params: {
         name: 'imageTemplateBuildCheckName-${avdOsImage}'
         location: aiblocation
-        azPowerShellVersion: '7.3'
+        azPowerShellVersion: '7.2'
         cleanupPreference: 'OnSuccess'
         userAssignedIdentities: createAibManagedIdentity ? {
             '${imageBuilderManagedIdentity.outputs.resourceId}': {}
