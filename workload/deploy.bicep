@@ -1025,6 +1025,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
     dependsOn: [
         avdComputeObjectsRg
         avdWrklKeyVaultget
+        imageTemplateBuildCheck
     ]
 }]
 // Add session hosts to AVD Host pool.
