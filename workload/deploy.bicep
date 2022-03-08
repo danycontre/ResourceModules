@@ -722,7 +722,7 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     name: 'AVD-Build-Image-Template-Check-Build-${time}'
     params: {
-        name: 'imageTemplateBuildName-${avdOsImage}'
+        name: 'imageTemplateBuildCheckName-${avdOsImage}'
         location: aiblocation
         kind: 'AzureCLI'
         azCliVersion: '2.15.0'
@@ -741,14 +741,14 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
             }
         ]
         scriptContent: useSharedImage ? '''
-            echo \" Checking image build status for $RGDO_imageTemplateName in RG $RGDO_imageTemplateRG \"
+            echo " Checking image build status for $RGDO_imageTemplateName in RG $RGDO_imageTemplateRG "
             az image builder wait --name $RGDO_imageTemplateName --resource-group $RGDO_imageTemplateRG --custom "lastRunStatus.runState!='Running'"
             while true
             do
               now=$(date)
               echo "Status of the run at $now... "
               STATUS=$(az image builder show --name $RGDO_imageTemplateName --resource-group $RGDO_imageTemplateRG --query lastRunStatus.runState)
-              echo \"Status of template build is ... \"
+              echo "Status of template build is ... "
               echo $STATUS
               if [ "$STATUS" = "\""Succeeded"\"" ]; then
               break
@@ -758,7 +758,7 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
               az image builder show --name $RGDO_imageTemplateName --resource-group $RGDO_imageTemplateRG --query lastRunStatus.message
               break
               fi
-              echo \Checking the status in 5 min\"
+              echo "Checking the status in 5 min"
               sleep 5m
             done
         ''' : ''
