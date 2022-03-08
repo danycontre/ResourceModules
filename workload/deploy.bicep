@@ -743,7 +743,7 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
         ]
 
         */
-        arguments: 'avdSharedResourcesRgName imageTemplateBuildName-${avdOsImage}'
+        arguments: '${avdSharedResourcesRgName} imageTemplateBuildName-${avdOsImage}'
         scriptContent: useSharedImage ? '''
             RGDO_imageTemplateRG = $1
             RGDO_imageTemplateName = $2
