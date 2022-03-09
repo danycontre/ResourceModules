@@ -382,7 +382,7 @@ module avdApplicationSecurityGroup '../arm/Microsoft.Network/applicationSecurity
         location: avdSessionHostLocation
     }
     dependsOn: [
-        avdNetworkObjectsRg
+        avdComputeObjectsRg
     ]
 }
 
