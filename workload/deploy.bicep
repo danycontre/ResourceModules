@@ -760,12 +760,17 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
                 Write-Host "User canceled the build. Delete the Image template definition: $imageTemplateName"
                 throw "User canceled the build."
             }
+            if ($status -eq "Succeeded") {
+                Write-Host "Success. Image template definition: $imageTemplateName is finished "
+                break
+            }
             # Sleep for 2 minutes
             Write-Host "Sleeping for 2 min"
             $DeploymentScriptOutputs="Sleeping for 2 minutes"
             Start-Sleep 120
         }
         until ($status -eq "Succeeded")
+
         ''' : ''
     }
     dependsOn: [
