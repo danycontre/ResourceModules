@@ -9,7 +9,7 @@ param location string = deployment().location
 @minLength(2)
 @maxLength(4)
 @description('Required. The name of the resource group to deploy')
-param deploymentPrefix string = 'App1'
+param deploymentPrefix string = ''
 
 @description('Required. AVD shared services subscription ID')
 param avdShrdlSubscriptionId string = ''
@@ -39,7 +39,7 @@ param avdWrklSecretAccess string = ''
     'Pooled'
 ])
 @description('Optional. AVD host pool type (Default: Pooled)')
-param avdHostPoolType string = 'Pooled'
+param avdHostPoolType string = ''
 
 @allowed([
     'BreadthFirst'

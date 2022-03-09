@@ -61,6 +61,7 @@
                         {
                             "name": "avdSubOrgsOption",
                             "type": "Microsoft.Common.OptionsGroup",
+                            "visible": true,
                             "label": "Select Multiple subscriptions or single subscription for platform resources",
                             "defaultValue": "Multiple (recommended)",
                             "toolTip": "If 'Multiple' is selected, deployment will use two subscriptions (AVD landing zone and AVD shared Services Landing zone).",
@@ -75,12 +76,12 @@
                                         "value": "Single"
                                     }
                                 ]
-                            },
-                            "visible": true
+                            }
                         },
                         {
                             "name": "avdSingleSubSection",
                             "type": "Microsoft.Common.Section",
+                            "visible": "[equals(steps('avdLzSettings').avdSubOrgsOption, 'Single')]",
                             "label": "Single subscription deployment",
                             "elements": [
                                 {
@@ -102,16 +103,16 @@
                                     }
                                 },
                                 {
-                                    "type": "Microsoft.Common.SubscriptionSelector",
                                     "name": "avdSingleSub",
+                                    "type": "Microsoft.Common.SubscriptionSelector",
                                     "label": "Single platform subscription"
                                 }
-                            ],
-                            "visible": "[equals(steps('avdLzSettings').avdSubOrgsOption, 'Single')]"
+                            ]
                         },
                         {
                             "name": "avdMultipleSubSection",
                             "type": "Microsoft.Common.Section",
+                            "visible": "[equals(steps('avdLzSettings').avdSubOrgsOption, 'Multiple')]",
                             "label": "Multiple subscriptions deployment",
                             "elements": [
                                 {
@@ -129,10 +130,10 @@
                                     "elements": []
                                 },
                                 {
-                                    "type": "Microsoft.Common.SubscriptionSelector",
                                     "name": "avdMultipleSubShared",
-                                    "label": "Multiple platform subscription AVD shared services",
-                                    "visible": true
+                                    "type": "Microsoft.Common.SubscriptionSelector",
+                                    "visible": true,
+                                    "label": "Multiple platform subscription AVD shared services"
                                 },
                                 {
                                     "name": "avdMultipleSubSectionWorkloadSub",
@@ -141,13 +142,12 @@
                                     "elements": []
                                 },
                                 {
-                                    "type": "Microsoft.Common.SubscriptionSelector",
                                     "name": "avdMultipleSubWorkload",
-                                    "label": "Multiple platform subscription AVD workload",
-                                    "visible": true
+                                    "type": "Microsoft.Common.SubscriptionSelector",
+                                    "visible": true,
+                                    "label": "Multiple platform subscription AVD workload"
                                 }
-                            ],
-                            "visible": "[equals(steps('avdLzSettings').avdSubOrgsOption, 'Multiple')]"
+                            ]
                         }
                     ]
                 },
@@ -178,6 +178,7 @@
                                 {
                                     "name": "avdManagementPlaneLocation",
                                     "type": "Microsoft.Common.DropDown",
+                                    "visible": true,
                                     "label": "Management plane",
                                     "defaultValue": "",
                                     "toolTip": "Select region where AVD workspace, host pool and application groups will be created.",
@@ -245,8 +246,7 @@
                                                 "value": "westus2"
                                             }
                                         ]
-                                    },
-                                    "visible": true
+                                    }
                                 },
                                 {
                                     "name": "esLocationsApi",
@@ -259,25 +259,27 @@
                                 {
                                     "name": "avdSessionHostLocation",
                                     "type": "Microsoft.Common.DropDown",
+                                    "visible": true,
                                     "label": "Session hosts",
                                     "defaultValue": "",
                                     "toolTip": "Select region where AVD session hosts (VMs) will be created, this location should be the closest one to the end users.",
                                     "constraints": {
                                         "required": true,
                                         "allowedValues": "[map(steps('avdManagementPlane').esLocationsApi.value,(item) => parse(concat('{\"label\":\"',item.displayName,'\",\"value\":\"',item.name,'\"}')))]"
-                                    },
-                                    "visible": true
+                                    }
                                 }
                             ]
                         },
                         {
                             "name": "avdManagementPlaneHostPoolSettings",
                             "type": "Microsoft.Common.Section",
+                            "visible": true,
                             "label": "Host pool settings",
                             "elements": [
                                 {
                                     "name": "hostPoolType",
                                     "type": "Microsoft.Common.DropDown",
+                                    "visible": true,
                                     "label": "Host pool type",
                                     "defaultValue": "Pooled",
                                     "multiLine": true,
@@ -296,12 +298,12 @@
                                                 "value": "Personal"
                                             }
                                         ]
-                                    },
-                                    "visible": true
+                                    }
                                 },
                                 {
-                                    "name": "loadBalancer",
+                                    "name": "loadBalancerType",
                                     "type": "Microsoft.Common.DropDown",
+                                    "visible": "[equals(steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.hostPoolType, 'Pooled')]",
                                     "label": "Load balancer",
                                     "defaultValue": "DepthFirst",
                                     "multiLine": true,
@@ -320,12 +322,12 @@
                                                 "value": "DepthFirst"
                                             }
                                         ]
-                                    },
-                                    "visible": "[equals(steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.hostPoolType, 'Pooled')]"
+                                    }
                                 },
                                 {
                                     "name": "maxSessions",
                                     "type": "Microsoft.Common.TextBox",
+                                    "visible": "[equals(steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.hostPoolType, 'Pooled')]",
                                     "label": "Max sessions",
                                     "defaultValue": "10",
                                     "toolTip": "The maximum number of users that have concurrent sessions on a session host. When setting a host pool to have depth first load balancing or planning to use Autoscaling, you must set an appropriate max session limit according to the configuration of your deployment and capacity of your VMs.",
@@ -333,12 +335,12 @@
                                         "required": false,
                                         "regex": "",
                                         "validationMessage": ""
-                                    },
-                                    "visible": "[equals(steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.hostPoolType, 'Pooled')]"
+                                    }
                                 },
                                 {
                                     "name": "assignmentType",
                                     "type": "Microsoft.Common.DropDown",
+                                    "visible": "[equals(steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.hostPoolType, 'Personal')]",
                                     "label": "Machine assignment",
                                     "defaultValue": "Automatic (Recommended)",
                                     "multiLine": true,
@@ -357,20 +359,20 @@
                                                 "value": "Direct"
                                             }
                                         ]
-                                    },
-                                    "visible": "[equals(steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.hostPoolType, 'Personal')]"
+                                    }
                                 }
-                            ],
-                            "visible": true
+                            ]
                         },
                         {
                             "name": "avdManagementPlaneHostPoolScaling",
                             "type": "Microsoft.Common.Section",
+                            "visible": true,
                             "label": "Session host scaling options",
                             "elements": [
                                 {
                                     "name": "startVmOnConnect",
                                     "type": "Microsoft.Common.OptionsGroup",
+                                    "visible": true,
                                     "label": "Start on connect",
                                     "defaultValue": "Yes (Recommended)",
                                     "toolTip": "If powered off, start VM once user connects. ",
@@ -386,12 +388,12 @@
                                                 "value": false
                                             }
                                         ]
-                                    },
-                                    "visible": true
+                                    }
                                 },
                                 {
                                     "name": "createVmRole",
                                     "type": "Microsoft.Common.OptionsGroup",
+                                    "visible": "[equals(steps('avdComponentsSection').startVmOnConnect, true)]",
                                     "label": "Create start VM on connect role",
                                     "defaultValue": "Yes (Required if using Start On Connect)",
                                     "toolTip": "Create custom Azure IAM role for Start VM on Connect",
@@ -407,8 +409,7 @@
                                                 "value": false
                                             }
                                         ]
-                                    },
-                                    "visible": "[equals(steps('avdComponentsSection').startVmOnConnect, true)]"
+                                    }
                                 },
                                 {
                                     "name": "vmRoleWarning",
@@ -420,8 +421,7 @@
                                         "style": "Warning"
                                     }
                                 }
-                            ],
-                            "visible": true
+                            ]
                         },
                         {
                             "name": "subWarning",
@@ -457,6 +457,7 @@
                         {
                             "name": "avdIdentityDomainInformation",
                             "type": "Microsoft.Common.Section",
+                            "visible": true,
                             "label": "Domain information",
                             "elements": [
                                 {
@@ -477,12 +478,12 @@
                                     "defaultValue": "Example: OU:avd;DC:contoso;DC:com",
                                     "constraints": {}
                                 }
-                            ],
-                            "visible": true
+                            ]
                         },
                         {
                             "name": "avdIdentityDomainCredentials",
                             "type": "Microsoft.Common.Section",
+                            "visible": true,
                             "label": "Domain join credentials",
                             "elements": [
                                 {
@@ -498,6 +499,7 @@
                                 {
                                     "name": "avdIdentityDomainJoinUserPassword",
                                     "type": "Microsoft.Compute.CredentialsCombo",
+                                    "visible": true,
                                     "label": {
                                         "password": "Password",
                                         "confirmPassword": "Confirm password"
@@ -511,15 +513,14 @@
                                     "options": {
                                         "hideConfirmation": true
                                     },
-                                    "osPlatform": "Windows",
-                                    "visible": true
+                                    "osPlatform": "Windows"
                                 }
-                            ],
-                            "visible": true
+                            ]
                         },
                         {
                             "name": "avdIdentityLocalCredentials",
                             "type": "Microsoft.Common.Section",
+                            "visible": true,
                             "label": "Session host local admin credentials",
                             "elements": [
                                 {
@@ -535,6 +536,7 @@
                                 {
                                     "name": "avdIdentityLocalUserPassword",
                                     "type": "Microsoft.Compute.CredentialsCombo",
+                                    "visible": true,
                                     "label": {
                                         "password": "Password",
                                         "confirmPassword": "Confirm password"
@@ -550,11 +552,9 @@
                                     "options": {
                                         "hideConfirmation": false
                                     },
-                                    "osPlatform": "Windows",
-                                    "visible": true
+                                    "osPlatform": "Windows"
                                 }
-                            ],
-                            "visible": true
+                            ]
                         }
                     ]
                 },
@@ -562,6 +562,7 @@
                     "name": "avdNetwork",
                     "label": "Network",
                     "type": "Microsoft.Common.Section",
+                    "visible": true,
                     "elements": [
                         {
                             "name": "vnetInfoBox",
@@ -576,6 +577,7 @@
                         {
                             "name": "createAvdVnet",
                             "type": "Microsoft.Common.OptionsGroup",
+                            "visible": true,
                             "label": "Virtual network",
                             "defaultValue": "New",
                             "toolTip": "",
@@ -591,41 +593,40 @@
                                         "value": false
                                     }
                                 ]
-                            },
-                            "visible": true
+                            }
                         },
                         {
                             "name": "avdVnetSize",
                             "type": "Microsoft.Common.TextBox",
+                            "visible": "[equals(steps('avdNetwork').createAvdVnet, true)]",
                             "label": "vNet address range",
                             "toolTip": "Virtual network for AVD virtual machines",
                             "placeholder": "Example: 10.10.0.0/23",
                             "constraints": {
                                 "required": true,
                                 "regex": ""
-                            },
-                            "visible": "[equals(steps('avdNetwork').createAvdVnet, true)]"
+                            }
                         },
                         {
                             "name": "avdVnetSubnetSize",
                             "type": "Microsoft.Common.TextBox",
+                            "visible": "[equals(steps('avdNetwork').createAvdVnet, true)]",
                             "label": "Subnet address prefix",
                             "toolTip": "Virtual network subnet for AVD virtual machines",
                             "placeholder": "Example: 10.10.0.0/23",
                             "constraints": {
                                 "required": true,
                                 "regex": ""
-                            },
-                            "visible": "[equals(steps('avdNetwork').createAvdVnet, true)]"
+                            }
                         },
                         {
                             "name": "avdVnetDns",
                             "type": "Microsoft.Common.TextBox",
+                            "visible": "[equals(steps('avdNetwork').createAvdVnet, true)]",
                             "label": "vNet DNS Servers",
                             "defaultValue": "",
                             "placeholder": "Example: 10.10.100.50, 10.20.100.50",
-                            "toolTip": "If using custom DNS servers, enter multiple IPs separated by a comma",
-                            "visible": "[equals(steps('avdNetwork').createAvdVnet, true)]"
+                            "toolTip": "If using custom DNS servers, enter multiple IPs separated by a comma"
                         },
                         {
                             "name": "avdVnetPeeringInfoBox",
@@ -640,14 +641,14 @@
                         {
                             "name": "avdVnetHubPeering",
                             "type": "Microsoft.Common.Section",
-                            "label": "Existing hub vNet peering information",
                             "visible": "[equals(steps('avdNetwork').createAvdVnet, true)]",
+                            "label": "Existing hub vNet peering information",
                             "elements": [
                                 {
                                     "name": "avdHubVnetSubsSelector",
                                     "type": "Microsoft.Solutions.ResourceSelector",
-                                    "label": "Hub vNet subscription",
                                     "visible": "[equals(steps('avdNetwork').createAvdVnet, true)]",
+                                    "label": "Hub vNet subscription",
                                     "resourceType": "Microsoft.Resources/resourceGroups",
                                     "constraints": {
                                         "required": true
@@ -656,8 +657,8 @@
                                 {
                                     "name": "avdHubVnetRgSelector",
                                     "type": "Microsoft.Solutions.ResourceSelector",
-                                    "label": "Hub vNet resource group",
                                     "visible": "[equals(steps('avdNetwork').createAvdVnet, true)]",
+                                    "label": "Hub vNet resource group",
                                     "resourceType": "Microsoft.Resources/resourceGroups",
                                     "constraints": {
                                         "required": true
@@ -666,8 +667,8 @@
                                 {
                                     "name": "avdHubVnetSelector",
                                     "type": "Microsoft.Solutions.ResourceSelector",
-                                    "label": "Hub vNet",
                                     "visible": "[equals(steps('avdNetwork').createAvdVnet, true)]",
+                                    "label": "Hub vNet",
                                     "resourceType": "Microsoft.Network/virtualNetworks",
                                     "options": {
                                         "filter": {
@@ -694,8 +695,8 @@
                         {
                             "name": "avdVnetSubsSelector",
                             "type": "Microsoft.Solutions.ResourceSelector",
-                            "label": "vNet subscription",
                             "visible": "[equals(steps('avdNetwork').createAvdVnet, false)]",
+                            "label": "vNet subscription",
                             "resourceType": "Microsoft.Resources/resourceGroups",
                             "constraints": {
                                 "required": true
@@ -704,8 +705,8 @@
                         {
                             "name": "avdVnetRgSelector",
                             "type": "Microsoft.Solutions.ResourceSelector",
-                            "label": "vNet resource group",
                             "visible": "[equals(steps('avdNetwork').createAvdVnet, false)]",
+                            "label": "vNet resource group",
                             "resourceType": "Microsoft.Resources/resourceGroups",
                             "constraints": {
                                 "required": true
@@ -714,8 +715,8 @@
                         {
                             "name": "avdVnetSelector",
                             "type": "Microsoft.Solutions.ResourceSelector",
-                            "label": "vNet",
                             "visible": "[equals(steps('avdNetwork').createAvdVnet, false)]",
+                            "label": "vNet",
                             "resourceType": "Microsoft.Network/virtualNetworks",
                             "options": {
                                 "filter": {
@@ -752,13 +753,43 @@
                                 "required": true
                             }
                         }
-                    ],
-                    "visible": true
+                    ]
                 }
             ]
         },
         "outputs": {
-            "parameters": {},
+            "parameters": {
+                "deploymentPrefix": "[steps('avdLzSettings').avdDeploymentPrefix]",
+                "avdSubOrgsOption": "[steps('avdLzSettings').avdSubOrgsOption]",
+                "avdSingleSub": "[steps('avdLzSettings').avdSingleSubSection.avdSingleSub]",
+                "avdShrdlSubscriptionId": "[steps('avdLzSettings').avdMultipleSubSection.avdMultipleSubShared]",
+                "avdWrklSubscriptionId": "[steps('avdLzSettings').avdMultipleSubSection.avdMultipleSubWorkload]",
+                "avdManagementPlaneLocation": "[steps('avdManagementPlane').avdDeploymentLocations.avdManagementPlaneLocation]",
+                "avdSessionHostLocation": "[steps('avdManagementPlane').avdDeploymentLocations.avdSessionHostLocation]",
+                "avdHostPoolType": "[steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.hostPoolType]",
+                "avdHostPoolloadBalancerType": "[steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.loadBalancerType]",
+                "maxSessions": "[steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.maxSessions]",
+                "assignmentType": "[steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.assignmentType]",
+                "avdStartVMOnConnect": "[steps('avdManagementPlane').avdManagementPlaneHostPoolScaling.startVmOnConnect]",
+                "createVmRole": "[steps('avdManagementPlane').avdManagementPlaneHostPoolScaling.createVmRole]",
+                "avdIdentityDomainName": "[steps('avdIdentity').avdIdentityDomainInformation.avdIdentityDomainName]",
+                "avdOuPath": "[steps('avdIdentity').avdIdentityDomainInformation.avdIdentityDomainOuPath]",
+                "avdDomainJoinUserName": "[steps('avdIdentity').avdIdentityDomainCredentials.avdIdentityDomainJoinUserName]",
+                "avdDomainJoinUserPassword": "[steps('avdIdentity').avdIdentityDomainCredentials.avdIdentityDomainJoinUserPassword]",
+                "avdVmLocalUserName": "[steps('avdIdentity').avdIdentityLocalCredentials.avdIdentityLocalUserName]",
+                "avdVmLocalUserPassword": "[steps('avdIdentity').avdIdentityLocalCredentials.avdIdentityLocalUserPassword]",
+                "createAvdVnet": "[steps('avdNetwork').createAvdVnet]",
+                "avdVnetworkAddressPrefixes": "[steps('avdNetwork').avdVnetSize]",
+                "avdVnetworkSubnetAddressPrefix": "[steps('avdNetwork').avdVnetSubnetSize]",
+                "customDnsIps": "[steps('avdNetwork').avdVnetDns]",
+                "existingHubVnetSubscriptionId": "[steps('avdNetwork').avdVnetHubPeering.avdHubVnetSubsSelector]",
+                "existingHubVnetRgName": "[steps('avdNetwork').avdVnetHubPeering.avdHubVnetRgSelector]",
+                "existingHubVnetName": "[steps('avdNetwork').avdVnetHubPeering.avdHubVnetSelector]",
+                "existingVnetSubscriptionId": "[steps('avdNetwork').avdVnetHubPeering.avdVnetSubsSelector]",
+                "existingVnetRgName": "[steps('avdNetwork').avdVnetHubPeering.avdVnetRgSelector]",
+                "existingVnetName": "[steps('avdNetwork').avdVnetHubPeering.avdVnetSelector]",
+                "existingVnetSubnetName": "[steps('avdNetwork').avdVnetHubPeering.subnetId]"
+            },
             "kind": "Tenant",
             "location": "[steps('basics').resourceScope.location.name]"
         }
