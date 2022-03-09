@@ -756,11 +756,11 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
             if ($status -eq "Failed") {
                 Write-Host "Build failed. Check the Packer logs"
                 $DeploymentScriptOutputs="Build Failed"
-                break
+                throw "Build Failed"
             }
             if ($status -eq "Canceled") {
-                Write-Host "User cancelled the build. Delete the Image template definition"
-                break
+                Write-Host "User canceled the build. Delete the Image template definition"
+                throw "User canceled the build"
             }
             $DeploymentScriptOutputs="Sleeping for 5 minutes"
             Start-Sleep 300
