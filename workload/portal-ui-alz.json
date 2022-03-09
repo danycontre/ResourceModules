@@ -8,6 +8,7 @@
                 {
                     "name": "basics",
                     "label": "Deployment location",
+                    "visible": false,
                     "elements": [
                         {
                             "name": "resourceScope",
@@ -126,7 +127,7 @@
                                 {
                                     "name": "avdMultipleSubSectionSharedSub",
                                     "type": "Microsoft.Common.Section",
-                                    "label": "AVD shared services:",
+                                    "label": "AVD shared services",
                                     "elements": []
                                 },
                                 {
@@ -138,7 +139,7 @@
                                 {
                                     "name": "avdMultipleSubSectionWorkloadSub",
                                     "type": "Microsoft.Common.Section",
-                                    "label": "AVD workload:",
+                                    "label": "AVD workload",
                                     "elements": []
                                 },
                                 {
@@ -366,8 +367,8 @@
                         {
                             "name": "avdManagementPlaneAppGroupOptions",
                             "type": "Microsoft.Common.Section",
-                            "visible": true,
-                            "label": "Application group options",
+                            "visible": "[equals(steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.hostPoolType, 'Pooled')]",
+                            "label": "Application group options (Desktop application group will be deployed by default)",
                             "elements": [
                                 {
                                     "name": "avdDeployRAppGroup",
@@ -800,7 +801,6 @@
                 "avhHostPoolMaxSessions": "[steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.maxSessions]",
                 "avdPersonalAssignType": "[steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.assignmentType]",
                 "avdDeployRAppGroup": "[steps('avdManagementPlane').avdManagementPlaneAppGroupOptions.avdDeployRAppGroup]",
-
                 "avdStartVMOnConnect": "[steps('avdManagementPlane').avdManagementPlaneHostPoolScaling.startVmOnConnect]",
                 "createVmRole": "[steps('avdManagementPlane').avdManagementPlaneHostPoolScaling.createVmRole]",
                 "avdIdentityDomainName": "[steps('avdIdentity').avdIdentityDomainInformation.avdIdentityDomainName]",
