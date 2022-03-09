@@ -745,16 +745,23 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
         $statusMessage=$getStatus.LastRunStatusMessage
             do {
             $now=(Get-Date)
+            Write-Host "Getting the current time: $now"
             $getStatus=$(Get-AzImageBuilderTemplate -ResourceGroupName $resourceGroupName -Name $imageTemplateName)
             $status=$getStatus.LastRunStatusRunState
-            # Sleep for 5 minutes
+            Write-Host "Current status of the image build $imageTemplateName is: $status"
+             # Sleep for 5 minutes
+            Write-Host "Sleeping for 5 min"
             $DeploymentScriptOutputs=$now
             $DeploymentScriptOutputs=$status
             if ($status -eq "Failed") {
+                Write-Host "Build failed. Check the Packer logs"
                 $DeploymentScriptOutputs="Build Failed"
                 break
             }
-            if ($status -eq "Canceled") {break}
+            if ($status -eq "Canceled") {
+                Write-Host "User cancelled the build. Delete the Image template definition"
+                break
+            }
             $DeploymentScriptOutputs="Sleeping for 5 minutes"
             Start-Sleep 300
         }
