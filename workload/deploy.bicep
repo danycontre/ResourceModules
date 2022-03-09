@@ -3,25 +3,40 @@ targetScope = 'subscription'
 // ========== //
 // Parameters //
 // ========== //
-@description('Required. The location to deploy into')
-param location string = deployment().location
-
 @minLength(2)
 @maxLength(4)
 @description('Required. The name of the resource group to deploy')
 param deploymentPrefix string = ''
 
-@description('Required. AVD shared services subscription ID')
-param avdShrdlSubscriptionId string = ''
+@allowed([
+    'Multiple'
+    'Single'
+])
+@description('Required. AVD subscription model (Default: Multiple)')
+param avdSubOrgsOption string = 'Multiple'
 
-@description('Required. AVD workload subscription ID')
-param avdWrklSubscriptionId string = ''
+@description('Required. Location where to deploy compute services')
+param avdSessionHostLocation string = ''
+
+@description('Required. Location where to deploy AVD management plane')
+param avdManagementPlaneLocation string = ''
+
+@description('Optional. AVD shared services subscription ID, single subscriptions scenario')
+param avdSingleSubsId string = ''
+
+@description('Optional. AVD shared services subscription ID, multiple subscriptions scenario')
+param avdShrdlSubsId string = ''
+
+@description('Optional. AVD workload subscription ID, multiple subscriptions scenario')
+param avdWrklSubsId string = ''
 
 @description('Required. AVD session host local credentials')
 param avdVmLocalUserName string = ''
-
 @secure()
 param avdVmLocalUserPassword string = ''
+
+@description('Required. AD domain name')
+param avdIdentityDomainName string = ''
 
 @description('Required. AVD session host domain join credentials')
 param avdDomainJoinUserName string = ''
@@ -31,7 +46,7 @@ param avdDomainJoinUserPassword string = ''
 @description('Optional. OU path to join AVd VMs')
 param avdOuPath string = ''
 
-@description('Id to grant access to on AVD workload key vault secrets')
+@description('Optional. Id to grant access to on AVD workload key vault secrets')
 param avdWrklSecretAccess string = ''
 
 @allowed([
@@ -39,14 +54,24 @@ param avdWrklSecretAccess string = ''
     'Pooled'
 ])
 @description('Optional. AVD host pool type (Default: Pooled)')
-param avdHostPoolType string = ''
+param avdHostPoolType string = 'Pooled'
+
+@allowed([
+    'Automatic'
+    'Direct'
+])
+@description('Optional. AVD host pool type (Default: Automatic)')
+param avdPersonalAssignType string = 'Automatic'
 
 @allowed([
     'BreadthFirst'
     'DepthFirst'
 ])
-@description('Optional. AVD host pool load balacing type (Default: BreadthFirst)')
+@description('Required. AVD host pool load balacing type (Default: BreadthFirst)')
 param avdHostPoolloadBalancerType string = 'BreadthFirst'
+
+@description('Optional. AVD host pool maximum number of user sessions per session host')
+param avhHostPoolMaxSessions int =
 
 @description('Optional. AVD host pool start VM on Connect (Default: true)')
 param avdStartVMOnConnect bool = false
@@ -114,7 +139,7 @@ param avdDeploySessionHosts bool = true
 @minValue(1)
 @maxValue(500)
 @description('Cuantity of session hosts to deploy')
-param avdDeploySessionHostsCount int = 1
+param avdDeploySessionHostsCount int =
 
 @description('Optional. Creates an availability zone and adds the VMs to it. Cannot be used in combination with availability set nor scale set. (Defualt: true)')
 param avdUseAvailabilityZones bool = true
@@ -144,7 +169,6 @@ param avdSessionHostDiskType string = 'Standard_LRS'
     'uksouth'
     'ukwest'
 ])
-
 @description('Azure image builder location (Defualt: eastus2)')
 param aiblocation string = 'eastus2'
 
@@ -178,23 +202,26 @@ param time string = utcNow()
 // Variable declaration //
 // =========== //
 var deploymentPrefixLowercase = toLower(deploymentPrefix)
-var locationLowercase = toLower(location)
-var avdDomainJoinUserPasswordSecretName = split(avdDomainJoinUserName, '@')
-var Domain = last(split(avdDomainJoinUserName, '@'))
-var avdServiceObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-service-objects' // max length limit 90 characters
-var avdNetworkObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-network' // max length limit 90 characters
-var avdComputeObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-pool-compute' // max length limit 90 characters
-var avdStorageObjectsRgName = 'rg-${locationLowercase}-avd-${deploymentPrefixLowercase}-storage' // max length limit 90 characters
-var avdSharedResourcesRgName = 'rg-${locationLowercase}-avd-shared-resources'
-var imageGalleryName = 'avdgallery${locationLowercase}'
+var avdSessionHostLocationLowercase = toLower(avdSessionHostLocation)
+var avdManagementPlaneLocationLowercase = toLower(avdManagementPlaneLocation)
+
+var avdWrklSubscriptionId = (avdSubOrgsOption == 'Multiple') ? avdWrklSubsId : avdSingleSubsId
+var avdShrdlSubscriptionId = (avdSubOrgsOption == 'Multiple') ? avdShrdlSubsId : avdSingleSubsId
+
+var avdServiceObjectsRgName = 'rg-${avdManagementPlaneLocationLowercase}-avd-${deploymentPrefixLowercase}-service-objects' // max length limit 90 characters
+var avdNetworkObjectsRgName = 'rg-${avdSessionHostLocationLowercase}-avd-${deploymentPrefixLowercase}-network' // max length limit 90 characters
+var avdComputeObjectsRgName = 'rg-${avdSessionHostLocationLowercase}-avd-${deploymentPrefixLowercase}-pool-compute' // max length limit 90 characters
+var avdStorageObjectsRgName = 'rg-${avdSessionHostLocationLowercase}-avd-${deploymentPrefixLowercase}-storage' // max length limit 90 characters
+var avdSharedResourcesRgName = 'rg-${avdSessionHostLocationLowercase}-avd-shared-resources'
+var imageGalleryName = 'avdgallery${avdSessionHostLocationLowercase}'
 var existingVnetResourceId = '/subscriptions/${existingVnetSubscriptionId}/resourceGroups/${existingVnetRgName}/providers/Microsoft.Network/virtualNetworks/${existingVnetName}'
 var hubVnetId = '/subscriptions/${existingHubVnetSubscriptionId}/resourceGroups/${existingHubVnetRgName}/providers/Microsoft.Network/virtualNetworks/${existingHubVnetName}'
-var avdVnetworkName = 'vnet-${locationLowercase}-avd-${deploymentPrefixLowercase}'
+var avdVnetworkName = 'vnet-${avdSessionHostLocationLowercase}-avd-${deploymentPrefixLowercase}'
 var avdVnetworkSubnetName = 'avd-${deploymentPrefixLowercase}'
-var avdNetworksecurityGroupName = 'nsg-${locationLowercase}-avd-${deploymentPrefixLowercase}'
-var avdRouteTableName = 'udr-${locationLowercase}-avd-${deploymentPrefixLowercase}'
-var avdApplicationsecurityGroupName = 'asg-${locationLowercase}-avd-${deploymentPrefixLowercase}'
-var avdVNetworkPeeringName = '${uniqueString(deploymentPrefixLowercase, location)}-virtualNetworkPeering-avd-${deploymentPrefixLowercase}'
+var avdNetworksecurityGroupName = 'nsg-${avdSessionHostLocationLowercase}-avd-${deploymentPrefixLowercase}'
+var avdRouteTableName = 'udr-${avdSessionHostLocationLowercase}-avd-${deploymentPrefixLowercase}'
+var avdApplicationsecurityGroupName = 'asg-${avdSessionHostLocationLowercase}-avd-${deploymentPrefixLowercase}'
+var avdVNetworkPeeringName = '${uniqueString(deploymentPrefixLowercase, avdSessionHostLocation)}-virtualNetworkPeering-avd-${deploymentPrefixLowercase}'
 var avdWorkSpaceName = 'avdws-${deploymentPrefixLowercase}'
 var avdHostPoolName = 'avdhp-${deploymentPrefixLowercase}'
 var avdApplicationGroupName = 'avdag-${deploymentPrefixLowercase}'
@@ -274,16 +301,16 @@ var fsLogixScript = './Set-FSLogixRegKeys.ps1'
 var fslogixSharePath = '\\\\${avdFslogixStorageName}.file.${environment().suffixes.storage}\\${avdFslogixFileShareName}'
 var FsLogixScriptArguments = '-volumeshare ${fslogixSharePath}'
 var avdAgentPackageLocation = 'https://wvdportalstorageblob.blob.${environment().suffixes.storage}/galleryartifacts/Configuration_01-20-2022.zip'
-var avdFslogixStorageName = 'fslogix${uniqueString(deploymentPrefixLowercase, locationLowercase)}${deploymentPrefixLowercase}'
+var avdFslogixStorageName = 'fslogix${uniqueString(deploymentPrefixLowercase, avdSessionHostLocationLowercase)}${deploymentPrefixLowercase}'
 var avdFslogixFileShareName = 'fslogix-${deploymentPrefixLowercase}'
-var avdSharedSResourcesStorageName = 'avd${uniqueString(deploymentPrefixLowercase, locationLowercase)}shared'
+var avdSharedSResourcesStorageName = 'avd${uniqueString(deploymentPrefixLowercase, avdSessionHostLocationLowercase)}shared'
 var avdSharedSResourcesAibContainerName = 'aib-${deploymentPrefixLowercase}'
 var avdSharedSResourcesScriptsContainerName = 'scripts-${deploymentPrefixLowercase}'
-var avdSharedServicesKvName = 'avd-${uniqueString(deploymentPrefixLowercase, locationLowercase)}-shared' // max length limit 24 characters
-var avdWrklKvName = 'avd-${uniqueString(deploymentPrefixLowercase, locationLowercase)}-${deploymentPrefixLowercase}' // max length limit 24 characters
+var avdSharedServicesKvName = 'avd-${uniqueString(deploymentPrefixLowercase, avdSessionHostLocationLowercase)}-shared' // max length limit 24 characters
+var avdWrklKvName = 'avd-${uniqueString(deploymentPrefixLowercase, avdSessionHostLocationLowercase)}-${deploymentPrefixLowercase}' // max length limit 24 characters
 var avdSessionHostNamePrefix = 'avdsh-${deploymentPrefix}'
 var avdAvailabilitySetName = 'avdas-${deploymentPrefix}'
-var allAvailabilityZones = pickZones('Microsoft.Compute', 'virtualMachines', location, 3)
+var allAvailabilityZones = pickZones('Microsoft.Compute', 'virtualMachines', avdSessionHostLocation, 3)
 
 // =========== //
 // Deployments //
@@ -296,7 +323,7 @@ module avdSharedResourcesRg '../arm/Microsoft.Resources/resourceGroups/deploy.bi
     name: 'AVD-RG-Shared-Resources-${time}'
     params: {
         name: avdSharedResourcesRgName
-        location: location
+        location: avdSessionHostLocation
     }
 }
 // AVD Workload subscription RGs
@@ -305,7 +332,7 @@ module avdServiceObjectsRg '../arm/Microsoft.Resources/resourceGroups/deploy.bic
     name: 'AVD-RG-ServiceObjects-${time}'
     params: {
         name: avdServiceObjectsRgName
-        location: location
+        location: avdManagementPlaneLocation
     }
 }
 
@@ -314,7 +341,7 @@ module avdNetworkObjectsRg '../arm/Microsoft.Resources/resourceGroups/deploy.bic
     name: 'AVD-RG-Network-${time}'
     params: {
         name: avdNetworkObjectsRgName
-        location: location
+        location: avdSessionHostLocation
     }
 }
 
@@ -323,7 +350,7 @@ module avdComputeObjectsRg '../arm/Microsoft.Resources/resourceGroups/deploy.bic
     name: 'AVD-RG-Compute-${time}'
     params: {
         name: avdComputeObjectsRgName
-        location: location
+        location: avdSessionHostLocation
     }
 }
 
@@ -332,7 +359,7 @@ module avdStorageObjectsRg '../arm/Microsoft.Resources/resourceGroups/deploy.bic
     name: 'AVD-RG-Storage-${time}'
     params: {
         name: avdStorageObjectsRgName
-        location: location
+        location: avdSessionHostLocation
     }
 }
 //
@@ -343,7 +370,7 @@ module avdNetworksecurityGroup '../arm/Microsoft.Network/networkSecurityGroups/d
     name: 'AVD-NSG-${time}'
     params: {
         name: avdNetworksecurityGroupName
-        location: location
+        location: avdSessionHostLocation
     }
     dependsOn: [
         avdNetworkObjectsRg
@@ -355,7 +382,7 @@ module avdApplicationSecurityGroup '../arm/Microsoft.Network/applicationSecurity
     name: 'AVD-ASG-${time}'
     params: {
         name: avdApplicationsecurityGroupName
-        location: location
+        location: avdSessionHostLocation
     }
     dependsOn: [
         avdNetworkObjectsRg
@@ -367,7 +394,7 @@ module avdRouteTable '../arm/Microsoft.Network/routeTables/deploy.bicep' = if (c
     name: 'AVD-UDR-${time}'
     params: {
         name: avdRouteTableName
-        location: location
+        location: avdSessionHostLocation
     }
     dependsOn: [
         avdNetworkObjectsRg
@@ -379,7 +406,7 @@ module avdVirtualNetwork '../arm/Microsoft.Network/virtualNetworks/deploy.bicep'
     name: 'AVD-vNet-${time}'
     params: {
         name: avdVnetworkName
-        location: location
+        location: avdSessionHostLocation
         addressPrefixes: avdVnetworkAddressPrefixes
         dnsServers: customDnsAvailable ? customDnsIps : []
         virtualNetworkPeerings: [
@@ -426,7 +453,7 @@ module avdWorkSpace '../arm/Microsoft.DesktopVirtualization/workspaces/deploy.bi
     name: 'AVD-WorkSpace-${time}'
     params: {
         name: avdWorkSpaceName
-        location: location
+        location: avdManagementPlaneLocation
         appGroupResourceIds: [
             avdApplicationGroup.outputs.resourceId
         ]
@@ -442,11 +469,13 @@ module avdHostPool '../arm/Microsoft.DesktopVirtualization/hostpools/deploy.bice
     name: 'AVD-HostPool-${time}'
     params: {
         name: avdHostPoolName
-        location: location
+        location: avdManagementPlaneLocation
         hostpoolType: avdHostPoolType
         startVMOnConnect: avdStartVMOnConnect
-        loadBalancerType: avdHostPoolloadBalancerType
         customRdpProperty: avdHostPoolRdpProperty
+        loadBalancerType: (avdHostPoolType == 'Pooled') ? avdHostPoolloadBalancerType: null
+        maxSessionLimit: (avdHostPoolType == 'Pooled') ? avhHostPoolMaxSessions: null
+        personalDesktopAssignmentType: (avdHostPoolType == 'Personal') ? avdPersonalAssignType: null
     }
     dependsOn: [
         avdServiceObjectsRg
@@ -476,7 +505,7 @@ module avdApplicationGroup '../arm/Microsoft.DesktopVirtualization/applicationgr
     name: 'AVD-ApplicationGroup-${time}'
     params: {
         name: avdApplicationGroupName
-        location: location
+        location: avdManagementPlaneLocation
         applicationGroupType: avdApplicationGroupType
         hostpoolName: avdHostPool.outputs.name
     }
@@ -549,7 +578,7 @@ module imageBuilderManagedIdentity '../arm/Microsoft.ManagedIdentity/userAssigne
     name: 'image-Builder-Managed-Identity-${time}'
     params: {
         name: aibManagedIdentityName
-        location: location
+        location: avdSessionHostLocation
     }
     dependsOn: [
         avdSharedResourcesRg
@@ -607,7 +636,7 @@ module azureComputeGallery '../arm/Microsoft.Compute/galleries/deploy.bicep' = i
     name: 'Deploy-Azure-Compute-Gallery-${time}'
     params: {
         name: imageGalleryName
-        location: location
+        location: avdSessionHostLocation
 
         galleryDescription: 'Azure Virtual Desktops Images'
     }
@@ -720,7 +749,7 @@ module avdWrklKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep' = {
     name: 'AVD-Workload-KeyVault-${time}'
     params: {
         name: avdWrklKvName
-        location: location
+        location: avdSessionHostLocation
         enableRbacAuthorization: false
         softDeleteRetentionInDays: 7
         networkAcls: {
@@ -781,7 +810,7 @@ module avdSharedServicesKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep'
     name: 'AVD-Shared-Services-KeyVault-${time}'
     params: {
         name: avdSharedServicesKvName
-        location: location
+        location: avdSessionHostLocation
         enableRbacAuthorization: false
         softDeleteRetentionInDays: 7
         networkAcls: {
@@ -803,7 +832,7 @@ module fslogixStorage '../arm/Microsoft.Storage/storageAccounts/deploy.bicep' = 
     name: 'AVD-Fslogix-Storage-${time}'
     params: {
         name: avdFslogixStorageName
-        location: location
+        location: avdSessionHostLocation
         storageAccountSku: avdUseAvailabilityZones ? 'Premium_ZRS' : 'Premium_LRS'
         allowBlobPublicAccess: false
         //azureFilesIdentityBasedAuthentication:
@@ -840,7 +869,7 @@ module avdSharedServicesStorage '../arm/Microsoft.Storage/storageAccounts/deploy
     name: 'AVD-Shared-Services-Storage-${time}'
     params: {
         name: avdSharedSResourcesStorageName
-        location: location
+        location: avdSessionHostLocation
         storageAccountSku: avdUseAvailabilityZones ? 'Standard_ZRS' : 'Standard_LRS'
         storageAccountKind: 'StorageV2'
         blobServices: {
@@ -868,7 +897,7 @@ module avdAvailabilitySet '../arm/Microsoft.Compute/availabilitySets/deploy.bice
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
     params: {
         name: avdAvailabilitySetName
-        location: location
+        location: avdSessionHostLocation
         availabilitySetFaultDomain: 3
         availabilitySetUpdateDomain: 5
     }
@@ -897,9 +926,8 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
     //retry: 5
     params: {
         name: '${avdSessionHostNamePrefix}-${i}'
-        location: location
+        location: avdSessionHostLocation
         systemAssignedIdentity: true
-        //availabilityZone: avdUseAvailabilityZones ? take(skip(allAvailabilityZones, i % length(allAvailabilityZones)), 1) : avdAvailabilityZones
         availabilityZone: avdUseAvailabilityZones ? take(skip(allAvailabilityZones, i % length(allAvailabilityZones)), 1) : []
         encryptionAtHost: encryptionAtHost
         availabilitySetName: !avdUseAvailabilityZones ? (avdDeploySessionHosts ? avdAvailabilitySet.outputs.name : '') : ''
@@ -936,7 +964,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         extensionDomainJoinConfig: {
             enabled: true
             settings: {
-                name: Domain
+                name: avdIdentityDomainName
                 ouPath: !empty(avdOuPath) ? avdOuPath : null
                 user: avdDomainJoinUserName
                 restart: 'true'
@@ -973,7 +1001,7 @@ module addAvdHostsToHostPool '../arm/Microsoft.Compute/virtualMachines/extension
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
     name: 'Add-AVD-Session-Host-${i}-to-HostPool-${time}'
     params: {
-        location: location
+        location: avdSessionHostLocation
         hostPoolToken: '${hostPool.properties.registrationInfo.token}'
         name: '${avdSessionHostNamePrefix}-${i}'
         hostPoolName: avdHostPoolName
@@ -989,7 +1017,7 @@ module configureFsLogixForAvdHosts '../arm/Microsoft.Compute/virtualMachines/ext
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
     name: 'Configure-FsLogix-for-${avdSessionHostNamePrefix}-${i}-${time}'
     params: {
-        location: location
+        location: avdSessionHostLocation
         name: '${avdSessionHostNamePrefix}-${i}'
         file: fsLogixScript
         FsLogixScriptArguments: FsLogixScriptArguments

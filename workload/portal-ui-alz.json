@@ -760,16 +760,19 @@
         "outputs": {
             "parameters": {
                 "deploymentPrefix": "[steps('avdLzSettings').avdDeploymentPrefix]",
-                "avdSubOrgsOption": "[steps('avdLzSettings').avdSubOrgsOption]",
-                "avdSingleSub": "[steps('avdLzSettings').avdSingleSubSection.avdSingleSub]",
-                "avdShrdlSubscriptionId": "[steps('avdLzSettings').avdMultipleSubSection.avdMultipleSubShared]",
-                "avdWrklSubscriptionId": "[steps('avdLzSettings').avdMultipleSubSection.avdMultipleSubWorkload]",
-                "avdManagementPlaneLocation": "[steps('avdManagementPlane').avdDeploymentLocations.avdManagementPlaneLocation]",
                 "avdSessionHostLocation": "[steps('avdManagementPlane').avdDeploymentLocations.avdSessionHostLocation]",
+                "avdManagementPlaneLocation": "[steps('avdManagementPlane').avdDeploymentLocations.avdManagementPlaneLocation]",
+                "avdSubOrgsOption": "[steps('avdLzSettings').avdSubOrgsOption]",
+                "avdSingleSubsId": "[steps('avdLzSettings').avdSingleSubSection.avdSingleSub]",
+                "avdShrdlSubsId": "[steps('avdLzSettings').avdMultipleSubSection.avdMultipleSubShared]",
+                "avdWrklSubsId": "[steps('avdLzSettings').avdMultipleSubSection.avdMultipleSubWorkload]",
                 "avdHostPoolType": "[steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.hostPoolType]",
                 "avdHostPoolloadBalancerType": "[steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.loadBalancerType]",
-                "maxSessions": "[steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.maxSessions]",
-                "assignmentType": "[steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.assignmentType]",
+                "avhHostPoolMaxSessions": "[steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.maxSessions]",
+                "avdPersonalAssignType": "[steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.assignmentType]",
+
+
+
                 "avdStartVMOnConnect": "[steps('avdManagementPlane').avdManagementPlaneHostPoolScaling.startVmOnConnect]",
                 "createVmRole": "[steps('avdManagementPlane').avdManagementPlaneHostPoolScaling.createVmRole]",
                 "avdIdentityDomainName": "[steps('avdIdentity').avdIdentityDomainInformation.avdIdentityDomainName]",
