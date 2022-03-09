@@ -756,7 +756,7 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
                 $DeploymentScriptOutputs="Build Failed"
                 throw "Build Failed"
             }
-            if ($status -eq "Canceled") -or ($status -eq "Canceling") {
+            if ($status -eq "Canceled") {
                 Write-Host "User canceled the build. Delete the Image template definition: $imageTemplateName"
                 throw "User canceled the build."
             }
