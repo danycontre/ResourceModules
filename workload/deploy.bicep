@@ -110,13 +110,13 @@ param aiblocation string = 'eastus2'
 param createAibCustomRole bool = true
 
 @allowed([
-    'win10-21h2-office'
-    'win10-21h2'
-    'win11-21h2-office'
-    'win11-21h2'
+    'win10_21h2_office'
+    'win10_21h2'
+    'win11_21h2_office'
+    'win11_21h2'
 ])
 @description('Required. AVD OS image source (Default: win10-21h2)')
-param avdOsImage string = 'win10-21h2'
+param avdOsImage string = 'win10_21h2'
 
 @description('Set to deploy image from Azure Compute Gallery')
 param useSharedImage bool
@@ -198,12 +198,12 @@ var avdWorkSpaceName = 'avdws-${deploymentPrefixLowercase}'
 var avdHostPoolName = 'avdhp-${deploymentPrefixLowercase}'
 var avdApplicationGroupName = 'avdag-${deploymentPrefixLowercase}'
 var aibManagedIdentityName = 'avd-uai-aib'
-var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
+var imageDefinitionsTemSpecName = 'AVDImageDefinition_${avdOsImage}'
 var imageTemplateBuildName = 'AVD-Image-Template-Build'
 var avdEnterpriseApplicationId = '486795c7-d929-4b48-a99e-3c5329d4ce86' // needs to be queried.
 //var hyperVGeneration = 'V2'
 var avdOsImageDefinitions = {
-    'win10-21h2-office': {
+    'win10_21h2_office': {
         name: 'Windows10_21H2_Office'
         osType: 'Windows'
         osState: 'Generalized'
@@ -212,7 +212,7 @@ var avdOsImageDefinitions = {
         sku: 'win10-21h2-avd-m365'
         hyperVGeneration: 'V1'
     }
-    'win10-21h2': {
+    'win10_21h2': {
         name: 'Windows10_21H2'
         osType: 'Windows'
         osState: 'Generalized'
@@ -221,7 +221,7 @@ var avdOsImageDefinitions = {
         sku: '21h2-avd'
         hyperVGeneration: 'V1'
     }
-    'win11-21h2-office': {
+    'win11_21h2_office': {
         name: 'Windows11_21H2'
         osType: 'Windows'
         osState: 'Generalized'
@@ -230,7 +230,7 @@ var avdOsImageDefinitions = {
         sku: 'win11-21h2-avd-m365'
         hyperVGeneration: 'V2'
     }
-    'win11-21h2': {
+    'win11_21h2': {
         name: 'Windows11_21H2'
         osType: 'Windows'
         osState: 'Generalized'
@@ -242,28 +242,28 @@ var avdOsImageDefinitions = {
 }
 
 var marketPlaceGalleryWindows = {
-    'win10-21h2-office': {
+    'win10_21h2_office': {
         publisher: 'MicrosoftWindowsDesktop'
         offer: 'office-365'
         sku: 'win10-21h2-avd-m365'
         version: 'latest'
     }
 
-    'win10-21h2': {
+    'win10_21h2': {
         publisher: 'MicrosoftWindowsDesktop'
         offer: 'Windows-10'
         sku: '21h2-avd'
         version: 'latest'
     }
 
-    'win11-21h2-office': {
+    'win11_21h2_office': {
         publisher: 'MicrosoftWindowsDesktop'
         offer: 'office-365'
         sku: 'win11-21h2-avd-m365'
         version: 'latest'
     }
 
-    'win11-21h2': {
+    'win11_21h2': {
         publisher: 'MicrosoftWindowsDesktop'
         offer: 'Windows-11'
         sku: 'win11-21h2-avd'
