@@ -13,7 +13,7 @@ Write-Host 'Loading up the repo to local folder'
 Invoke-WebRequest -Uri $osOptURL -OutFile $outputPath
 Write-Host 'AIB Customization: Starting OS Optimizations script'
 Expand-Archive -LiteralPath 'C:\\Optimize\\Windows_10_VDI_Optimize-main.zip' -DestinationPath $Localpath -Force -Verbose
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Force -Verbose
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Force -Verbose -Scope MachinePolicy
 Set-Location -Path C:\\Optimize\\Virtual-Desktop-Optimization-Tool-main
 
 # instrumentation
