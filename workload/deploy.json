@@ -5,38 +5,63 @@
     "_generator": {
       "name": "bicep",
       "version": "0.4.1272.37030",
-      "templateHash": "56431019054391264"
+      "templateHash": "6877610918791702710"
     }
   },
   "parameters": {
-    "location": {
-      "type": "string",
-      "defaultValue": "[deployment().location]",
-      "metadata": {
-        "description": "Required. The location to deploy into"
-      }
-    },
     "deploymentPrefix": {
       "type": "string",
-      "defaultValue": "App1",
+      "defaultValue": "",
       "metadata": {
         "description": "Required. The name of the resource group to deploy"
       },
       "maxLength": 4,
       "minLength": 2
     },
-    "avdShrdlSubscriptionId": {
+    "avdSubOrgsOption": {
+      "type": "string",
+      "defaultValue": "Multiple",
+      "metadata": {
+        "description": "Required. AVD subscription model (Default: Multiple)"
+      },
+      "allowedValues": [
+        "Multiple",
+        "Single"
+      ]
+    },
+    "avdSessionHostLocation": {
       "type": "string",
       "defaultValue": "",
       "metadata": {
-        "description": "Required. AVD shared services subscription ID"
+        "description": "Required. Location where to deploy compute services"
       }
     },
-    "avdWrklSubscriptionId": {
+    "avdManagementPlaneLocation": {
       "type": "string",
       "defaultValue": "",
       "metadata": {
-        "description": "Required. AVD workload subscription ID"
+        "description": "Required. Location where to deploy AVD management plane"
+      }
+    },
+    "avdSingleSubsId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. AVD shared services subscription ID, single subscriptions scenario"
+      }
+    },
+    "avdShrdlSubsId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. AVD shared services subscription ID, multiple subscriptions scenario"
+      }
+    },
+    "avdWrklSubsId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. AVD workload subscription ID, multiple subscriptions scenario"
       }
     },
     "avdVmLocalUserName": {
@@ -49,6 +74,13 @@
     "avdVmLocalUserPassword": {
       "type": "secureString",
       "defaultValue": ""
+    },
+    "avdIdentityDomainName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Required. AD domain name"
+      }
     },
     "avdDomainJoinUserName": {
       "type": "string",
@@ -72,7 +104,7 @@
       "type": "string",
       "defaultValue": "",
       "metadata": {
-        "description": "Id to grant access to on AVD workload key vault secrets"
+        "description": "Optional. Id to grant access to on AVD workload key vault secrets"
       }
     },
     "avdHostPoolType": {
@@ -86,16 +118,34 @@
         "Pooled"
       ]
     },
+    "avdPersonalAssignType": {
+      "type": "string",
+      "defaultValue": "Automatic",
+      "metadata": {
+        "description": "Optional. AVD host pool type (Default: Automatic)"
+      },
+      "allowedValues": [
+        "Automatic",
+        "Direct"
+      ]
+    },
     "avdHostPoolloadBalancerType": {
       "type": "string",
       "defaultValue": "BreadthFirst",
       "metadata": {
-        "description": "Optional. AVD host pool load balacing type (Default: BreadthFirst)"
+        "description": "Required. AVD host pool load balacing type (Default: BreadthFirst)"
       },
       "allowedValues": [
         "BreadthFirst",
         "DepthFirst"
       ]
+    },
+    "avhHostPoolMaxSessions": {
+      "type": "int",
+      "defaultValue": 15,
+      "metadata": {
+        "description": "Optional. AVD host pool maximum number of user sessions per session host"
+      }
     },
     "avdStartVMOnConnect": {
       "type": "bool",
@@ -104,16 +154,12 @@
         "description": "Optional. AVD host pool start VM on Connect (Default: true)"
       }
     },
-    "avdApplicationGroupType": {
-      "type": "string",
-      "defaultValue": "Desktop",
+    "avdDeployRAppGroup": {
+      "type": "bool",
+      "defaultValue": true,
       "metadata": {
-        "description": "Optional. AVD application group type (Default: Desktop)"
-      },
-      "allowedValues": [
-        "Desktop",
-        "RemoteApp"
-      ]
+        "description": "Optional. AVD deploy remote app application group (Default: true)"
+      }
     },
     "avdHostPoolRdpProperty": {
       "type": "string",
@@ -237,7 +283,7 @@
     },
     "avdDeploySessionHostsCount": {
       "type": "int",
-      "defaultValue": 1,
+      "defaultValue": 3,
       "metadata": {
         "description": "Cuantity of session hosts to deploy"
       },
@@ -347,26 +393,28 @@
   },
   "variables": {
     "deploymentPrefixLowercase": "[toLower(parameters('deploymentPrefix'))]",
-    "locationLowercase": "[toLower(parameters('location'))]",
-    "avdDomainJoinUserPasswordSecretName": "[split(parameters('avdDomainJoinUserName'), '@')]",
-    "Domain": "[last(split(parameters('avdDomainJoinUserName'), '@'))]",
-    "avdServiceObjectsRgName": "[format('rg-{0}-avd-{1}-service-objects', variables('locationLowercase'), variables('deploymentPrefixLowercase'))]",
-    "avdNetworkObjectsRgName": "[format('rg-{0}-avd-{1}-network', variables('locationLowercase'), variables('deploymentPrefixLowercase'))]",
-    "avdComputeObjectsRgName": "[format('rg-{0}-avd-{1}-pool-compute', variables('locationLowercase'), variables('deploymentPrefixLowercase'))]",
-    "avdStorageObjectsRgName": "[format('rg-{0}-avd-{1}-storage', variables('locationLowercase'), variables('deploymentPrefixLowercase'))]",
-    "avdSharedResourcesRgName": "[format('rg-{0}-avd-shared-resources', variables('locationLowercase'))]",
-    "imageGalleryName": "[format('avdgallery{0}', variables('locationLowercase'))]",
+    "avdSessionHostLocationLowercase": "[toLower(parameters('avdSessionHostLocation'))]",
+    "avdManagementPlaneLocationLowercase": "[toLower(parameters('avdManagementPlaneLocation'))]",
+    "avdWrklSubscriptionId": "[if(equals(parameters('avdSubOrgsOption'), 'Multiple'), parameters('avdWrklSubsId'), parameters('avdSingleSubsId'))]",
+    "avdShrdlSubscriptionId": "[if(equals(parameters('avdSubOrgsOption'), 'Multiple'), parameters('avdShrdlSubsId'), parameters('avdSingleSubsId'))]",
+    "avdServiceObjectsRgName": "[format('rg-{0}-avd-{1}-service-objects', variables('avdManagementPlaneLocationLowercase'), variables('deploymentPrefixLowercase'))]",
+    "avdNetworkObjectsRgName": "[format('rg-{0}-avd-{1}-network', variables('avdSessionHostLocationLowercase'), variables('deploymentPrefixLowercase'))]",
+    "avdComputeObjectsRgName": "[format('rg-{0}-avd-{1}-pool-compute', variables('avdSessionHostLocationLowercase'), variables('deploymentPrefixLowercase'))]",
+    "avdStorageObjectsRgName": "[format('rg-{0}-avd-{1}-storage', variables('avdSessionHostLocationLowercase'), variables('deploymentPrefixLowercase'))]",
+    "avdSharedResourcesRgName": "[format('rg-{0}-avd-shared-resources', variables('avdSessionHostLocationLowercase'))]",
+    "imageGalleryName": "[format('avdgallery{0}', variables('avdSessionHostLocationLowercase'))]",
     "existingVnetResourceId": "[format('/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Network/virtualNetworks/{2}', parameters('existingVnetSubscriptionId'), parameters('existingVnetRgName'), parameters('existingVnetName'))]",
     "hubVnetId": "[format('/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Network/virtualNetworks/{2}', parameters('existingHubVnetSubscriptionId'), parameters('existingHubVnetRgName'), parameters('existingHubVnetName'))]",
-    "avdVnetworkName": "[format('vnet-{0}-avd-{1}', variables('locationLowercase'), variables('deploymentPrefixLowercase'))]",
+    "avdVnetworkName": "[format('vnet-{0}-avd-{1}', variables('avdSessionHostLocationLowercase'), variables('deploymentPrefixLowercase'))]",
     "avdVnetworkSubnetName": "[format('avd-{0}', variables('deploymentPrefixLowercase'))]",
-    "avdNetworksecurityGroupName": "[format('nsg-{0}-avd-{1}', variables('locationLowercase'), variables('deploymentPrefixLowercase'))]",
-    "avdRouteTableName": "[format('udr-{0}-avd-{1}', variables('locationLowercase'), variables('deploymentPrefixLowercase'))]",
-    "avdApplicationsecurityGroupName": "[format('asg-{0}-avd-{1}', variables('locationLowercase'), variables('deploymentPrefixLowercase'))]",
-    "avdVNetworkPeeringName": "[format('{0}-virtualNetworkPeering-avd-{1}', uniqueString(variables('deploymentPrefixLowercase'), parameters('location')), variables('deploymentPrefixLowercase'))]",
+    "avdNetworksecurityGroupName": "[format('nsg-{0}-avd-{1}', variables('avdSessionHostLocationLowercase'), variables('deploymentPrefixLowercase'))]",
+    "avdRouteTableName": "[format('udr-{0}-avd-{1}', variables('avdSessionHostLocationLowercase'), variables('deploymentPrefixLowercase'))]",
+    "avdApplicationsecurityGroupName": "[format('asg-{0}-avd-{1}', variables('avdSessionHostLocationLowercase'), variables('deploymentPrefixLowercase'))]",
+    "avdVNetworkPeeringName": "[format('{0}-virtualNetworkPeering-avd-{1}', uniqueString(variables('deploymentPrefixLowercase'), parameters('avdSessionHostLocation')), variables('deploymentPrefixLowercase'))]",
     "avdWorkSpaceName": "[format('avdws-{0}', variables('deploymentPrefixLowercase'))]",
     "avdHostPoolName": "[format('avdhp-{0}', variables('deploymentPrefixLowercase'))]",
-    "avdApplicationGroupName": "[format('avdag-{0}', variables('deploymentPrefixLowercase'))]",
+    "avdApplicationGroupNameDesktop": "[format('avd-dag-{0}', variables('deploymentPrefixLowercase'))]",
+    "avdApplicationGroupNameRApp": "[format('avd-raag-{0}', variables('deploymentPrefixLowercase'))]",
     "aibManagedIdentityName": "avd-uai-aib",
     "imageDefinitionsTemSpecName": "[format('AVD-Image-Definition-{0}', parameters('avdOsImage'))]",
     "imageTemplateBuildName": "AVD-Image-Template-Build",
@@ -438,23 +486,23 @@
     "fslogixSharePath": "[format('\\\\{0}.file.{1}\\{2}', variables('avdFslogixStorageName'), environment().suffixes.storage, variables('avdFslogixFileShareName'))]",
     "FsLogixScriptArguments": "[format('-volumeshare {0}', variables('fslogixSharePath'))]",
     "avdAgentPackageLocation": "[format('https://wvdportalstorageblob.blob.{0}/galleryartifacts/Configuration_01-20-2022.zip', environment().suffixes.storage)]",
-    "avdFslogixStorageName": "[format('fslogix{0}{1}', uniqueString(variables('deploymentPrefixLowercase'), variables('locationLowercase')), variables('deploymentPrefixLowercase'))]",
+    "avdFslogixStorageName": "[format('fslogix{0}{1}', uniqueString(variables('deploymentPrefixLowercase'), variables('avdSessionHostLocationLowercase')), variables('deploymentPrefixLowercase'))]",
     "avdFslogixFileShareName": "[format('fslogix-{0}', variables('deploymentPrefixLowercase'))]",
-    "avdSharedSResourcesStorageName": "[format('avd{0}shared', uniqueString(variables('deploymentPrefixLowercase'), variables('locationLowercase')))]",
+    "avdSharedSResourcesStorageName": "[format('avd{0}shared', uniqueString(variables('deploymentPrefixLowercase'), variables('avdSessionHostLocationLowercase')))]",
     "avdSharedSResourcesAibContainerName": "[format('aib-{0}', variables('deploymentPrefixLowercase'))]",
     "avdSharedSResourcesScriptsContainerName": "[format('scripts-{0}', variables('deploymentPrefixLowercase'))]",
-    "avdSharedServicesKvName": "[format('avd-{0}-shared', uniqueString(variables('deploymentPrefixLowercase'), variables('locationLowercase')))]",
-    "avdWrklKvName": "[format('avd-{0}-{1}', uniqueString(variables('deploymentPrefixLowercase'), variables('locationLowercase')), variables('deploymentPrefixLowercase'))]",
+    "avdSharedServicesKvName": "[format('avd-{0}-shared', uniqueString(variables('deploymentPrefixLowercase'), variables('avdSessionHostLocationLowercase')))]",
+    "avdWrklKvName": "[format('avd-{0}-{1}', uniqueString(variables('deploymentPrefixLowercase'), variables('avdSessionHostLocationLowercase')), variables('deploymentPrefixLowercase'))]",
     "avdSessionHostNamePrefix": "[format('avdsh-{0}', parameters('deploymentPrefix'))]",
     "avdAvailabilitySetName": "[format('avdas-{0}', parameters('deploymentPrefix'))]",
-    "allAvailabilityZones": "[pickZones('Microsoft.Compute', 'virtualMachines', parameters('location'), 3)]"
+    "allAvailabilityZones": "[pickZones('Microsoft.Compute', 'virtualMachines', parameters('avdSessionHostLocation'), 3)]"
   },
   "resources": [
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('AVD-RG-Shared-Resources-{0}', parameters('time'))]",
-      "subscriptionId": "[parameters('avdShrdlSubscriptionId')]",
+      "subscriptionId": "[variables('avdShrdlSubscriptionId')]",
       "location": "[deployment().location]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -466,7 +514,7 @@
             "value": "[variables('avdSharedResourcesRgName')]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[parameters('avdSessionHostLocation')]"
           }
         },
         "template": {
@@ -888,7 +936,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('AVD-RG-ServiceObjects-{0}', parameters('time'))]",
-      "subscriptionId": "[parameters('avdWrklSubscriptionId')]",
+      "subscriptionId": "[variables('avdWrklSubscriptionId')]",
       "location": "[deployment().location]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -900,7 +948,7 @@
             "value": "[variables('avdServiceObjectsRgName')]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[parameters('avdManagementPlaneLocation')]"
           }
         },
         "template": {
@@ -1323,7 +1371,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('AVD-RG-Network-{0}', parameters('time'))]",
-      "subscriptionId": "[parameters('avdWrklSubscriptionId')]",
+      "subscriptionId": "[variables('avdWrklSubscriptionId')]",
       "location": "[deployment().location]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -1335,7 +1383,7 @@
             "value": "[variables('avdNetworkObjectsRgName')]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[parameters('avdSessionHostLocation')]"
           }
         },
         "template": {
@@ -1757,7 +1805,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('AVD-RG-Compute-{0}', parameters('time'))]",
-      "subscriptionId": "[parameters('avdWrklSubscriptionId')]",
+      "subscriptionId": "[variables('avdWrklSubscriptionId')]",
       "location": "[deployment().location]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -1769,7 +1817,7 @@
             "value": "[variables('avdComputeObjectsRgName')]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[parameters('avdSessionHostLocation')]"
           }
         },
         "template": {
@@ -2191,7 +2239,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('AVD-RG-Storage-{0}', parameters('time'))]",
-      "subscriptionId": "[parameters('avdWrklSubscriptionId')]",
+      "subscriptionId": "[variables('avdWrklSubscriptionId')]",
       "location": "[deployment().location]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -2203,7 +2251,7 @@
             "value": "[variables('avdStorageObjectsRgName')]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[parameters('avdSessionHostLocation')]"
           }
         },
         "template": {
@@ -2626,7 +2674,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('AVD-NSG-{0}', parameters('time'))]",
-      "subscriptionId": "[format('{0}', parameters('avdWrklSubscriptionId'))]",
+      "subscriptionId": "[format('{0}', variables('avdWrklSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdNetworkObjectsRgName'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -2638,7 +2686,7 @@
             "value": "[variables('avdNetworksecurityGroupName')]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[parameters('avdSessionHostLocation')]"
           }
         },
         "template": {
@@ -2981,7 +3029,7 @@
         }
       },
       "dependsOn": [
-        "[subscriptionResourceId(parameters('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Network-{0}', parameters('time')))]"
+        "[subscriptionResourceId(variables('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Network-{0}', parameters('time')))]"
       ]
     },
     {
@@ -2989,7 +3037,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('AVD-ASG-{0}', parameters('time'))]",
-      "subscriptionId": "[format('{0}', parameters('avdWrklSubscriptionId'))]",
+      "subscriptionId": "[format('{0}', variables('avdWrklSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdNetworkObjectsRgName'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -3001,7 +3049,7 @@
             "value": "[variables('avdApplicationsecurityGroupName')]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[parameters('avdSessionHostLocation')]"
           }
         },
         "template": {
@@ -3228,7 +3276,7 @@
         }
       },
       "dependsOn": [
-        "[subscriptionResourceId(parameters('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Network-{0}', parameters('time')))]"
+        "[subscriptionResourceId(variables('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Network-{0}', parameters('time')))]"
       ]
     },
     {
@@ -3236,7 +3284,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('AVD-UDR-{0}', parameters('time'))]",
-      "subscriptionId": "[format('{0}', parameters('avdWrklSubscriptionId'))]",
+      "subscriptionId": "[format('{0}', variables('avdWrklSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdNetworkObjectsRgName'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -3248,7 +3296,7 @@
             "value": "[variables('avdRouteTableName')]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[parameters('avdSessionHostLocation')]"
           }
         },
         "template": {
@@ -3488,7 +3536,7 @@
         }
       },
       "dependsOn": [
-        "[subscriptionResourceId(parameters('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Network-{0}', parameters('time')))]"
+        "[subscriptionResourceId(variables('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Network-{0}', parameters('time')))]"
       ]
     },
     {
@@ -3496,7 +3544,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('AVD-vNet-{0}', parameters('time'))]",
-      "subscriptionId": "[format('{0}', parameters('avdWrklSubscriptionId'))]",
+      "subscriptionId": "[format('{0}', variables('avdWrklSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdNetworkObjectsRgName'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -3508,7 +3556,7 @@
             "value": "[variables('avdVnetworkName')]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[parameters('avdSessionHostLocation')]"
           },
           "addressPrefixes": {
             "value": "[parameters('avdVnetworkAddressPrefixes')]"
@@ -4637,17 +4685,17 @@
         }
       },
       "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-ASG-{0}', parameters('time')))]",
-        "[subscriptionResourceId(parameters('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Network-{0}', parameters('time')))]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-NSG-{0}', parameters('time')))]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-UDR-{0}', parameters('time')))]"
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-ASG-{0}', parameters('time')))]",
+        "[subscriptionResourceId(variables('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Network-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-NSG-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-UDR-{0}', parameters('time')))]"
       ]
     },
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('AVD-WorkSpace-{0}', parameters('time'))]",
-      "subscriptionId": "[format('{0}', parameters('avdWrklSubscriptionId'))]",
+      "subscriptionId": "[format('{0}', variables('avdWrklSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdServiceObjectsRgName'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -4659,11 +4707,12 @@
             "value": "[variables('avdWorkSpaceName')]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[parameters('avdManagementPlaneLocation')]"
           },
           "appGroupResourceIds": {
             "value": [
-              "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-ApplicationGroup-{0}', parameters('time')))).outputs.resourceId.value]"
+              "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-ApplicationGroup-{0}', parameters('time')))).outputs.resourceId.value]",
+              "[if(parameters('avdDeployRAppGroup'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-ApplicationGroup-{0}', parameters('time')))).outputs.resourceId.value, '')]"
             ]
           }
         },
@@ -5002,15 +5051,16 @@
         }
       },
       "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-ApplicationGroup-{0}', parameters('time')))]",
-        "[subscriptionResourceId(parameters('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-ServiceObjects-{0}', parameters('time')))]"
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-ApplicationGroup-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-ApplicationGroup-{0}', parameters('time')))]",
+        "[subscriptionResourceId(variables('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-ServiceObjects-{0}', parameters('time')))]"
       ]
     },
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('AVD-HostPool-{0}', parameters('time'))]",
-      "subscriptionId": "[format('{0}', parameters('avdWrklSubscriptionId'))]",
+      "subscriptionId": "[format('{0}', variables('avdWrklSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdServiceObjectsRgName'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -5022,7 +5072,7 @@
             "value": "[variables('avdHostPoolName')]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[parameters('avdManagementPlaneLocation')]"
           },
           "hostpoolType": {
             "value": "[parameters('avdHostPoolType')]"
@@ -5030,11 +5080,17 @@
           "startVMOnConnect": {
             "value": "[parameters('avdStartVMOnConnect')]"
           },
+          "customRdpProperty": {
+            "value": "[parameters('avdHostPoolRdpProperty')]"
+          },
           "loadBalancerType": {
             "value": "[parameters('avdHostPoolloadBalancerType')]"
           },
-          "customRdpProperty": {
-            "value": "[parameters('avdHostPoolRdpProperty')]"
+          "maxSessionLimit": {
+            "value": "[parameters('avhHostPoolMaxSessions')]"
+          },
+          "personalDesktopAssignmentType": {
+            "value": "[parameters('avdPersonalAssignType')]"
           }
         },
         "template": {
@@ -5499,14 +5555,14 @@
         }
       },
       "dependsOn": [
-        "[subscriptionResourceId(parameters('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-ServiceObjects-{0}', parameters('time')))]"
+        "[subscriptionResourceId(variables('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-ServiceObjects-{0}', parameters('time')))]"
       ]
     },
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('AVD-ApplicationGroup-{0}', parameters('time'))]",
-      "subscriptionId": "[format('{0}', parameters('avdWrklSubscriptionId'))]",
+      "subscriptionId": "[format('{0}', variables('avdWrklSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdServiceObjectsRgName'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -5515,16 +5571,16 @@
         "mode": "Incremental",
         "parameters": {
           "name": {
-            "value": "[variables('avdApplicationGroupName')]"
+            "value": "[variables('avdApplicationGroupNameDesktop')]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[parameters('avdManagementPlaneLocation')]"
           },
           "applicationGroupType": {
-            "value": "[parameters('avdApplicationGroupType')]"
+            "value": "Desktop"
           },
           "hostpoolName": {
-            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-HostPool-{0}', parameters('time')))).outputs.name.value]"
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-HostPool-{0}', parameters('time')))).outputs.name.value]"
           }
         },
         "template": {
@@ -6087,8 +6143,598 @@
         }
       },
       "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-HostPool-{0}', parameters('time')))]",
-        "[subscriptionResourceId(parameters('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-ServiceObjects-{0}', parameters('time')))]"
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-HostPool-{0}', parameters('time')))]",
+        "[subscriptionResourceId(variables('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-ServiceObjects-{0}', parameters('time')))]"
+      ]
+    },
+    {
+      "condition": "[parameters('avdDeployRAppGroup')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "[format('AVD-ApplicationGroup-{0}', parameters('time'))]",
+      "subscriptionId": "[format('{0}', variables('avdWrklSubscriptionId'))]",
+      "resourceGroup": "[format('{0}', variables('avdServiceObjectsRgName'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[variables('avdApplicationGroupNameRApp')]"
+          },
+          "location": {
+            "value": "[parameters('avdManagementPlaneLocation')]"
+          },
+          "applicationGroupType": {
+            "value": "RemoteApp"
+          },
+          "hostpoolName": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-HostPool-{0}', parameters('time')))).outputs.name.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.4.1272.37030",
+              "templateHash": "17402173610326291522"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "metadata": {
+                "description": "Required. Name of the Application Group to create this application in."
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Optional. Location for all resources."
+              }
+            },
+            "applicationGroupType": {
+              "type": "string",
+              "allowedValues": [
+                "RemoteApp",
+                "Desktop"
+              ],
+              "metadata": {
+                "description": "Required. The type of the Application Group to be created. Allowed values: RemoteApp or Desktop"
+              }
+            },
+            "hostpoolName": {
+              "type": "string",
+              "metadata": {
+                "description": "Required. Name of the Host Pool to be linked to this Application Group."
+              }
+            },
+            "friendlyName": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The friendly name of the Application Group to be created."
+              }
+            },
+            "description": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The description of the Application Group to be created."
+              }
+            },
+            "roleAssignments": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Optional. Array of role assignment objects that contain the 'roleDefinitionIdOrName' and 'principalIds' to define RBAC role assignments on this resource. In the roleDefinitionIdOrName attribute, you can provide either the display name of the role definition, or its fully qualified ID in the following format: '/providers/Microsoft.Authorization/roleDefinitions/c2f4ef07-c644-48eb-af81-4b1b4947fb11'"
+              }
+            },
+            "diagnosticLogsRetentionInDays": {
+              "type": "int",
+              "defaultValue": 365,
+              "maxValue": 365,
+              "minValue": 0,
+              "metadata": {
+                "description": "Optional. Specifies the number of days that logs will be kept for; a value of 0 will retain data indefinitely."
+              }
+            },
+            "diagnosticStorageAccountId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. Resource ID of the diagnostic storage account."
+              }
+            },
+            "diagnosticWorkspaceId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. Resource ID of log analytics."
+              }
+            },
+            "diagnosticEventHubAuthorizationRuleId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. Resource ID of the diagnostic event hub authorization rule for the Event Hubs namespace in which the event hub should be created or streamed to."
+              }
+            },
+            "diagnosticEventHubName": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. Name of the diagnostic event hub within the namespace to which logs are streamed. Without this, an event hub is created for each log category."
+              }
+            },
+            "lock": {
+              "type": "string",
+              "defaultValue": "NotSpecified",
+              "metadata": {
+                "description": "Optional. Specify the type of lock."
+              },
+              "allowedValues": [
+                "CanNotDelete",
+                "NotSpecified",
+                "ReadOnly"
+              ]
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Optional. Tags of the resource."
+              }
+            },
+            "cuaId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. Customer Usage Attribution ID (GUID). This GUID must be previously registered"
+              }
+            },
+            "logsToEnable": {
+              "type": "array",
+              "defaultValue": [
+                "Checkpoint",
+                "Error",
+                "Management"
+              ],
+              "allowedValues": [
+                "Checkpoint",
+                "Error",
+                "Management"
+              ],
+              "metadata": {
+                "description": "Optional. The name of logs that will be streamed."
+              }
+            },
+            "applications": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Optional. List of applications to be created in the Application Group."
+              }
+            }
+          },
+          "variables": {
+            "copy": [
+              {
+                "name": "diagnosticsLogs",
+                "count": "[length(parameters('logsToEnable'))]",
+                "input": {
+                  "category": "[parameters('logsToEnable')[copyIndex('diagnosticsLogs')]]",
+                  "enabled": true,
+                  "retentionPolicy": {
+                    "enabled": true,
+                    "days": "[parameters('diagnosticLogsRetentionInDays')]"
+                  }
+                }
+              }
+            ]
+          },
+          "resources": [
+            {
+              "type": "Microsoft.DesktopVirtualization/applicationGroups",
+              "apiVersion": "2021-07-12",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "hostPoolArmPath": "[resourceId('Microsoft.DesktopVirtualization/hostPools', parameters('hostpoolName'))]",
+                "friendlyName": "[parameters('friendlyName')]",
+                "description": "[parameters('description')]",
+                "applicationGroupType": "[parameters('applicationGroupType')]"
+              }
+            },
+            {
+              "condition": "[not(equals(parameters('lock'), 'NotSpecified'))]",
+              "type": "Microsoft.Authorization/locks",
+              "apiVersion": "2017-04-01",
+              "scope": "[format('Microsoft.DesktopVirtualization/applicationGroups/{0}', parameters('name'))]",
+              "name": "[format('{0}-{1}-lock', parameters('name'), parameters('lock'))]",
+              "properties": {
+                "level": "[parameters('lock')]",
+                "notes": "[if(equals(parameters('lock'), 'CanNotDelete'), 'Cannot delete resource or child resources.', 'Cannot modify the resource or child resources.')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.DesktopVirtualization/applicationGroups', parameters('name'))]"
+              ]
+            },
+            {
+              "condition": "[or(or(or(not(empty(parameters('diagnosticStorageAccountId'))), not(empty(parameters('diagnosticWorkspaceId')))), not(empty(parameters('diagnosticEventHubAuthorizationRuleId')))), not(empty(parameters('diagnosticEventHubName'))))]",
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.DesktopVirtualization/applicationGroups/{0}', parameters('name'))]",
+              "name": "[format('{0}-diagnosticSettings', parameters('name'))]",
+              "properties": {
+                "storageAccountId": "[if(not(empty(parameters('diagnosticStorageAccountId'))), parameters('diagnosticStorageAccountId'), null())]",
+                "workspaceId": "[if(not(empty(parameters('diagnosticWorkspaceId'))), parameters('diagnosticWorkspaceId'), null())]",
+                "eventHubAuthorizationRuleId": "[if(not(empty(parameters('diagnosticEventHubAuthorizationRuleId'))), parameters('diagnosticEventHubAuthorizationRuleId'), null())]",
+                "eventHubName": "[if(not(empty(parameters('diagnosticEventHubName'))), parameters('diagnosticEventHubName'), null())]",
+                "logs": "[variables('diagnosticsLogs')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.DesktopVirtualization/applicationGroups', parameters('name'))]"
+              ]
+            },
+            {
+              "condition": "[not(empty(parameters('cuaId')))]",
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2020-10-01",
+              "name": "[format('pid-{0}', parameters('cuaId'))]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {},
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.4.1272.37030",
+                      "templateHash": "4174488789265615178"
+                    }
+                  },
+                  "resources": []
+                }
+              }
+            },
+            {
+              "copy": {
+                "name": "appGroup_applications",
+                "count": "[length(parameters('applications'))]"
+              },
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2020-10-01",
+              "name": "[format('{0}-AppGroup-App-{1}', uniqueString(deployment().name, parameters('location')), copyIndex())]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "name": {
+                    "value": "[parameters('applications')[copyIndex()].name]"
+                  },
+                  "appGroupName": {
+                    "value": "[parameters('name')]"
+                  },
+                  "description": {
+                    "value": "[if(contains(parameters('applications')[copyIndex()], 'description'), parameters('applications')[copyIndex()].description, '')]"
+                  },
+                  "friendlyName": {
+                    "value": "[if(contains(parameters('applications')[copyIndex()], 'friendlyName'), parameters('applications')[copyIndex()].friendlyName, parameters('name'))]"
+                  },
+                  "filePath": {
+                    "value": "[parameters('applications')[copyIndex()].filePath]"
+                  },
+                  "commandLineSetting": {
+                    "value": "[if(contains(parameters('applications')[copyIndex()], 'commandLineSetting'), parameters('applications')[copyIndex()].commandLineSetting, 'DoNotAllow')]"
+                  },
+                  "commandLineArguments": {
+                    "value": "[if(contains(parameters('applications')[copyIndex()], 'commandLineArguments'), parameters('applications')[copyIndex()].commandLineArguments, '')]"
+                  },
+                  "showInPortal": {
+                    "value": "[if(contains(parameters('applications')[copyIndex()], 'showInPortal'), parameters('applications')[copyIndex()].showInPortal, false())]"
+                  },
+                  "iconPath": {
+                    "value": "[if(contains(parameters('applications')[copyIndex()], 'iconPath'), parameters('applications')[copyIndex()].iconPath, parameters('applications')[copyIndex()].filePath)]"
+                  },
+                  "iconIndex": {
+                    "value": "[if(contains(parameters('applications')[copyIndex()], 'iconIndex'), parameters('applications')[copyIndex()].iconIndex, 0)]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.4.1272.37030",
+                      "templateHash": "10045431663420625657"
+                    }
+                  },
+                  "parameters": {
+                    "appGroupName": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Required. Name of the Application Group to create the application(s) in."
+                      }
+                    },
+                    "name": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Required. Name of the Application to be created in the Application Group."
+                      }
+                    },
+                    "description": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. Description of Application.."
+                      }
+                    },
+                    "friendlyName": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Required. Friendly name of Application.."
+                      }
+                    },
+                    "filePath": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Required. Specifies a path for the executable file for the application."
+                      }
+                    },
+                    "commandLineSetting": {
+                      "type": "string",
+                      "defaultValue": "DoNotAllow",
+                      "metadata": {
+                        "description": "Optional. Specifies whether this published application can be launched with command-line arguments provided by the client, command-line arguments specified at publish time, or no command-line arguments at all."
+                      },
+                      "allowedValues": [
+                        "Allow",
+                        "DoNotAllow",
+                        "Require"
+                      ]
+                    },
+                    "commandLineArguments": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. Command-Line Arguments for Application."
+                      }
+                    },
+                    "showInPortal": {
+                      "type": "bool",
+                      "defaultValue": false,
+                      "metadata": {
+                        "description": "Optional. Specifies whether to show the RemoteApp program in the RD Web Access server."
+                      }
+                    },
+                    "iconPath": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. Path to icon."
+                      }
+                    },
+                    "iconIndex": {
+                      "type": "int",
+                      "defaultValue": 0,
+                      "metadata": {
+                        "description": "Optional. Index of the icon."
+                      }
+                    },
+                    "cuaId": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. Customer Usage Attribution ID (GUID). This GUID must be previously registered"
+                      }
+                    }
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.DesktopVirtualization/applicationGroups/applications",
+                      "apiVersion": "2021-07-12",
+                      "name": "[format('{0}/{1}', parameters('appGroupName'), parameters('name'))]",
+                      "properties": {
+                        "description": "[parameters('description')]",
+                        "friendlyName": "[parameters('friendlyName')]",
+                        "filePath": "[parameters('filePath')]",
+                        "commandLineSetting": "[parameters('commandLineSetting')]",
+                        "commandLineArguments": "[parameters('commandLineArguments')]",
+                        "showInPortal": "[parameters('showInPortal')]",
+                        "iconPath": "[parameters('iconPath')]",
+                        "iconIndex": "[parameters('iconIndex')]"
+                      }
+                    },
+                    {
+                      "condition": "[not(empty(parameters('cuaId')))]",
+                      "type": "Microsoft.Resources/deployments",
+                      "apiVersion": "2020-10-01",
+                      "name": "[format('pid-{0}', parameters('cuaId'))]",
+                      "properties": {
+                        "expressionEvaluationOptions": {
+                          "scope": "inner"
+                        },
+                        "mode": "Incremental",
+                        "parameters": {},
+                        "template": {
+                          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                          "contentVersion": "1.0.0.0",
+                          "metadata": {
+                            "_generator": {
+                              "name": "bicep",
+                              "version": "0.4.1272.37030",
+                              "templateHash": "4174488789265615178"
+                            }
+                          },
+                          "resources": []
+                        }
+                      }
+                    }
+                  ],
+                  "outputs": {
+                    "applicationResourceIds": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.DesktopVirtualization/applicationGroups/applications', parameters('appGroupName'), parameters('name'))]",
+                      "metadata": {
+                        "description": "The resource ID of the deployed Application."
+                      }
+                    },
+                    "resourceGroupName": {
+                      "type": "string",
+                      "value": "[resourceGroup().name]",
+                      "metadata": {
+                        "description": "The name of the Resource Group the AVD Application was created in."
+                      }
+                    },
+                    "name": {
+                      "type": "string",
+                      "value": "[parameters('appGroupName')]",
+                      "metadata": {
+                        "description": "The Name of the Application Group to register the Application in."
+                      }
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.DesktopVirtualization/applicationGroups', parameters('name'))]"
+              ]
+            },
+            {
+              "copy": {
+                "name": "appGroup_rbac",
+                "count": "[length(parameters('roleAssignments'))]"
+              },
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2020-10-01",
+              "name": "[format('{0}-AppGroup-Rbac-{1}', uniqueString(deployment().name, parameters('location')), copyIndex())]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "principalIds": {
+                    "value": "[parameters('roleAssignments')[copyIndex()].principalIds]"
+                  },
+                  "roleDefinitionIdOrName": {
+                    "value": "[parameters('roleAssignments')[copyIndex()].roleDefinitionIdOrName]"
+                  },
+                  "resourceId": {
+                    "value": "[resourceId('Microsoft.DesktopVirtualization/applicationGroups', parameters('name'))]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.4.1272.37030",
+                      "templateHash": "16979074209655907039"
+                    }
+                  },
+                  "parameters": {
+                    "principalIds": {
+                      "type": "array"
+                    },
+                    "roleDefinitionIdOrName": {
+                      "type": "string"
+                    },
+                    "resourceId": {
+                      "type": "string"
+                    }
+                  },
+                  "variables": {
+                    "builtInRoleNames": {
+                      "Owner": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '8e3af657-a8ff-443c-a75c-2fe8c4bcb635')]",
+                      "Contributor": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]",
+                      "Reader": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'acdd72a7-3385-48ef-bd42-f606fba81ae7')]",
+                      "Application Group Contributor": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ca6382a4-1721-4bcf-a114-ff0c70227b6b')]",
+                      "Desktop Virtualization Application Group Contributor": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '86240b0e-9422-4c43-887b-b61143f32ba8')]",
+                      "Desktop Virtualization Application Group Reader": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'aebf23d0-b568-4e86-b8f9-fe83a2c6ab55')]",
+                      "Desktop Virtualization Contributor": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '082f0a83-3be5-4ba1-904c-961cca79b387')]",
+                      "Desktop Virtualization Reader": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '49a72310-ab8d-41df-bbb0-79b649203868')]",
+                      "Desktop Virtualization User": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '1d18fff3-a72a-46b5-b4a9-0b38a3cd7e63')]",
+                      "Desktop Virtualization Workspace Contributor": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '21efdde3-836f-432b-bf3d-3e8e734d4b2b')]",
+                      "Desktop Virtualization Workspace Reader": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '0fa44ee9-7a7d-466b-9bb2-2bf446b1204d')]",
+                      "Log Analytics Contributor": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '92aaf0da-9dab-42b6-94a3-d43ce8d16293')]",
+                      "Log Analytics Reader": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '73c42c96-874c-492b-b04d-ab87d138a893')]",
+                      "Managed Application Contributor Role": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '641177b8-a67a-45b9-a033-47bc880bb21e')]",
+                      "Managed Application Operator Role": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'c7393b34-138c-406f-901b-d8cf2b17e6ae')]",
+                      "Managed Applications Reader": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b9331d33-8a36-4f8c-b097-4f54124fdb44')]",
+                      "Monitoring Contributor": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '749f88d5-cbae-40b8-bcfc-e573ddc772fa')]",
+                      "Monitoring Metrics Publisher": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb')]",
+                      "Monitoring Reader": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '43d0d8ad-25c7-4714-9337-8ba259a9fe05')]",
+                      "Resource Policy Contributor": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '36243c78-bf99-498c-9df9-86d9f8d28608')]",
+                      "User Access Administrator": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '18d7d88d-d35e-4fb5-a5c3-7773c20a72d9')]"
+                    }
+                  },
+                  "resources": [
+                    {
+                      "copy": {
+                        "name": "roleAssignment",
+                        "count": "[length(parameters('principalIds'))]"
+                      },
+                      "type": "Microsoft.Authorization/roleAssignments",
+                      "apiVersion": "2021-04-01-preview",
+                      "scope": "[format('Microsoft.DesktopVirtualization/applicationGroups/{0}', last(split(parameters('resourceId'), '/')))]",
+                      "name": "[guid(last(split(parameters('resourceId'), '/')), parameters('principalIds')[copyIndex()], parameters('roleDefinitionIdOrName'))]",
+                      "properties": {
+                        "roleDefinitionId": "[if(contains(variables('builtInRoleNames'), parameters('roleDefinitionIdOrName')), variables('builtInRoleNames')[parameters('roleDefinitionIdOrName')], parameters('roleDefinitionIdOrName'))]",
+                        "principalId": "[parameters('principalIds')[copyIndex()]]"
+                      }
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.DesktopVirtualization/applicationGroups', parameters('name'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "resourceId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.DesktopVirtualization/applicationGroups', parameters('name'))]",
+              "metadata": {
+                "description": "The resource ID  of the AVD application group"
+              }
+            },
+            "resourceGroupName": {
+              "type": "string",
+              "value": "[resourceGroup().name]",
+              "metadata": {
+                "description": "The resource group the AVD application group was deployed into"
+              }
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]",
+              "metadata": {
+                "description": "The name of the AVD application group"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-HostPool-{0}', parameters('time')))]",
+        "[subscriptionResourceId(variables('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-ServiceObjects-{0}', parameters('time')))]"
       ]
     },
     {
@@ -6096,7 +6742,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('Start-VM-on-Connect-Role-{0}', parameters('time'))]",
-      "subscriptionId": "[parameters('avdWrklSubscriptionId')]",
+      "subscriptionId": "[variables('avdWrklSubscriptionId')]",
       "location": "[deployment().location]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -6105,7 +6751,7 @@
         "mode": "Incremental",
         "parameters": {
           "subscriptionId": {
-            "value": "[parameters('avdWrklSubscriptionId')]"
+            "value": "[variables('avdWrklSubscriptionId')]"
           },
           "description": {
             "value": "Start VM on connect AVD"
@@ -6121,7 +6767,7 @@
           },
           "assignableScopes": {
             "value": [
-              "[format('/subscriptions/{0}', parameters('avdWrklSubscriptionId'))]"
+              "[format('/subscriptions/{0}', variables('avdWrklSubscriptionId'))]"
             ]
           }
         },
@@ -6244,7 +6890,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('Azure-Image-Builder-Role-{0}', parameters('time'))]",
-      "subscriptionId": "[parameters('avdShrdlSubscriptionId')]",
+      "subscriptionId": "[variables('avdShrdlSubscriptionId')]",
       "location": "[deployment().location]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -6253,7 +6899,7 @@
         "mode": "Incremental",
         "parameters": {
           "subscriptionId": {
-            "value": "[parameters('avdShrdlSubscriptionId')]"
+            "value": "[variables('avdShrdlSubscriptionId')]"
           },
           "description": {
             "value": "Azure Image Builder AVD"
@@ -6289,7 +6935,7 @@
           },
           "assignableScopes": {
             "value": [
-              "[format('/subscriptions/{0}', parameters('avdShrdlSubscriptionId'))]"
+              "[format('/subscriptions/{0}', variables('avdShrdlSubscriptionId'))]"
             ]
           }
         },
@@ -6412,7 +7058,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('image-Builder-Managed-Identity-{0}', parameters('time'))]",
-      "subscriptionId": "[format('{0}', parameters('avdShrdlSubscriptionId'))]",
+      "subscriptionId": "[format('{0}', variables('avdShrdlSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdSharedResourcesRgName'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -6424,7 +7070,7 @@
             "value": "[variables('aibManagedIdentityName')]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[parameters('avdSessionHostLocation')]"
           }
         },
         "template": {
@@ -6653,7 +7299,7 @@
         }
       },
       "dependsOn": [
-        "[subscriptionResourceId(parameters('avdShrdlSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Shared-Resources-{0}', parameters('time')))]"
+        "[subscriptionResourceId(variables('avdShrdlSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Shared-Resources-{0}', parameters('time')))]"
       ]
     },
     {
@@ -6661,7 +7307,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('Azure-Image-Builder-RoleAssign-{0}', parameters('time'))]",
-      "subscriptionId": "[format('{0}', parameters('avdShrdlSubscriptionId'))]",
+      "subscriptionId": "[format('{0}', variables('avdShrdlSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdSharedResourcesRgName'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -6670,10 +7316,10 @@
         "mode": "Incremental",
         "parameters": {
           "roleDefinitionIdOrName": {
-            "value": "[if(parameters('createAibCustomRole'), reference(subscriptionResourceId(parameters('avdShrdlSubscriptionId'), 'Microsoft.Resources/deployments', format('Azure-Image-Builder-Role-{0}', parameters('time')))).outputs.resourceId.value, '')]"
+            "value": "[if(parameters('createAibCustomRole'), reference(subscriptionResourceId(variables('avdShrdlSubscriptionId'), 'Microsoft.Resources/deployments', format('Azure-Image-Builder-Role-{0}', parameters('time')))).outputs.resourceId.value, '')]"
           },
           "principalId": {
-            "value": "[if(parameters('createAibManagedIdentity'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('image-Builder-Managed-Identity-{0}', parameters('time')))).outputs.principalId.value, '')]"
+            "value": "[if(parameters('createAibManagedIdentity'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('image-Builder-Managed-Identity-{0}', parameters('time')))).outputs.principalId.value, '')]"
           }
         },
         "template": {
@@ -7127,8 +7773,8 @@
         }
       },
       "dependsOn": [
-        "[subscriptionResourceId(parameters('avdShrdlSubscriptionId'), 'Microsoft.Resources/deployments', format('Azure-Image-Builder-Role-{0}', parameters('time')))]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('image-Builder-Managed-Identity-{0}', parameters('time')))]"
+        "[subscriptionResourceId(variables('avdShrdlSubscriptionId'), 'Microsoft.Resources/deployments', format('Azure-Image-Builder-Role-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('image-Builder-Managed-Identity-{0}', parameters('time')))]"
       ]
     },
     {
@@ -7136,7 +7782,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('Start-VM-OnConnect-RoleAssign-{0}', parameters('time'))]",
-      "subscriptionId": "[format('{0}', parameters('avdWrklSubscriptionId'))]",
+      "subscriptionId": "[format('{0}', variables('avdWrklSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdComputeObjectsRgName'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -7145,7 +7791,7 @@
         "mode": "Incremental",
         "parameters": {
           "roleDefinitionIdOrName": {
-            "value": "[if(parameters('createStartVmOnConnectCustomRole'), reference(subscriptionResourceId(parameters('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('Start-VM-on-Connect-Role-{0}', parameters('time')))).outputs.resourceId.value, '')]"
+            "value": "[if(parameters('createStartVmOnConnectCustomRole'), reference(subscriptionResourceId(variables('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('Start-VM-on-Connect-Role-{0}', parameters('time')))).outputs.resourceId.value, '')]"
           },
           "principalId": {
             "value": "[variables('avdEnterpriseApplicationId')]"
@@ -7602,8 +8248,8 @@
         }
       },
       "dependsOn": [
-        "[subscriptionResourceId(parameters('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-ServiceObjects-{0}', parameters('time')))]",
-        "[subscriptionResourceId(parameters('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('Start-VM-on-Connect-Role-{0}', parameters('time')))]"
+        "[subscriptionResourceId(variables('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-ServiceObjects-{0}', parameters('time')))]",
+        "[subscriptionResourceId(variables('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('Start-VM-on-Connect-Role-{0}', parameters('time')))]"
       ]
     },
     {
@@ -7611,7 +8257,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('Deploy-Azure-Compute-Gallery-{0}', parameters('time'))]",
-      "subscriptionId": "[format('{0}', parameters('avdShrdlSubscriptionId'))]",
+      "subscriptionId": "[format('{0}', variables('avdShrdlSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdSharedResourcesRgName'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -7623,7 +8269,7 @@
             "value": "[variables('imageGalleryName')]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[parameters('avdSessionHostLocation')]"
           },
           "galleryDescription": {
             "value": "Azure Virtual Desktops Images"
@@ -8340,7 +8986,7 @@
         }
       },
       "dependsOn": [
-        "[subscriptionResourceId(parameters('avdShrdlSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Shared-Resources-{0}', parameters('time')))]"
+        "[subscriptionResourceId(variables('avdShrdlSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Shared-Resources-{0}', parameters('time')))]"
       ]
     },
     {
@@ -8348,7 +8994,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('Deploy-AVD-Image-Template-Definition-{0}', parameters('time'))]",
-      "subscriptionId": "[format('{0}', parameters('avdShrdlSubscriptionId'))]",
+      "subscriptionId": "[format('{0}', variables('avdShrdlSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdSharedResourcesRgName'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -8357,7 +9003,7 @@
         "mode": "Incremental",
         "parameters": {
           "galleryName": {
-            "value": "[if(parameters('useSharedImage'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('Deploy-Azure-Compute-Gallery-{0}', parameters('time')))).outputs.name.value, '')]"
+            "value": "[if(parameters('useSharedImage'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('Deploy-Azure-Compute-Gallery-{0}', parameters('time')))).outputs.name.value, '')]"
           },
           "name": {
             "value": "[variables('imageDefinitionsTemSpecName')]"
@@ -8771,8 +9417,8 @@
         }
       },
       "dependsOn": [
-        "[subscriptionResourceId(parameters('avdShrdlSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Shared-Resources-{0}', parameters('time')))]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('Deploy-Azure-Compute-Gallery-{0}', parameters('time')))]"
+        "[subscriptionResourceId(variables('avdShrdlSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Shared-Resources-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('Deploy-Azure-Compute-Gallery-{0}', parameters('time')))]"
       ]
     },
     {
@@ -8780,7 +9426,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('AVD-Deploy-Image-Template-{0}', parameters('time'))]",
-      "subscriptionId": "[format('{0}', parameters('avdShrdlSubscriptionId'))]",
+      "subscriptionId": "[format('{0}', variables('avdShrdlSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdSharedResourcesRgName'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -8792,10 +9438,10 @@
             "value": "[variables('imageDefinitionsTemSpecName')]"
           },
           "userMsiName": {
-            "value": "[if(parameters('createAibManagedIdentity'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('image-Builder-Managed-Identity-{0}', parameters('time')))).outputs.name.value, '')]"
+            "value": "[if(parameters('createAibManagedIdentity'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('image-Builder-Managed-Identity-{0}', parameters('time')))).outputs.name.value, '')]"
           },
           "userMsiResourceGroup": {
-            "value": "[if(parameters('createAibManagedIdentity'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('image-Builder-Managed-Identity-{0}', parameters('time')))).outputs.resourceGroupName.value, '')]"
+            "value": "[if(parameters('createAibManagedIdentity'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('image-Builder-Managed-Identity-{0}', parameters('time')))).outputs.resourceGroupName.value, '')]"
           },
           "location": {
             "value": "[parameters('aiblocation')]"
@@ -8804,7 +9450,7 @@
             "value": "[parameters('avdImageRegionsReplicas')]"
           },
           "sigImageDefinitionId": {
-            "value": "[if(parameters('useSharedImage'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('Deploy-AVD-Image-Template-Definition-{0}', parameters('time')))).outputs.resourceId.value, '')]"
+            "value": "[if(parameters('useSharedImage'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('Deploy-AVD-Image-Template-Definition-{0}', parameters('time')))).outputs.resourceId.value, '')]"
           },
           "customizationSteps": {
             "value": [
@@ -9229,11 +9875,11 @@
         }
       },
       "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('Deploy-AVD-Image-Template-Definition-{0}', parameters('time')))]",
-        "[subscriptionResourceId(parameters('avdShrdlSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Shared-Resources-{0}', parameters('time')))]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('Deploy-Azure-Compute-Gallery-{0}', parameters('time')))]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('Azure-Image-Builder-RoleAssign-{0}', parameters('time')))]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('image-Builder-Managed-Identity-{0}', parameters('time')))]"
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('Deploy-AVD-Image-Template-Definition-{0}', parameters('time')))]",
+        "[subscriptionResourceId(variables('avdShrdlSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Shared-Resources-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('Deploy-Azure-Compute-Gallery-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('Azure-Image-Builder-RoleAssign-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('image-Builder-Managed-Identity-{0}', parameters('time')))]"
       ]
     },
     {
@@ -9241,7 +9887,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('AVD-Build-Image-Template-{0}', parameters('time'))]",
-      "subscriptionId": "[format('{0}', parameters('avdShrdlSubscriptionId'))]",
+      "subscriptionId": "[format('{0}', variables('avdShrdlSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdSharedResourcesRgName'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -9262,10 +9908,10 @@
             "value": "OnSuccess"
           },
           "userAssignedIdentities": {
-            "value": "[if(parameters('createAibManagedIdentity'), createObject(format('{0}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('image-Builder-Managed-Identity-{0}', parameters('time')))).outputs.resourceId.value), createObject()), createObject())]"
+            "value": "[if(parameters('createAibManagedIdentity'), createObject(format('{0}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('image-Builder-Managed-Identity-{0}', parameters('time')))).outputs.resourceId.value), createObject()), createObject())]"
           },
           "scriptContent": {
-            "value": "[if(parameters('useSharedImage'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('AVD-Deploy-Image-Template-{0}', parameters('time')))).outputs.runThisCommand.value, '')]"
+            "value": "[if(parameters('useSharedImage'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('AVD-Deploy-Image-Template-{0}', parameters('time')))).outputs.runThisCommand.value, '')]"
           }
         },
         "template": {
@@ -9530,17 +10176,17 @@
         }
       },
       "dependsOn": [
-        "[subscriptionResourceId(parameters('avdShrdlSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Shared-Resources-{0}', parameters('time')))]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('Azure-Image-Builder-RoleAssign-{0}', parameters('time')))]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('image-Builder-Managed-Identity-{0}', parameters('time')))]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('AVD-Deploy-Image-Template-{0}', parameters('time')))]"
+        "[subscriptionResourceId(variables('avdShrdlSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Shared-Resources-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('Azure-Image-Builder-RoleAssign-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('image-Builder-Managed-Identity-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('AVD-Deploy-Image-Template-{0}', parameters('time')))]"
       ]
     },
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('AVD-Workload-KeyVault-{0}', parameters('time'))]",
-      "subscriptionId": "[format('{0}', parameters('avdWrklSubscriptionId'))]",
+      "subscriptionId": "[format('{0}', variables('avdWrklSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdServiceObjectsRgName'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -9552,7 +10198,7 @@
             "value": "[variables('avdWrklKvName')]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[parameters('avdSessionHostLocation')]"
           },
           "enableRbacAuthorization": {
             "value": false
@@ -9571,7 +10217,7 @@
           "privateEndpoints": {
             "value": [
               {
-                "subnetResourceId": "[if(parameters('createAvdVnet'), format('{0}/subnets/{1}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-vNet-{0}', parameters('time')))).outputs.resourceId.value, variables('avdVnetworkSubnetName')), format('{0}/subnets/{1}', variables('existingVnetResourceId'), parameters('existingVnetSubnetName')))]",
+                "subnetResourceId": "[if(parameters('createAvdVnet'), format('{0}/subnets/{1}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-vNet-{0}', parameters('time')))).outputs.resourceId.value, variables('avdVnetworkSubnetName')), format('{0}/subnets/{1}', variables('existingVnetResourceId'), parameters('existingVnetSubnetName')))]",
                 "service": "vault"
               }
             ]
@@ -10996,15 +11642,15 @@
         }
       },
       "dependsOn": [
-        "[subscriptionResourceId(parameters('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Compute-{0}', parameters('time')))]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-vNet-{0}', parameters('time')))]"
+        "[subscriptionResourceId(variables('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Compute-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-vNet-{0}', parameters('time')))]"
       ]
     },
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('AVD-Shared-Services-KeyVault-{0}', parameters('time'))]",
-      "subscriptionId": "[format('{0}', parameters('avdShrdlSubscriptionId'))]",
+      "subscriptionId": "[format('{0}', variables('avdShrdlSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdSharedResourcesRgName'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -11016,7 +11662,7 @@
             "value": "[variables('avdSharedServicesKvName')]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[parameters('avdSessionHostLocation')]"
           },
           "enableRbacAuthorization": {
             "value": false
@@ -12413,14 +13059,14 @@
         }
       },
       "dependsOn": [
-        "[subscriptionResourceId(parameters('avdShrdlSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Shared-Resources-{0}', parameters('time')))]"
+        "[subscriptionResourceId(variables('avdShrdlSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Shared-Resources-{0}', parameters('time')))]"
       ]
     },
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('AVD-Fslogix-Storage-{0}', parameters('time'))]",
-      "subscriptionId": "[format('{0}', parameters('avdWrklSubscriptionId'))]",
+      "subscriptionId": "[format('{0}', variables('avdWrklSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdStorageObjectsRgName'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -12432,7 +13078,7 @@
             "value": "[variables('avdFslogixStorageName')]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[parameters('avdSessionHostLocation')]"
           },
           "storageAccountSku": {
             "value": "[if(parameters('avdUseAvailabilityZones'), 'Premium_ZRS', 'Premium_LRS')]"
@@ -12467,7 +13113,7 @@
           "privateEndpoints": {
             "value": [
               {
-                "subnetResourceId": "[if(parameters('createAvdVnet'), format('{0}/subnets/{1}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-vNet-{0}', parameters('time')))).outputs.resourceId.value, variables('avdVnetworkSubnetName')), format('{0}/subnets/{1}', variables('existingVnetResourceId'), parameters('existingVnetSubnetName')))]",
+                "subnetResourceId": "[if(parameters('createAvdVnet'), format('{0}/subnets/{1}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-vNet-{0}', parameters('time')))).outputs.resourceId.value, variables('avdVnetworkSubnetName')), format('{0}/subnets/{1}', variables('existingVnetResourceId'), parameters('existingVnetSubnetName')))]",
                 "service": "file"
               }
             ]
@@ -15401,15 +16047,15 @@
         }
       },
       "dependsOn": [
-        "[subscriptionResourceId(parameters('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Storage-{0}', parameters('time')))]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-vNet-{0}', parameters('time')))]"
+        "[subscriptionResourceId(variables('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Storage-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-vNet-{0}', parameters('time')))]"
       ]
     },
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('AVD-Shared-Services-Storage-{0}', parameters('time'))]",
-      "subscriptionId": "[format('{0}', parameters('avdShrdlSubscriptionId'))]",
+      "subscriptionId": "[format('{0}', variables('avdShrdlSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdSharedResourcesRgName'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -15421,7 +16067,7 @@
             "value": "[variables('avdSharedSResourcesStorageName')]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[parameters('avdSessionHostLocation')]"
           },
           "storageAccountSku": {
             "value": "[if(parameters('avdUseAvailabilityZones'), 'Standard_ZRS', 'Standard_LRS')]"
@@ -18372,7 +19018,7 @@
         }
       },
       "dependsOn": [
-        "[subscriptionResourceId(parameters('avdShrdlSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Shared-Resources-{0}', parameters('time')))]"
+        "[subscriptionResourceId(variables('avdShrdlSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Shared-Resources-{0}', parameters('time')))]"
       ]
     },
     {
@@ -18380,7 +19026,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('AVD-Availability-Set-{0}', parameters('time'))]",
-      "subscriptionId": "[format('{0}', parameters('avdWrklSubscriptionId'))]",
+      "subscriptionId": "[format('{0}', variables('avdWrklSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdComputeObjectsRgName'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -18392,7 +19038,7 @@
             "value": "[variables('avdAvailabilitySetName')]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[parameters('avdSessionHostLocation')]"
           },
           "availabilitySetFaultDomain": {
             "value": 3
@@ -18661,7 +19307,7 @@
         }
       },
       "dependsOn": [
-        "[subscriptionResourceId(parameters('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Compute-{0}', parameters('time')))]"
+        "[subscriptionResourceId(variables('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Compute-{0}', parameters('time')))]"
       ]
     },
     {
@@ -18673,7 +19319,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('AVD-Session-Host-{0}-{1}', range(0, parameters('avdDeploySessionHostsCount'))[copyIndex()], parameters('time'))]",
-      "subscriptionId": "[format('{0}', parameters('avdWrklSubscriptionId'))]",
+      "subscriptionId": "[format('{0}', variables('avdWrklSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdComputeObjectsRgName'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -18685,7 +19331,7 @@
             "value": "[format('{0}-{1}', variables('avdSessionHostNamePrefix'), range(0, parameters('avdDeploySessionHostsCount'))[copyIndex()])]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[parameters('avdSessionHostLocation')]"
           },
           "systemAssignedIdentity": {
             "value": true
@@ -18697,7 +19343,7 @@
             "value": "[parameters('encryptionAtHost')]"
           },
           "availabilitySetName": {
-            "value": "[if(not(parameters('avdUseAvailabilityZones')), if(parameters('avdDeploySessionHosts'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdWrklSubscriptionId')), format('{0}', variables('avdComputeObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-Availability-Set-{0}', parameters('time')))).outputs.name.value, ''), '')]"
+            "value": "[if(not(parameters('avdUseAvailabilityZones')), if(parameters('avdDeploySessionHosts'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdComputeObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-Availability-Set-{0}', parameters('time')))).outputs.name.value, ''), '')]"
           },
           "osType": {
             "value": "Windows"
@@ -18709,7 +19355,7 @@
             "value": "[parameters('avdSessionHostsSize')]"
           },
           "imageReference": {
-            "value": "[if(parameters('useSharedImage'), json(format('{{''id'': ''{0}''}}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('AVD-Deploy-Image-Template-{0}', parameters('time')))).outputs.resourceId.value)), variables('marketPlaceGalleryWindows')[parameters('avdOsImage')])]"
+            "value": "[if(parameters('useSharedImage'), json(format('{{''id'': ''{0}''}}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('AVD-Deploy-Image-Template-{0}', parameters('time')))).outputs.resourceId.value)), variables('marketPlaceGalleryWindows')[parameters('avdOsImage')])]"
           },
           "osDisk": {
             "value": {
@@ -18727,7 +19373,7 @@
           "adminPassword": {
             "reference": {
               "keyVault": {
-                "id": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.KeyVault/vaults', variables('avdWrklKvName'))]"
+                "id": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.KeyVault/vaults', variables('avdWrklKvName'))]"
               },
               "secretName": "avdVmLocalUserPassword"
             }
@@ -18737,11 +19383,11 @@
               {
                 "nicSuffix": "-nic-01",
                 "deleteOption": "Delete",
-                "asgId": "[if(parameters('createAvdVnet'), format('{0}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-ASG-{0}', parameters('time')))).outputs.resourceId.value), null())]",
+                "asgId": "[if(parameters('createAvdVnet'), format('{0}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-ASG-{0}', parameters('time')))).outputs.resourceId.value), null())]",
                 "ipConfigurations": [
                   {
                     "name": "ipconfig01",
-                    "subnetId": "[if(parameters('createAvdVnet'), format('{0}/subnets/{1}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-vNet-{0}', parameters('time')))).outputs.resourceId.value, variables('avdVnetworkSubnetName')), format('{0}/subnets/{1}', variables('existingVnetResourceId'), parameters('existingVnetSubnetName')))]"
+                    "subnetId": "[if(parameters('createAvdVnet'), format('{0}/subnets/{1}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-vNet-{0}', parameters('time')))).outputs.resourceId.value, variables('avdVnetworkSubnetName')), format('{0}/subnets/{1}', variables('existingVnetResourceId'), parameters('existingVnetSubnetName')))]"
                   }
                 ]
               }
@@ -18753,7 +19399,7 @@
           "extensionDomainJoinPassword": {
             "reference": {
               "keyVault": {
-                "id": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.KeyVault/vaults', variables('avdWrklKvName'))]"
+                "id": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.KeyVault/vaults', variables('avdWrklKvName'))]"
               },
               "secretName": "avdDomainJoinUserPassword"
             }
@@ -18762,7 +19408,7 @@
             "value": {
               "enabled": true,
               "settings": {
-                "name": "[variables('Domain')]",
+                "name": "[parameters('avdIdentityDomainName')]",
                 "ouPath": "[if(not(empty(parameters('avdOuPath'))), parameters('avdOuPath'), null())]",
                 "user": "[parameters('avdDomainJoinUserName')]",
                 "restart": "true",
@@ -22131,11 +22777,11 @@
         }
       },
       "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-ASG-{0}', parameters('time')))]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdWrklSubscriptionId')), format('{0}', variables('avdComputeObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-Availability-Set-{0}', parameters('time')))]",
-        "[subscriptionResourceId(parameters('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Compute-{0}', parameters('time')))]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-vNet-{0}', parameters('time')))]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('AVD-Deploy-Image-Template-{0}', parameters('time')))]"
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-ASG-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdComputeObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-Availability-Set-{0}', parameters('time')))]",
+        "[subscriptionResourceId(variables('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Compute-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-vNet-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('AVD-Deploy-Image-Template-{0}', parameters('time')))]"
       ]
     },
     {
@@ -22147,7 +22793,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('Add-AVD-Session-Host-{0}-to-HostPool-{1}', range(0, parameters('avdDeploySessionHostsCount'))[copyIndex()], parameters('time'))]",
-      "subscriptionId": "[format('{0}', parameters('avdWrklSubscriptionId'))]",
+      "subscriptionId": "[format('{0}', variables('avdWrklSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdComputeObjectsRgName'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -22156,10 +22802,10 @@
         "mode": "Incremental",
         "parameters": {
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[parameters('avdSessionHostLocation')]"
           },
           "hostPoolToken": {
-            "value": "[format('{0}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', parameters('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.DesktopVirtualization/hostPools', variables('avdHostPoolName')), '2021-01-14-preview').registrationInfo.token)]"
+            "value": "[format('{0}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.DesktopVirtualization/hostPools', variables('avdHostPoolName')), '2021-01-14-preview').registrationInfo.token)]"
           },
           "name": {
             "value": "[format('{0}-{1}', variables('avdSessionHostNamePrefix'), range(0, parameters('avdDeploySessionHostsCount'))[copyIndex()])]"
@@ -22235,7 +22881,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "[format('Configure-FsLogix-for-{0}-{1}-{2}', variables('avdSessionHostNamePrefix'), range(0, parameters('avdDeploySessionHostsCount'))[copyIndex()], parameters('time'))]",
-      "subscriptionId": "[format('{0}', parameters('avdWrklSubscriptionId'))]",
+      "subscriptionId": "[format('{0}', variables('avdWrklSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdComputeObjectsRgName'))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -22244,7 +22890,7 @@
         "mode": "Incremental",
         "parameters": {
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[parameters('avdSessionHostLocation')]"
           },
           "name": {
             "value": "[format('{0}-{1}', variables('avdSessionHostNamePrefix'), range(0, parameters('avdDeploySessionHostsCount'))[copyIndex()])]"

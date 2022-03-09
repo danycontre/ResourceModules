@@ -364,6 +364,35 @@
                             ]
                         },
                         {
+                            "name": "avdManagementPlaneAppGroupOptions",
+                            "type": "Microsoft.Common.Section",
+                            "visible": true,
+                            "label": "Application group options",
+                            "elements": [
+                                {
+                                    "name": "avdDeployRAppGroup",
+                                    "type": "Microsoft.Common.OptionsGroup",
+                                    "visible": true,
+                                    "label": "Create remote app group",
+                                    "defaultValue": "Yes (Recommended)",
+                                    "toolTip": "This application group type allows to publish seamless apps instead of full desktops.",
+                                    "constraints": {
+                                        "required": true,
+                                        "allowedValues": [
+                                            {
+                                                "label": "Yes (Recommended)",
+                                                "value": true
+                                            },
+                                            {
+                                                "label": "No",
+                                                "value": false
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        },
+                        {
                             "name": "avdManagementPlaneHostPoolScaling",
                             "type": "Microsoft.Common.Section",
                             "visible": true,
@@ -770,8 +799,7 @@
                 "avdHostPoolloadBalancerType": "[steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.loadBalancerType]",
                 "avhHostPoolMaxSessions": "[steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.maxSessions]",
                 "avdPersonalAssignType": "[steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.assignmentType]",
-
-
+                "avdDeployRAppGroup": "[steps('avdManagementPlane').avdManagementPlaneAppGroupOptions.avdDeployRAppGroup]",
 
                 "avdStartVMOnConnect": "[steps('avdManagementPlane').avdManagementPlaneHostPoolScaling.startVmOnConnect]",
                 "createVmRole": "[steps('avdManagementPlane').avdManagementPlaneHostPoolScaling.createVmRole]",

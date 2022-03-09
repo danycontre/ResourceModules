@@ -71,17 +71,13 @@ param avdPersonalAssignType string = 'Automatic'
 param avdHostPoolloadBalancerType string = 'BreadthFirst'
 
 @description('Optional. AVD host pool maximum number of user sessions per session host')
-param avhHostPoolMaxSessions int =
+param avhHostPoolMaxSessions int = 15
 
 @description('Optional. AVD host pool start VM on Connect (Default: true)')
 param avdStartVMOnConnect bool = false
 
-@allowed([
-    'Desktop'
-    'RemoteApp'
-])
-@description('Optional. AVD application group type (Default: Desktop)')
-param avdApplicationGroupType string = 'Desktop'
+@description('Optional. AVD deploy remote app application group (Default: true)')
+param avdDeployRAppGroup bool = true
 
 @description('Optional. AVD host pool Custom RDP properties')
 param avdHostPoolRdpProperty string = 'audiocapturemode:i:1;audiomode:i:0;drivestoredirect:s:;redirectclipboard:i:1;redirectcomports:i:1;redirectprinters:i:1;redirectsmartcards:i:1;screen mode id:i:2'
@@ -139,7 +135,7 @@ param avdDeploySessionHosts bool = true
 @minValue(1)
 @maxValue(500)
 @description('Cuantity of session hosts to deploy')
-param avdDeploySessionHostsCount int =
+param avdDeploySessionHostsCount int = 3
 
 @description('Optional. Creates an availability zone and adds the VMs to it. Cannot be used in combination with availability set nor scale set. (Defualt: true)')
 param avdUseAvailabilityZones bool = true
@@ -224,7 +220,8 @@ var avdApplicationsecurityGroupName = 'asg-${avdSessionHostLocationLowercase}-av
 var avdVNetworkPeeringName = '${uniqueString(deploymentPrefixLowercase, avdSessionHostLocation)}-virtualNetworkPeering-avd-${deploymentPrefixLowercase}'
 var avdWorkSpaceName = 'avdws-${deploymentPrefixLowercase}'
 var avdHostPoolName = 'avdhp-${deploymentPrefixLowercase}'
-var avdApplicationGroupName = 'avdag-${deploymentPrefixLowercase}'
+var avdApplicationGroupNameDesktop = 'avd-dag-${deploymentPrefixLowercase}'
+var avdApplicationGroupNameRApp = 'avd-raag-${deploymentPrefixLowercase}'
 var aibManagedIdentityName = 'avd-uai-aib'
 var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
 var imageTemplateBuildName = 'AVD-Image-Template-Build'
@@ -378,7 +375,7 @@ module avdNetworksecurityGroup '../arm/Microsoft.Network/networkSecurityGroups/d
 }
 
 module avdApplicationSecurityGroup '../arm/Microsoft.Network/applicationSecurityGroups/deploy.bicep' = if (createAvdVnet) {
-    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdNetworkObjectsRgName}')
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdComputeObjectsRgName}')
     name: 'AVD-ASG-${time}'
     params: {
         name: avdApplicationsecurityGroupName
@@ -455,12 +452,14 @@ module avdWorkSpace '../arm/Microsoft.DesktopVirtualization/workspaces/deploy.bi
         name: avdWorkSpaceName
         location: avdManagementPlaneLocation
         appGroupResourceIds: [
-            avdApplicationGroup.outputs.resourceId
+            avdApplicationGroupDesktop.outputs.resourceId
+            avdDeployRAppGroup ? avdApplicationGroupRApp.outputs.resourceId: ''
         ]
     }
     dependsOn: [
         avdServiceObjectsRg
-        avdApplicationGroup
+        avdApplicationGroupDesktop
+        avdApplicationGroupRApp
     ]
 }
 
@@ -473,14 +472,15 @@ module avdHostPool '../arm/Microsoft.DesktopVirtualization/hostpools/deploy.bice
         hostpoolType: avdHostPoolType
         startVMOnConnect: avdStartVMOnConnect
         customRdpProperty: avdHostPoolRdpProperty
-        loadBalancerType: (avdHostPoolType == 'Pooled') ? avdHostPoolloadBalancerType: null
-        maxSessionLimit: (avdHostPoolType == 'Pooled') ? avhHostPoolMaxSessions: null
-        personalDesktopAssignmentType: (avdHostPoolType == 'Personal') ? avdPersonalAssignType: null
+        loadBalancerType: avdHostPoolloadBalancerType
+        maxSessionLimit: avhHostPoolMaxSessions
+        personalDesktopAssignmentType: avdPersonalAssignType
     }
     dependsOn: [
         avdServiceObjectsRg
     ]
 }
+
 /*
 module hostpoolToken '../arm/Microsoft.Resources/deploymentScripts/deploy.bicep' = if (useSharedImage) {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdServiceObjectsRgName}')
@@ -500,13 +500,28 @@ module hostpoolToken '../arm/Microsoft.Resources/deploymentScripts/deploy.bicep'
     ]
 }
 */
-module avdApplicationGroup '../arm/Microsoft.DesktopVirtualization/applicationgroups/deploy.bicep' = {
+module avdApplicationGroupDesktop '../arm/Microsoft.DesktopVirtualization/applicationgroups/deploy.bicep' = {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
-    name: 'AVD-ApplicationGroup-${time}'
+    name: 'AVD-AppGroup-Desktop-${time}'
     params: {
-        name: avdApplicationGroupName
+        name: avdApplicationGroupNameDesktop
         location: avdManagementPlaneLocation
-        applicationGroupType: avdApplicationGroupType
+        applicationGroupType: 'Desktop'
+        hostpoolName: avdHostPool.outputs.name
+    }
+    dependsOn: [
+        avdServiceObjectsRg
+        avdHostPool
+    ]
+}
+
+module avdApplicationGroupRApp '../arm/Microsoft.DesktopVirtualization/applicationgroups/deploy.bicep' = if (avdDeployRAppGroup) {
+    scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
+    name: 'AVD-AppGroup-RApp-${time}'
+    params: {
+        name: avdApplicationGroupNameRApp
+        location: avdManagementPlaneLocation
+        applicationGroupType: 'RemoteApp'
         hostpoolName: avdHostPool.outputs.name
     }
     dependsOn: [
