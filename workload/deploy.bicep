@@ -743,12 +743,17 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
         $status=$getStatus.LastRunStatusRunState
         $statusMessage=$getStatus.LastRunStatusMessage
             do {
-            $now=Get-Date
+            $now=(Get-Date)
             $getStatus=$(Get-AzImageBuilderTemplate -ResourceGroupName $resourceGroupName -Name $imageTemplateName)
             $status=$getStatus.LastRunStatusRunState
             # Sleep for 5 minutes
             $DeploymentScriptOutputs=$now
             $DeploymentScriptOutputs=$status
+            if ($status -eq "Failed") {
+                $DeploymentScriptOutputs="Build Failed"
+                break
+            }
+            if ($status -eq "Canceled") {break}
             $DeploymentScriptOutputs="Sleeping for 5 minutes"
             Start-Sleep 300
         }
