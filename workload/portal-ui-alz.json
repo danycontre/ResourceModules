@@ -63,7 +63,7 @@
                             "name": "avdSubOrgsOption",
                             "type": "Microsoft.Common.OptionsGroup",
                             "visible": true,
-                            "label": "Select Multiple subscriptions or single subscription for platform resources",
+                            "label": "Subscription deployment model",
                             "defaultValue": "Multiple (recommended)",
                             "toolTip": "If 'Multiple' is selected, deployment will use two subscriptions (AVD landing zone and AVD shared Services Landing zone).",
                             "constraints": {
@@ -261,9 +261,9 @@
                                     "name": "avdSessionHostLocation",
                                     "type": "Microsoft.Common.DropDown",
                                     "visible": true,
-                                    "label": "Session hosts",
+                                    "label": "Compute and storage",
                                     "defaultValue": "",
-                                    "toolTip": "Select region where AVD session hosts (VMs) will be created, this location should be the closest one to the end users.",
+                                    "toolTip": "Select region where AVD session hosts (VMs), key vaults, image components and storage will be created, this location should be the closest one to the end users.",
                                     "constraints": {
                                         "required": true,
                                         "allowedValues": "[map(steps('avdManagementPlane').esLocationsApi.value,(item) => parse(concat('{\"label\":\"',item.displayName,'\",\"value\":\"',item.name,'\"}')))]"
