@@ -785,10 +785,10 @@
                 "existingHubVnetSubscriptionId": "[steps('avdNetwork').avdVnetHubPeering.avdHubVnetSubsSelector]",
                 "existingHubVnetRgName": "[steps('avdNetwork').avdVnetHubPeering.avdHubVnetRgSelector]",
                 "existingHubVnetName": "[steps('avdNetwork').avdVnetHubPeering.avdHubVnetSelector]",
-                "existingVnetSubscriptionId": "[steps('avdNetwork').avdVnetHubPeering.avdVnetSubsSelector]",
-                "existingVnetRgName": "[steps('avdNetwork').avdVnetHubPeering.avdVnetRgSelector]",
-                "existingVnetName": "[steps('avdNetwork').avdVnetHubPeering.avdVnetSelector]",
-                "existingVnetSubnetName": "[steps('avdNetwork').avdVnetHubPeering.subnetId]"
+                "existingVnetSubscriptionId": "[steps('avdNetwork').avdVnetSubsSelector]",
+                "existingVnetRgName": "[steps('avdNetwork').avdVnetRgSelector]",
+                "existingVnetName": "[steps('avdNetwork').avdVnetSelector]",
+                "existingVnetSubnetName": "[steps('avdNetwork').subnetId]"
             },
             "kind": "Tenant",
             "location": "[steps('basics').resourceScope.location.name]"
