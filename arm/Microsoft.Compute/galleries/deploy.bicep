@@ -77,7 +77,7 @@ module galleries_images 'images/deploy.bicep' = [for (image, index) in images: {
     minRecommendedMemory: contains(image, 'minRecommendedMemory') ? image.minRecommendedMemory : 4
     maxRecommendedMemory: contains(image, 'maxRecommendedMemory') ? image.maxRecommendedMemory : 16
     hyperVGeneration: contains(image, 'hyperVGeneration') ? image.hyperVGeneration : 'V1'
-    imageDefinitionDescription: contains(image, 'imageDefinitionDescription') ? image.imageDefinitionDescription : ''
+    /* imageDefinitionDescription: contains(image, 'imageDefinitionDescription') ? image.imageDefinitionDescription : ''
     eula: contains(image, 'eula') ? image.eula : ''
     privacyStatementUri: contains(image, 'privacyStatementUri') ? image.privacyStatementUri : ''
     releaseNoteUri: contains(image, 'releaseNoteUri') ? image.releaseNoteUri : ''
@@ -85,7 +85,7 @@ module galleries_images 'images/deploy.bicep' = [for (image, index) in images: {
     planName: contains(image, 'planName') ? image.planName : ''
     planPublisherName: contains(image, 'planPublisherName') ? image.planPublisherName : ''
     endOfLife: contains(image, 'endOfLife') ? image.endOfLife : ''
-    excludedDiskTypes: contains(image, 'excludedDiskTypes') ? image.excludedDiskTypes : []
+    excludedDiskTypes: contains(image, 'excludedDiskTypes') ? image.excludedDiskTypes : [] */
     roleAssignments: contains(image, 'roleAssignments') ? image.roleAssignments : []
     tags: contains(image, 'tags') ? image.tags : {}
   }
