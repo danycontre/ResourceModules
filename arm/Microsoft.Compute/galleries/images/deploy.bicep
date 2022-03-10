@@ -127,6 +127,9 @@ resource image 'Microsoft.Compute/galleries/images@2020-09-30' = {
       }
     }
     hyperVGeneration: hyperVGeneration
+
+    /// Options below break the VM creation from Image Gallery. Therefore, it's commented out for AVD
+
     /* description: imageDefinitionDescription
     eula: eula
     privacyStatementUri: privacyStatementUri

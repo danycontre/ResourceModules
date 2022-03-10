@@ -642,31 +642,6 @@ module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/dep
     ]
 }
 
-/*
-module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/deploy.bicep' = if (useSharedImage) {
-    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
-    name: 'Deploy-AVD-Image-Template-Definition-${time}'
-    params: {
-        SIGname: useSharedImage ? azureComputeGallery.outputs.name : ''
-        imageDefinitionPropertiesName: imageDefinitionsTemSpecName
-        osState: avdOsImageDefinitions[avdOsImage].osState
-        osType: avdOsImageDefinitions[avdOsImage].osType
-        publisher: avdOsImageDefinitions[avdOsImage].publisher
-        offer: avdOsImageDefinitions[avdOsImage].offer
-        sku: avdOsImageDefinitions[avdOsImage].sku
-        location: aiblocation
-        hyperVGeneration: avdOsImageDefinitions[avdOsImage].hyperVGeneration
-    }
-    dependsOn: [
-        azureComputeGallery
-        avdSharedResourcesRg
-    ]
-}
-
-
-
-*/
-
 //
 
 // Create Image Template
