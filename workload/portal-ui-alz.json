@@ -738,13 +738,13 @@
                             }
                         },
                         {
-                            "name": "avdVnetHubPeering",
+                            "name": "avdHubVnetPeering",
                             "type": "Microsoft.Common.Section",
                             "visible": "[equals(steps('avdNetwork').createAvdVnet, true)]",
                             "label": "Existing hub vNet peering information",
                             "elements": [
                                 {
-                                    "name": "avdHubVnetRgSelector",
+                                    "name": "avdHubVnetSelector",
                                     "type": "Microsoft.Solutions.ResourceSelector",
                                     "label": "Virtual Network",
                                     "resourceType": "Microsoft.Network/virtualNetworks",
@@ -765,43 +765,17 @@
                             }
                         },
                         {
-                            "name": "avdVnetSubsSelector",
-                            "type": "Microsoft.Solutions.ResourceSelector",
-                            "visible": "[equals(steps('avdNetwork').createAvdVnet, false)]",
-                            "label": "vNet subscription",
-                            "resourceType": "Microsoft.Resources/resourceGroups",
-                            "constraints": {
-                                "required": true
-                            }
-                        },
-                        {
-                            "name": "avdVnetRgSelector",
-                            "type": "Microsoft.Solutions.ResourceSelector",
-                            "visible": "[equals(steps('avdNetwork').createAvdVnet, false)]",
-                            "label": "vNet resource group",
-                            "resourceType": "Microsoft.Resources/resourceGroups",
-                            "constraints": {
-                                "required": true
-                            }
-                        },
-                        {
                             "name": "avdVnetSelector",
                             "type": "Microsoft.Solutions.ResourceSelector",
                             "visible": "[equals(steps('avdNetwork').createAvdVnet, false)]",
-                            "label": "vNet",
+                            "label": "Virtual network",
                             "resourceType": "Microsoft.Network/virtualNetworks",
-                            "options": {
-                                "filter": {
-                                    "subscription": "onBasics",
-                                    "location": "onBasics"
-                                }
-                            },
                             "constraints": {
                                 "required": true
                             }
                         },
                         {
-                            "name": "subnetApi",
+                            "name": "avdSubnetApi",
                             "type": "Microsoft.Solutions.ArmApiControl",
                             "request": {
                                 "method": "GET",
@@ -809,7 +783,7 @@
                             }
                         },
                         {
-                            "name": "subnetId",
+                            "name": "avdVnetSelectorSubnetId",
                             "label": "Subnet",
                             "type": "Microsoft.Common.DropDown",
                             "visible": "[equals(steps('avdNetwork').createAvdVnet, false)]",
@@ -821,7 +795,7 @@
                             "filterPlaceholder": "Filter items ...",
                             "multiLine": true,
                             "constraints": {
-                                "allowedValues": "[map(steps('avdNetwork').subnetApi.value,(item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\",\"description\":\"', 'Resource Group: ', last(take(split(item.id, '/'), 5)), '\"}')))]",
+                                "allowedValues": "[map(steps('avdNetwork').avdSubnetApi.value,(item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\",\"description\":\"', 'Resource Group: ', last(take(split(item.id, '/'), 5)), '\"}')))]",
                                 "required": true
                             }
                         }
@@ -855,10 +829,8 @@
                 "avdVnetworkAddressPrefixes": "[steps('avdNetwork').avdVnetSize]",
                 "avdVnetworkSubnetAddressPrefix": "[steps('avdNetwork').avdVnetSubnetSize]",
                 "customDnsIps": "[steps('avdNetwork').avdVnetDns]",
-                "existingVnetSubscriptionId": "[steps('avdNetwork').avdVnetSubsSelector]",
-                "existingVnetRgName": "[steps('avdNetwork').avdVnetRgSelector]",
-                "existingVnetName": "[steps('avdNetwork').avdVnetSelector]",
-                "existingVnetSubnetName": "[steps('avdNetwork').subnetId]"
+                "hubVnetId": "[steps('avdNetwork').avdHubVnetPeering.avdHubVnetSelector]",
+                "existingVnetSubnetId": "[steps('avdNetwork').avdVnetSelectorSubnetId]"
             },
             "kind": "Tenant",
             "location": "[steps('basics').resourceScope.location.name]"
