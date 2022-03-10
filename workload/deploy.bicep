@@ -45,10 +45,10 @@ param avdDomainJoinUserPassword string = ''
 
 @description('Optional. OU path to join AVd VMs')
 param avdOuPath string = ''
-
+/*
 @description('Optional. Id to grant access to on AVD workload key vault secrets')
 param avdWrklSecretAccess string = ''
-
+*/
 @allowed([
     'Personal'
     'Pooled'
@@ -120,10 +120,10 @@ param avdVnetworkAddressPrefixes array = [
 
 @description('AVD virtual network subnet address prefix (Default: 10.0.0.0/23)')
 param avdVnetworkSubnetAddressPrefix string = '10.0.0.0/23'
-
+/*
 @description('Are custom DNS servers accessible form the hub (defualt: true)')
 param customDnsAvailable bool = true
-
+*/
 @description('custom DNS servers IPs (defualt: 10.10.10.5, 10.10.10.6)')
 param customDnsIps array = []
 
@@ -412,7 +412,8 @@ module avdVirtualNetwork '../arm/Microsoft.Network/virtualNetworks/deploy.bicep'
         name: avdVnetworkName
         location: avdSessionHostLocation
         addressPrefixes: avdVnetworkAddressPrefixes
-        dnsServers: customDnsAvailable ? customDnsIps : []
+        //dnsServers: customDnsAvailable ? customDnsIps : []
+        dnsServers: !empty(customDnsIps) ? customDnsIps : []
         virtualNetworkPeerings: [
             {
                 remoteVirtualNetworkId: existingHubVnetResourceId
@@ -811,6 +812,7 @@ module avdWrklKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep' = {
                 }
             ]
         }
+        /*
         accessPolicies: [
             {
                 objectId: avdWrklSecretAccess
@@ -822,6 +824,7 @@ module avdWrklKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep' = {
                 }
             }
         ]
+        */
     }
     dependsOn: [
         avdComputeObjectsRg
