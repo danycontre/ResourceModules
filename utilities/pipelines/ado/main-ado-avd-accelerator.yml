@@ -6,7 +6,7 @@ pr:
 
 variables:
   - name: deploymentRegion
-    value: canadacentral
+    value: eastus2
   - name: serviceConnection
     value: AzureLabCACN-MSDN
   - name: vmWinImage
@@ -42,9 +42,9 @@ variables:
   - name: existingVnetRgName
     value: AzurelabCACN-VNET
   - name: existingVnetName
-    value: azurelabcacn-avd-vnet
+    value: azureminlab-eastus2-avd-vnet
   - name: existingVnetSubnetName
-    value: PR01-SUB
+    value: vms
   - name: avdDomainJoinUserName
     value: 'azadmin@azureminilab.com'
   - name: avdDomainJoinUserPassword
