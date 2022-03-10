@@ -816,8 +816,8 @@
                 "avdHostPoolloadBalancerType": "[steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.loadBalancerType]",
                 "avhHostPoolMaxSessions": "[steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.maxSessions]",
                 "avdPersonalAssignType": "[steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.assignmentType]",
-                "avdDeployRAppGroup": "[if(equals(steps('avdManagementPlane').avdManagementPlaneAppGroupOptions.avdDeployRAppGroup, false), '', steps('avdManagementPlane').avdManagementPlaneAppGroupOptions.avdDeployRAppGroup)]",
-                "avdStartVMOnConnect": "[if(equals(steps('avdManagementPlane').avdManagementPlaneHostPoolScaling.startVmOnConnect, false), '', steps('avdManagementPlane').avdManagementPlaneHostPoolScaling.startVmOnConnect)]",
+                "avdDeployRAppGroup": "[steps('avdManagementPlane').avdManagementPlaneAppGroupOptions.avdDeployRAppGroup]",
+                "avdStartVMOnConnect": "[steps('avdManagementPlane').avdManagementPlaneHostPoolScaling.startVmOnConnect]",
                 "createVmRole": "[if(equals(steps('avdManagementPlane').avdManagementPlaneHostPoolScaling.createVmRole, false), '', steps('avdManagementPlane').avdManagementPlaneHostPoolScaling.createVmRole)]",
                 "avdIdentityDomainName": "[steps('avdIdentity').avdIdentityDomainInformation.avdIdentityDomainName]",
                 "avdOuPath": "[steps('avdIdentity').avdIdentityDomainInformation.avdIdentityDomainOuPath]",
@@ -830,7 +830,8 @@
                 "avdVnetworkSubnetAddressPrefix": "[steps('avdNetwork').avdVnetSubnetSize]",
                 "customDnsIps": "[steps('avdNetwork').avdVnetDns]",
                 "existingHubVnetResourceId": "[steps('avdNetwork').avdHubVnetPeering.avdHubVnetSelector.id]",
-                "existingVnetSubnetResourceId": "[steps('avdNetwork').avdVnetSelectorSubnetId.id]"
+                "existingVnetSubnetResourceId": "[steps('avdNetwork').avdVnetSelectorSubnetId.id]",
+                "avdDeploySessionHosts": "[steps('avdSessionHosts').avdDeploySessionHosts]"
             },
             "kind": "Tenant",
             "location": "[steps('basics').resourceScope.location.name]"
