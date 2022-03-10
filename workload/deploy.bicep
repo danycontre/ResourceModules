@@ -977,7 +977,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         licenseType: 'Windows_Client'
         vmSize: avdSessionHostsSize
         // imageReference: useSharedImage ? json('{\'id\': \'${imageTemplate.outputs.resourceId}\'}') : marketPlaceGalleryWindows[avdOsImage]
-        imageReference: useSharedImage ? 'id\': \'${imageTemplate.outputs.resourceId}' : marketPlaceGalleryWindows[avdOsImage]
+        imageReference: useSharedImage ? json('${imageTemplate.outputs.resourceId}') : marketPlaceGalleryWindows[avdOsImage]
         osDisk: {
             createOption: 'fromImage'
             deleteOption: 'Delete'
