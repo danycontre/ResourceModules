@@ -128,7 +128,7 @@ param customDnsAvailable bool = true
 param customDnsIps array = []
 
 @description('Does the hub contains a virtual network gateway (defualt: true)')
-param vNetworkGatewayOnHub bool = true
+param vNetworkGatewayOnHub bool = false
 
 @description('Optional. Fslogix file share size (Default: 5TB)')
 param avdFslogixFileShareQuotaSize string = '51200'

@@ -751,6 +751,27 @@
                                     "constraints": {
                                         "required": true
                                     }
+                                },
+                                {
+                                    "name": "avdHubVnetGateway",
+                                    "type": "Microsoft.Common.OptionsGroup",
+                                    "visible": true,
+                                    "label": "Gateway on hub",
+                                    "defaultValue": "No",
+                                    "toolTip": "This information will be used to set remote gateway settings on vNet peering.",
+                                    "constraints": {
+                                        "required": true,
+                                        "allowedValues": [
+                                            {
+                                                "label": "Yes",
+                                                "value": true
+                                            },
+                                            {
+                                                "label": "No",
+                                                "value": false
+                                            }
+                                        ]
+                                    }
                                 }
                             ]
                         },
@@ -830,6 +851,7 @@
                 "avdVnetworkSubnetAddressPrefix": "[steps('avdNetwork').avdVnetSubnetSize]",
                 "customDnsIps": "[steps('avdNetwork').avdVnetDns]",
                 "existingHubVnetResourceId": "[steps('avdNetwork').avdHubVnetPeering.avdHubVnetSelector.id]",
+                "vNetworkGatewayOnHub": "[steps('avdNetwork').avdHubVnetPeering.avdHubVnetGateway]",
                 "existingVnetSubnetResourceId": "[steps('avdNetwork').avdVnetSelectorSubnetId.id]",
                 "avdDeploySessionHosts": "[steps('avdSessionHosts').avdDeploySessionHosts]"
             },
