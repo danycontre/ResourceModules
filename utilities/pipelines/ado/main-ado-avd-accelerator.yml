@@ -30,7 +30,7 @@ variables:
   - name: useSharedImage
     value: true
   - name: avdOsImage
-    value: win11_21h2
+    value: win10_21h2_office
   - name: existingHubVnetSubscriptionId
     value: a127444e-1844-4c1e-a359-c9ba98cf5160
   - name: existingHubVnetRgName
