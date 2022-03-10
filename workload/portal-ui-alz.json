@@ -424,7 +424,7 @@
                                 {
                                     "name": "createVmRole",
                                     "type": "Microsoft.Common.OptionsGroup",
-                                    "visible": "[equals(steps('avdComponentsSection').startVmOnConnect, true)]",
+                                    "visible": "[equals(steps('avdManagementPlane').avdManagementPlaneHostPoolScaling.startVmOnConnect, true)]",
                                     "label": "Create start VM on connect role",
                                     "defaultValue": "Yes (Required if using Start On Connect)",
                                     "toolTip": "Create custom Azure IAM role for Start VM on Connect",
@@ -445,7 +445,7 @@
                                 {
                                     "name": "vmRoleWarning",
                                     "type": "Microsoft.Common.InfoBox",
-                                    "visible": "[equals(steps('avdComponentsSection').createVmRole, false)]",
+                                    "visible": "[equals(steps('avdManagementPlane').avdManagementPlaneHostPoolScaling.createVmRole, false)]",
                                     "options": {
                                         "text": "Start VM on Connect will not work without a custom role definition. If you enable start on connect, but do not specify a custom role VM's will not start on-demand. Only select no if this custom role already exists and is assigned to your AVD subscription.",
                                         "uri": "https://docs.microsoft.com/en-us/azure/virtual-desktop/start-virtual-machine-connect",
@@ -816,8 +816,8 @@
                 "avdHostPoolloadBalancerType": "[steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.loadBalancerType]",
                 "avhHostPoolMaxSessions": "[steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.maxSessions]",
                 "avdPersonalAssignType": "[steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.assignmentType]",
-                "avdDeployRAppGroup": "[steps('avdManagementPlane').avdManagementPlaneAppGroupOptions.avdDeployRAppGroup]",
-                "avdStartVMOnConnect": "[steps('avdManagementPlane').avdManagementPlaneHostPoolScaling.startVmOnConnect]",
+                "avdDeployRAppGroup": "[if(equals(steps('avdManagementPlane').avdManagementPlaneAppGroupOptions.avdDeployRAppGroup, false), '', steps('avdManagementPlane').avdManagementPlaneAppGroupOptions.avdDeployRAppGroup)]",
+                "avdStartVMOnConnect": "[if(equals(steps('avdManagementPlane').avdManagementPlaneHostPoolScaling.startVmOnConnect, false), '', steps('avdManagementPlane').avdManagementPlaneHostPoolScaling.startVmOnConnect)]",
                 "createVmRole": "[steps('avdManagementPlane').avdManagementPlaneHostPoolScaling.createVmRole]",
                 "avdIdentityDomainName": "[steps('avdIdentity').avdIdentityDomainInformation.avdIdentityDomainName]",
                 "avdOuPath": "[steps('avdIdentity').avdIdentityDomainInformation.avdIdentityDomainOuPath]",
