@@ -976,7 +976,8 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         osType: 'Windows'
         licenseType: 'Windows_Client'
         vmSize: avdSessionHostsSize
-        imageReference: useSharedImage ? json('{\'id\': \'${imageTemplate.outputs.resourceId}\'}') : marketPlaceGalleryWindows[avdOsImage]
+        // imageReference: useSharedImage ? json('{\'id\': \'${imageTemplate.outputs.resourceId}\'}') : marketPlaceGalleryWindows[avdOsImage]
+        imageReference: useSharedImage ? 'id\': \'${imageTemplate.outputs.resourceId}' : marketPlaceGalleryWindows[avdOsImage]
         osDisk: {
             createOption: 'fromImage'
             deleteOption: 'Delete'
@@ -1036,7 +1037,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
     dependsOn: [
         avdComputeObjectsRg
         avdWrklKeyVaultget
-        imageTemplateBuildCheck
+        // imageTemplateBuildCheck
     ]
 }]
 // Add session hosts to AVD Host pool.
