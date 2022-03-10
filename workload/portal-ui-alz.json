@@ -829,8 +829,8 @@
                 "avdVnetworkAddressPrefixes": "[steps('avdNetwork').avdVnetSize]",
                 "avdVnetworkSubnetAddressPrefix": "[steps('avdNetwork').avdVnetSubnetSize]",
                 "customDnsIps": "[steps('avdNetwork').avdVnetDns]",
-                "hubVnetId": "[steps('avdNetwork').avdHubVnetPeering.avdHubVnetSelector]",
-                "existingVnetSubnetId": "[steps('avdNetwork').avdVnetSelectorSubnetId]"
+                "existingHubVnetResourceId": "[steps('avdNetwork').avdHubVnetPeering.avdHubVnetSelector.id]",
+                "existingVnetSubnetResourceId": "[steps('avdNetwork').avdVnetSelectorSubnetId.id]"
             },
             "kind": "Tenant",
             "location": "[steps('basics').resourceScope.location.name]"

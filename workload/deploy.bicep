@@ -85,6 +85,7 @@ param avdHostPoolRdpProperty string = 'audiocapturemode:i:1;audiomode:i:0;drives
 @description('Create new virtual network (Default: true)')
 param createAvdVnet bool = true
 
+/*
 @description('Existing virtual network subscription')
 param existingVnetSubscriptionId string = ''
 
@@ -94,6 +95,12 @@ param existingVnetRgName string = ''
 @description('Existing virtual network')
 param existingVnetName string = ''
 
+@description('Existing virtual network subnet (subnet requires PrivateEndpointNetworkPolicies property to be disabled)')
+param existingVnetSubnetName string = ''
+*/
+@description('Existing virtual network subnet')
+param existingVnetSubnetResourceId string = ''
+/*
 @description('Existing hub virtual network subscription')
 param existingHubVnetSubscriptionId string
 
@@ -102,9 +109,9 @@ param existingHubVnetRgName string = ''
 
 @description('Existing hub virtual network')
 param existingHubVnetName string = ''
-
-@description('Existing virtual network subnet (subnet requires PrivateEndpointNetworkPolicies property to be disabled)')
-param existingVnetSubnetName string = ''
+*/
+@description('Existing hub virtual network for perring')
+param existingHubVnetResourceId string = ''
 
 @description('AVD virtual network address prefixes (Default: 10.0.0.0/23)')
 param avdVnetworkAddressPrefixes array = [
@@ -210,8 +217,8 @@ var avdComputeObjectsRgName = 'rg-${avdSessionHostLocationLowercase}-avd-${deplo
 var avdStorageObjectsRgName = 'rg-${avdSessionHostLocationLowercase}-avd-${deploymentPrefixLowercase}-storage' // max length limit 90 characters
 var avdSharedResourcesRgName = 'rg-${avdSessionHostLocationLowercase}-avd-shared-resources'
 var imageGalleryName = 'avdgallery${avdSessionHostLocationLowercase}'
-var existingVnetResourceId = '/subscriptions/${existingVnetSubscriptionId}/resourceGroups/${existingVnetRgName}/providers/Microsoft.Network/virtualNetworks/${existingVnetName}'
-var hubVnetId = '/subscriptions/${existingHubVnetSubscriptionId}/resourceGroups/${existingHubVnetRgName}/providers/Microsoft.Network/virtualNetworks/${existingHubVnetName}'
+//var existingVnetResourceId = '/subscriptions/${existingVnetSubscriptionId}/resourceGroups/${existingVnetRgName}/providers/Microsoft.Network/virtualNetworks/${existingVnetName}'
+//var hubVnetId = '/subscriptions/${existingHubVnetSubscriptionId}/resourceGroups/${existingHubVnetRgName}/providers/Microsoft.Network/virtualNetworks/${existingHubVnetName}'
 var avdVnetworkName = 'vnet-${avdSessionHostLocationLowercase}-avd-${deploymentPrefixLowercase}'
 var avdVnetworkSubnetName = 'avd-${deploymentPrefixLowercase}'
 var avdNetworksecurityGroupName = 'nsg-${avdSessionHostLocationLowercase}-avd-${deploymentPrefixLowercase}'
@@ -408,7 +415,7 @@ module avdVirtualNetwork '../arm/Microsoft.Network/virtualNetworks/deploy.bicep'
         dnsServers: customDnsAvailable ? customDnsIps : []
         virtualNetworkPeerings: [
             {
-                remoteVirtualNetworkId: hubVnetId
+                remoteVirtualNetworkId: existingHubVnetResourceId
                 name: avdVNetworkPeeringName
                 allowForwardedTraffic: true
                 allowGatewayTransit: false
@@ -453,7 +460,7 @@ module avdWorkSpace '../arm/Microsoft.DesktopVirtualization/workspaces/deploy.bi
         location: avdManagementPlaneLocation
         appGroupResourceIds: [
             avdApplicationGroupDesktop.outputs.resourceId
-            avdDeployRAppGroup ? avdApplicationGroupRApp.outputs.resourceId: ''
+            avdDeployRAppGroup ? avdApplicationGroupRApp.outputs.resourceId : ''
         ]
     }
     dependsOn: [
@@ -775,7 +782,8 @@ module avdWrklKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep' = {
         }
         privateEndpoints: [
             {
-                subnetResourceId: createAvdVnet ? '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}' : '${existingVnetResourceId}/subnets/${existingVnetSubnetName}'
+                //subnetResourceId: createAvdVnet ? '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}' : '${existingVnetResourceId}/subnets/${existingVnetSubnetName}'
+                subnetResourceId: createAvdVnet ? '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}' : existingVnetSubnetResourceId
                 service: 'vault'
             }
         ]
@@ -869,7 +877,8 @@ module fslogixStorage '../arm/Microsoft.Storage/storageAccounts/deploy.bicep' = 
         }
         privateEndpoints: [
             {
-                subnetResourceId: createAvdVnet ? '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}' : '${existingVnetResourceId}/subnets/${existingVnetSubnetName}'
+                //subnetResourceId: createAvdVnet ? '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}' : '${existingVnetResourceId}/subnets/${existingVnetSubnetName}'
+                subnetResourceId: createAvdVnet ? '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}' : existingVnetSubnetResourceId
                 service: 'file'
             }
         ]
@@ -968,7 +977,8 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
                 ipConfigurations: [
                     {
                         name: 'ipconfig01'
-                        subnetId: createAvdVnet ? '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}' : '${existingVnetResourceId}/subnets/${existingVnetSubnetName}'
+                        //subnetId: createAvdVnet ? '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}' : '${existingVnetResourceId}/subnets/${existingVnetSubnetName}'
+                        subnetId: createAvdVnet ? '${avdVirtualNetwork.outputs.resourceId}/subnets/${avdVnetworkSubnetName}' : existingVnetSubnetResourceId
                     }
                 ]
             }
