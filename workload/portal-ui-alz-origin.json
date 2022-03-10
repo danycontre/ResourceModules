@@ -3,7 +3,7 @@
     "view": {
         "kind": "Form",
         "properties": {
-            "title": "Azure AVD landing zone accelerator",
+            "title": "Azure landing zone accelerator",
             "steps": [
                 {
                     "name": "basics",
@@ -17,29 +17,29 @@
                 },
                 {
                     "name": "lzSettings",
-                    "label": "Azure AVD core setup",
+                    "label": "Azure core setup",
                     "subLabel": {
-                        "preValidation": "Provide deployment prefix for the resource groups and resources that will be created.",
+                        "preValidation": "Provide a company prefix for the management group structure that will be created.",
                         "postValidation": "Done"
                     },
-                    "bladeTitle": "Deployment prefix",
+                    "bladeTitle": "Company prefix",
                     "elements": [
                         {
                             "name": "info",
                             "type": "Microsoft.Common.InfoBox",
                             "visible": true,
                             "options": {
-                                "text": "Azure AVD Landing Zones ARM deployment requires owner access at the subscription scope. Visit this link to get more information on RBAC permissions and scopes",
-                                "uri": "https://docs.microsoft.com/en-us/azure/role-based-access-control/scope-overview",
+                                "text": "Azure Landing Zones ARM deployment requires access at the tenant root (/) scope. Visit this link to ensure you have the appropriate RBAC permission to complete the deployment",
+                                "uri": "https://docs.microsoft.com/azure/role-based-access-control/elevate-access-global-admin",
                                 "style": "Info"
                             }
                         },
                         {
-                            "name": "avdWorkloadSubscription",
+                            "name": "mgmtGroup",
                             "type": "Microsoft.Common.TextBlock",
                             "visible": true,
                             "options": {
-                                "text": "Azure AVD Landing Zones will create the resource group hierarchy under the subscriptions with the prefix provided at this step.",
+                                "text": "Azure Landing Zones will create the management group hierarchy under the Tenant Root Group with the prefix provided at this step.",
                                 "link": {
                                     "label": "Learn more",
                                     "uri": "https://docs.microsoft.com/azure/cloud-adoption-framework/ready/enterprise-scale/management-group-and-subscription-organization"
@@ -47,28 +47,28 @@
                             }
                         },
                         {
-                            "name": "avdDeploymentPrefix",
+                            "name": "esMgmtGroup",
                             "type": "Microsoft.Common.TextBox",
-                            "label": "Deployment prefix",
-                            "toolTip": "Provide a prefix (max 4 characters) for the resource groups and resources created as part of AVD landing zones.",
+                            "label": "Management Group prefix",
+                            "toolTip": "Provide a prefix (max 10 characters, unique at tenant-scope) for the Management Group hierarchy and other resources created as part of Enterprise-scale.",
                             "defaultValue": "",
                             "constraints": {
                                 "required": true,
-                                "regex": "^[a-z0-9A-Z-]{1,4}$",
-                                "validationMessage": "The prefix must be 1-4 characters."
+                                "regex": "^[a-z0-9A-Z-]{1,10}$",
+                                "validationMessage": "The prefix must be 1-10 characters."
                             }
                         },
                         {
-                            "name": "avdSubOrgsOption",
+                            "name": "subOrgsOption",
                             "type": "Microsoft.Common.OptionsGroup",
                             "label": "Select dedicated subscriptions or single subscription for platform resources",
                             "defaultValue": "Dedicated (recommended)",
-                            "toolTip": "If 'Multiple' is selected, deployment will use two subscriptions (AVD landing zone and AVD shared Services Landing zone).",
+                            "toolTip": "If 'Yes' is selected when also adding a subscription for management, ARM will deploy resources and enable them for continious compliance.",
                             "constraints": {
                                 "allowedValues": [
                                     {
-                                        "label": "Multiple (recommended)",
-                                        "value": "Multiple"
+                                        "label": "Dedicated (recommended)",
+                                        "value": "Dedicated"
                                     },
                                     {
                                         "label": "Single",
@@ -79,9 +79,9 @@
                             "visible": true
                         },
                         {
-                            "name": "avdSingleSubSection",
+                            "name": "esSingleSubSection",
                             "type": "Microsoft.Common.Section",
-                            "label": "Single subscription deployment",
+                            "label": "Single platform subscription",
                             "elements": [
                                 {
                                     "name": "subWarning",
@@ -89,7 +89,7 @@
                                     "visible": true,
                                     "options": {
                                         "icon": "Warning",
-                                        "text": "Multiple subscriptions are recommended for the various components to ensure scale, sustainability, and segregation of duties. However, a single subscription can also be used in case this is not a concern (e.g., small enterprises).",
+                                        "text": "Dedicated subscriptions are recommended for the various platform components to ensure scale, sustainability, and segregation of duties. However, a single subscription can also be used in case this is not a concern (e.g., small enterprises).",
                                         "uri": "https://docs.microsoft.com/azure/cloud-adoption-framework/ready/enterprise-scale/management-group-and-subscription-organization"
                                     }
                                 },
@@ -98,42 +98,16 @@
                                     "type": "Microsoft.Common.TextBlock",
                                     "visible": true,
                                     "options": {
-                                        "text": "Select the dedicated, single subscription that will be used for all AVD resources during deployment (AVD workload and shared services resources)."
+                                        "text": "Select the dedicated, single subscription that will be used for all platform resources during deployment, for security, logging, connectivity, and identity."
                                     }
                                 },
                                 {
                                     "type": "Microsoft.Common.SubscriptionSelector",
-                                    "name": "avdSingleSub",
+                                    "name": "esSingleSub",
                                     "label": "Single platform subscription"
                                 }
                             ],
-                            "visible": "[equals(steps('lzSettings').avdSubOrgsOption, 'Single')]"
-                        },
-                        {
-                            "name": "avdMultipleSubSection",
-                            "type": "Microsoft.Common.Section",
-                            "label": "Multiple subscription deployment",
-                            "elements": [
-                                {
-                                    "name": "multipleSubText",
-                                    "type": "Microsoft.Common.TextBlock",
-                                    "visible": true,
-                                    "options": {
-                                        "text": "Select the subscriptions, AVD Shared Services Landing Zone for shared platform resources (compute gallery, key vaults, storage, etc.) and AVD Landing zone for workload specific resources (VMs, AVD management plane, etc.) ."
-                                    }
-                                },
-                                {
-                                    "type": "Microsoft.Common.SubscriptionSelector",
-                                    "name": "avdMultipleSubShared",
-                                    "label": "Multiple platform subscription AVD shared services"
-                                },
-                                {
-                                    "type": "Microsoft.Common.SubscriptionSelector",
-                                    "name": "avdMultipleSubWorkload",
-                                    "label": "Multiple platform subscription AVD workload"
-                                }
-                            ],
-                            "visible": "[equals(steps('lzSettings').avdSubOrgsOption, 'Multiple')]"
+                            "visible": "[equals(steps('lzSettings').subOrgsOption, 'Single')]"
                         }
                     ]
                 },

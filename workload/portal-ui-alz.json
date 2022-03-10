@@ -154,7 +154,7 @@
                 },
                 {
                     "name": "avdManagementPlane",
-                    "label": "AVD components",
+                    "label": "Management plane",
                     "subLabel": {
                         "preValidation": "",
                         "postValidation": ""
@@ -250,7 +250,7 @@
                                     }
                                 },
                                 {
-                                    "name": "esLocationsApi",
+                                    "name": "avdLocationsApi",
                                     "type": "Microsoft.Solutions.ArmApiControl",
                                     "request": {
                                         "method": "GET",
@@ -262,11 +262,12 @@
                                     "type": "Microsoft.Common.DropDown",
                                     "visible": true,
                                     "label": "Compute and storage",
+                                    "filter": true,
                                     "defaultValue": "",
                                     "toolTip": "Select region where AVD session hosts (VMs), key vaults, image components and storage will be created, this location should be the closest one to the end users.",
                                     "constraints": {
                                         "required": true,
-                                        "allowedValues": "[map(steps('avdManagementPlane').esLocationsApi.value,(item) => parse(concat('{\"label\":\"',item.displayName,'\",\"value\":\"',item.name,'\"}')))]"
+                                        "allowedValues": "[map(steps('avdManagementPlane').avdDeploymentLocations.avdLocationsApi.value,(item) => parse(concat('{\"label\":\"',item.displayName,'\",\"value\":\"',item.name,'\"}')))]"
                                     }
                                 }
                             ]
@@ -466,6 +467,70 @@
                     ]
                 },
                 {
+                    "name": "avdSessionHosts",
+                    "label": "Session Hosts",
+                    "subLabel": {
+                        "preValidation": "",
+                        "postValidation": ""
+                    },
+                    "bladeTitle": "avdSessionHosts",
+                    "elements": [
+                        {
+                            "name": "avdDeploySessionHosts",
+                            "type": "Microsoft.Common.OptionsGroup",
+                            "visible": true,
+                            "label": "Deploy session hosts",
+                            "defaultValue": "No",
+                            "toolTip": "Create session hosts compute and storage resources.",
+                            "constraints": {
+                                "required": true,
+                                "allowedValues": [
+                                    {
+                                        "label": "Yes",
+                                        "value": true
+                                    },
+                                    {
+                                        "label": "No",
+                                        "value": false
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "avdStorage",
+                    "label": "Storage",
+                    "subLabel": {
+                        "preValidation": "",
+                        "postValidation": ""
+                    },
+                    "bladeTitle": "avdStorage",
+                    "elements": [
+                        {
+                            "name": "avdDeploySessionHosts",
+                            "type": "Microsoft.Common.OptionsGroup",
+                            "visible": true,
+                            "label": "Deploy session hosts",
+                            "defaultValue": "No",
+                            "toolTip": "Create session hosts compute and storage resources.",
+                            "constraints": {
+                                "required": true,
+                                "allowedValues": [
+                                    {
+                                        "label": "Yes",
+                                        "value": true
+                                    },
+                                    {
+                                        "label": "No",
+                                        "value": false
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
                     "name": "avdIdentity",
                     "label": "Identity",
                     "subLabel": {
@@ -590,7 +655,7 @@
                 },
                 {
                     "name": "avdNetwork",
-                    "label": "Network",
+                    "label": "Network connectivity",
                     "type": "Microsoft.Common.Section",
                     "visible": true,
                     "elements": [
@@ -656,7 +721,11 @@
                             "label": "vNet DNS Servers",
                             "defaultValue": "",
                             "placeholder": "Example: 10.10.100.50, 10.20.100.50",
-                            "toolTip": "If using custom DNS servers, enter multiple IPs separated by a comma"
+                            "toolTip": "If using custom DNS servers, enter multiple IPs separated by a comma.",
+                            "constraints": {
+                                "required": true,
+                                "regex": ""
+                            }
                         },
                         {
                             "name": "avdVnetPeeringInfoBox",
@@ -675,37 +744,10 @@
                             "label": "Existing hub vNet peering information",
                             "elements": [
                                 {
-                                    "name": "avdHubVnetSubsSelector",
-                                    "type": "Microsoft.Solutions.ResourceSelector",
-                                    "visible": "[equals(steps('avdNetwork').createAvdVnet, true)]",
-                                    "label": "Hub vNet subscription",
-                                    "resourceType": "Microsoft.Resources/resourceGroups",
-                                    "constraints": {
-                                        "required": true
-                                    }
-                                },
-                                {
                                     "name": "avdHubVnetRgSelector",
                                     "type": "Microsoft.Solutions.ResourceSelector",
-                                    "visible": "[equals(steps('avdNetwork').createAvdVnet, true)]",
-                                    "label": "Hub vNet resource group",
-                                    "resourceType": "Microsoft.Resources/resourceGroups",
-                                    "constraints": {
-                                        "required": true
-                                    }
-                                },
-                                {
-                                    "name": "avdHubVnetSelector",
-                                    "type": "Microsoft.Solutions.ResourceSelector",
-                                    "visible": "[equals(steps('avdNetwork').createAvdVnet, true)]",
-                                    "label": "Hub vNet",
+                                    "label": "Virtual Network",
                                     "resourceType": "Microsoft.Network/virtualNetworks",
-                                    "options": {
-                                        "filter": {
-                                            "subscription": "onBasics",
-                                            "location": "onBasics"
-                                        }
-                                    },
                                     "constraints": {
                                         "required": true
                                     }
@@ -813,9 +855,6 @@
                 "avdVnetworkAddressPrefixes": "[steps('avdNetwork').avdVnetSize]",
                 "avdVnetworkSubnetAddressPrefix": "[steps('avdNetwork').avdVnetSubnetSize]",
                 "customDnsIps": "[steps('avdNetwork').avdVnetDns]",
-                "existingHubVnetSubscriptionId": "[steps('avdNetwork').avdVnetHubPeering.avdHubVnetSubsSelector]",
-                "existingHubVnetRgName": "[steps('avdNetwork').avdVnetHubPeering.avdHubVnetRgSelector]",
-                "existingHubVnetName": "[steps('avdNetwork').avdVnetHubPeering.avdHubVnetSelector]",
                 "existingVnetSubscriptionId": "[steps('avdNetwork').avdVnetSubsSelector]",
                 "existingVnetRgName": "[steps('avdNetwork').avdVnetRgSelector]",
                 "existingVnetName": "[steps('avdNetwork').avdVnetSelector]",
