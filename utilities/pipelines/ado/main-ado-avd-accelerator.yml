@@ -7,6 +7,8 @@ pr:
 variables:
   - name: deploymentRegion
     value: eastus2
+  - name: deploymentPrefix
+    value: app2
   - name: serviceConnection
     value: AzureLabCACN-MSDN
   - name: vmWinImage
