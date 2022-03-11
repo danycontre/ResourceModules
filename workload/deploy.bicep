@@ -134,7 +134,7 @@ param customDnsIps array = []
 param vNetworkGatewayOnHub bool = false
 
 @description('Optional. Fslogix file share size (Default: 5TB)')
-param avdFslogixFileShareQuotaSize string = '51200'
+param avdFslogixFileShareQuotaSize int = 51200
 
 @description('Deploy new session hosts (defualt: false)')
 param avdDeploySessionHosts bool = true
@@ -874,7 +874,7 @@ module fslogixStorage '../arm/Microsoft.Storage/storageAccounts/deploy.bicep' = 
             shares: [
                 {
                     name: avdFslogixFileShareName
-                    shareQuota: avdFslogixFileShareQuotaSize
+                    shareQuota: avdFslogixFileShareQuotaSize * 100 //Portal UI steps scale
                 }
             ]
         }
