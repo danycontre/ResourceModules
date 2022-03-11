@@ -529,6 +529,58 @@
                                 "regex": "^[1-499]{1,3}$",
                                 "validationMessage": "The count must be between 1-499 session hosts."
                             }
+                        },
+                        {
+                            "name": "avdSessionHostsImageSource",
+                            "type": "Microsoft.Common.DropDown",
+                            "visible": "[equals(steps('avdSessionHosts').avdDeploySessionHosts, true)]",
+                            "label": "OS image source",
+                            "filter": true,
+                            "defaultValue": "Marketplace",
+                            "toolTip": "Select marketplace or build custom image to deploy the session hosts.",
+                            "constraints": {
+                                "required": true,
+                                "allowedValues": [
+                                    {
+                                        "label": "Marketplace",
+                                        "value": false
+                                    },
+                                    {
+                                        "label": "Build custom image",
+                                        "value": true
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "avdSessionHostsOsImage",
+                            "type": "Microsoft.Common.DropDown",
+                            "visible": "[equals(steps('avdSessionHosts').avdDeploySessionHosts, true)]",
+                            "label": "OS version",
+                            "filter": true,
+                            "defaultValue": "Windows 11",
+                            "toolTip": "Select OS version to deploy the session hosts with.",
+                            "constraints": {
+                                "required": true,
+                                "allowedValues": [
+                                    {
+                                        "label": "Windows 10",
+                                        "value": "win10-21h2"
+                                    },
+                                    {
+                                        "label": "Windows 10 - Office 365",
+                                        "value": "win10-21h2-office"
+                                    },
+                                    {
+                                        "label": "Windows 11",
+                                        "value": "win11-21h2"
+                                    },
+                                    {
+                                        "label": "Windows 11 - Office 365",
+                                        "value": "win11-21h2-office"
+                                    }
+                                ]
+                            }
                         }
                     ]
                 },
@@ -892,7 +944,9 @@
                 "avdStartVMOnConnect": "[steps('avdManagementPlane').avdManagementPlaneHostPoolScaling.startVmOnConnect]",
                 "createStartVmOnConnectCustomRole": "[steps('avdManagementPlane').avdManagementPlaneHostPoolScaling.createVmRole]",
                 "avdUseAvailabilityZones": "[steps('avdSessionHosts').avdSessionHostsAvailabilitySettings]",
-                "avdDeploySessionHostsCount": "[steps('avdSessionHosts').avdSessionHostsCount]"
+                "avdDeploySessionHostsCount": "[steps('avdSessionHosts').avdSessionHostsCount]",
+                "useSharedImage": "[steps('avdSessionHosts').avdSessionHostsImageSource]",
+                "avdOsImage": "[steps('avdSessionHosts').avdSessionHostsOsImage]"
             },
             "kind": "Tenant",
             "location": "[steps('basics').resourceScope.location.name]"
