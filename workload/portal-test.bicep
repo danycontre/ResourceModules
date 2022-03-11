@@ -45,10 +45,10 @@ param avdDomainJoinUserPassword string = ''
 
 @description('Optional. OU path to join AVd VMs')
 param avdOuPath string = ''
-/*
+
 @description('Optional. Id to grant access to on AVD workload key vault secrets')
 param avdWrklSecretAccess string = ''
-*/
+
 @allowed([
     'Personal'
     'Pooled'
@@ -75,9 +75,6 @@ param avhHostPoolMaxSessions int = 15
 
 @description('Optional. AVD host pool start VM on Connect (Default: true)')
 param avdStartVMOnConnect bool = false
-
-@description('Create custom Start VM on connect role')
-param createStartVmOnConnectCustomRole bool = true
 
 @description('Optional. AVD deploy remote app application group (Default: true)')
 param avdDeployRAppGroup bool = true
@@ -123,18 +120,21 @@ param avdVnetworkAddressPrefixes array = [
 
 @description('AVD virtual network subnet address prefix (Default: 10.0.0.0/23)')
 param avdVnetworkSubnetAddressPrefix string = '10.0.0.0/23'
-/*
+
 @description('Are custom DNS servers accessible form the hub (defualt: true)')
 param customDnsAvailable bool = true
-*/
+
 @description('custom DNS servers IPs (defualt: 10.10.10.5, 10.10.10.6)')
 param customDnsIps array = []
 
 @description('Does the hub contains a virtual network gateway (defualt: true)')
-param vNetworkGatewayOnHub bool = false
+param vNetworkGatewayOnHub bool = true
 
 @description('Optional. Fslogix file share size (Default: 5TB)')
-param avdFslogixFileShareQuotaSize int = 51200
+param avdFslogixFileShareQuotaSize string = '51200'
+
+@description('Create custom Start VM on connect role')
+param createStartVmOnConnectCustomRole bool = true
 
 @description('Deploy new session hosts (defualt: false)')
 param avdDeploySessionHosts bool = true
@@ -148,7 +148,7 @@ param avdDeploySessionHostsCount int = 3
 param avdUseAvailabilityZones bool = true
 
 @description('Optional. This property can be used by user in the request to enable or disable the Host Encryption for the virtual machine. This will enable the encryption for all the disks including Resource/Temp disk at host itself. For security reasons, it is recommended to set encryptionAtHost to True. Restrictions: Cannot be enabled if Azure Disk Encryption (guest-VM encryption using bitlocker/DM-Crypt) is enabled on your VMs.')
-param encryptionAtHost bool = true
+param encryptionAtHost bool = false
 
 @description('Session host VM size (Defualt: Standard_D2s_v4) ')
 param avdSessionHostsSize string = 'Standard_D2s_v4'
@@ -179,13 +179,13 @@ param aiblocation string = 'eastus2'
 param createAibCustomRole bool = true
 
 @allowed([
-    'win10_21h2_office'
-    'win10_21h2'
-    'win11_21h2_office'
-    'win11_21h2'
+    'win10-21h2-office'
+    'win10-21h2'
+    'win11-21h2-office'
+    'win11-21h2'
 ])
 @description('Required. AVD OS image source (Default: win10-21h2)')
-param avdOsImage string = 'win10_21h2'
+param avdOsImage string = 'win10-21h2'
 
 @description('Set to deploy image from Azure Compute Gallery')
 param useSharedImage bool
@@ -230,72 +230,68 @@ var avdHostPoolName = 'avdhp-${deploymentPrefixLowercase}'
 var avdApplicationGroupNameDesktop = 'avd-dag-${deploymentPrefixLowercase}'
 var avdApplicationGroupNameRApp = 'avd-raag-${deploymentPrefixLowercase}'
 var aibManagedIdentityName = 'avd-uai-aib'
-var imageDefinitionsTemSpecName = 'AVDImageDefinition_${avdOsImage}'
+var imageDefinitionsTemSpecName = 'AVD-Image-Definition-${avdOsImage}'
 var imageTemplateBuildName = 'AVD-Image-Template-Build'
 var avdEnterpriseApplicationId = '486795c7-d929-4b48-a99e-3c5329d4ce86' // needs to be queried.
-//var hyperVGeneration = 'V2'
+var hyperVGeneration = 'V2'
 var avdOsImageDefinitions = {
-    'win10_21h2_office': {
+    'win10-21h2-office': {
         name: 'Windows10_21H2_Office'
         osType: 'Windows'
         osState: 'Generalized'
         offer: 'office-365'
         publisher: 'MicrosoftWindowsDesktop'
         sku: 'win10-21h2-avd-m365'
-        hyperVGeneration: 'V1'
     }
-    'win10_21h2': {
+    'win10-21h2': {
         name: 'Windows10_21H2'
         osType: 'Windows'
         osState: 'Generalized'
         offer: 'Windows-10'
         publisher: 'MicrosoftWindowsDesktop'
         sku: '21h2-avd'
-        hyperVGeneration: 'V1'
     }
-    'win11_21h2_office': {
+    'win11-21h2-office': {
         name: 'Windows11_21H2'
         osType: 'Windows'
         osState: 'Generalized'
         offer: 'windows-11'
         publisher: 'MicrosoftWindowsDesktop'
         sku: 'win11-21h2-avd-m365'
-        hyperVGeneration: 'V2'
     }
-    'win11_21h2': {
+    'win11-21h2': {
         name: 'Windows11_21H2'
         osType: 'Windows'
         osState: 'Generalized'
         offer: 'windows-11'
         publisher: 'MicrosoftWindowsDesktop'
         sku: 'win11-21h2-avd'
-        hyperVGeneration: 'V2'
     }
 }
 
 var marketPlaceGalleryWindows = {
-    'win10_21h2_office': {
+    'win10-21h2-office': {
         publisher: 'MicrosoftWindowsDesktop'
         offer: 'office-365'
         sku: 'win10-21h2-avd-m365'
         version: 'latest'
     }
 
-    'win10_21h2': {
+    'win10-21h2': {
         publisher: 'MicrosoftWindowsDesktop'
         offer: 'Windows-10'
         sku: '21h2-avd'
         version: 'latest'
     }
 
-    'win11_21h2_office': {
+    'win11-21h2-office': {
         publisher: 'MicrosoftWindowsDesktop'
         offer: 'office-365'
         sku: 'win11-21h2-avd-m365'
         version: 'latest'
     }
 
-    'win11_21h2': {
+    'win11-21h2': {
         publisher: 'MicrosoftWindowsDesktop'
         offer: 'Windows-11'
         sku: 'win11-21h2-avd'
@@ -416,8 +412,7 @@ module avdVirtualNetwork '../arm/Microsoft.Network/virtualNetworks/deploy.bicep'
         name: avdVnetworkName
         location: avdSessionHostLocation
         addressPrefixes: avdVnetworkAddressPrefixes
-        //dnsServers: customDnsAvailable ? customDnsIps : []
-        dnsServers: !empty(customDnsIps) ? customDnsIps : []
+        dnsServers: customDnsAvailable ? customDnsIps : []
         virtualNetworkPeerings: [
             {
                 remoteVirtualNetworkId: existingHubVnetResourceId
@@ -589,7 +584,6 @@ module azureImageBuilderRole '../arm/Microsoft.Authorization/roleDefinitions/sub
             'Microsoft.Resources/deploymentScripts/read'
             'Microsoft.Resources/deploymentScripts/write'
             'Microsoft.VirtualMachineImages/imageTemplates/run/action'
-            'Microsoft.VirtualMachineImages/imageTemplates/read'
             'Microsoft.Network/virtualNetworks/read'
             'Microsoft.Network/virtualNetworks/subnets/join/action'
         ]
@@ -687,14 +681,13 @@ module avdImageTemplataDefinition '../arm/Microsoft.Compute/galleries/images/dep
         offer: avdOsImageDefinitions[avdOsImage].offer
         sku: avdOsImageDefinitions[avdOsImage].sku
         location: aiblocation
-        hyperVGeneration: avdOsImageDefinitions[avdOsImage].hyperVGeneration
+        hyperVGeneration: hyperVGeneration
     }
     dependsOn: [
         azureComputeGallery
         avdSharedResourcesRg
     ]
 }
-
 //
 
 // Create Image Template
@@ -770,71 +763,6 @@ module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.b
         azureImageBuilderRoleAssign
     ]
 }
-
-// Execute Deployment script to check the status of the image build.
-
-module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/deploy.bicep' = if (useSharedImage) {
-    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
-    name: 'AVD-Build-Image-Template-Check-Build-${time}'
-    params: {
-        name: 'imageTemplateBuildCheckName-${avdOsImage}'
-        location: aiblocation
-        timeout: 'PT6H'
-        azPowerShellVersion: '7.2'
-        cleanupPreference: 'OnSuccess'
-        userAssignedIdentities: createAibManagedIdentity ? {
-            '${imageBuilderManagedIdentity.outputs.resourceId}': {}
-        } : {}
-        arguments: '-resourceGroupName \'${avdSharedResourcesRgName}\' -imageTemplateName \'${imageTemplate.outputs.name}\''
-        scriptContent: useSharedImage ? '''
-        param(
-        [string] [Parameter(Mandatory=$true)] $resourceGroupName,
-        [string] [Parameter(Mandatory=$true)] $imageTemplateName
-        )
-            $ErrorActionPreference = "Stop"
-            Install-Module -Name Az.ImageBuilder -Force
-            $DeploymentScriptOutputs = @{}
-        $getStatus=$(Get-AzImageBuilderTemplate -ResourceGroupName $resourceGroupName -Name $imageTemplateName)
-        $status=$getStatus.LastRunStatusRunState
-        $statusMessage=$getStatus.LastRunStatusMessage
-            do {
-            $now=(Get-Date)
-            Write-Host "Getting the current time: $now"
-            $getStatus=$(Get-AzImageBuilderTemplate -ResourceGroupName $resourceGroupName -Name $imageTemplateName)
-            $status=$getStatus.LastRunStatusRunState
-            Write-Host "Current status of the image build $imageTemplateName is: $status"
-            $DeploymentScriptOutputs=$now
-            $DeploymentScriptOutputs=$status
-            if ($status -eq "Failed") {
-                Write-Host "Build failed for image template: $imageTemplateName. Check the Packer logs"
-                $DeploymentScriptOutputs="Build Failed"
-                throw "Build Failed"
-            }
-            if ($status -eq "Canceled") {
-                Write-Host "User canceled the build. Delete the Image template definition: $imageTemplateName"
-                throw "User canceled the build."
-            }
-            if ($status -eq "Succeeded") {
-                Write-Host "Success. Image template definition: $imageTemplateName is finished "
-                break
-            }
-            # Sleep for 2 minutes
-            Write-Host "Sleeping for 2 min"
-            $DeploymentScriptOutputs="Sleeping for 2 minutes"
-            Start-Sleep 120
-        }
-        until ($status -eq "Succeeded")
-
-        ''' : ''
-    }
-    dependsOn: [
-        imageTemplate
-        avdSharedResourcesRg
-        azureImageBuilderRoleAssign
-        imageTemplateBuild
-    ]
-}
-
 //
 
 // Key vaults
@@ -883,7 +811,6 @@ module avdWrklKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep' = {
                 }
             ]
         }
-        /*
         accessPolicies: [
             {
                 objectId: avdWrklSecretAccess
@@ -895,7 +822,6 @@ module avdWrklKeyVault '../arm/Microsoft.KeyVault/vaults/deploy.bicep' = {
                 }
             }
         ]
-        */
     }
     dependsOn: [
         avdComputeObjectsRg
@@ -945,7 +871,7 @@ module fslogixStorage '../arm/Microsoft.Storage/storageAccounts/deploy.bicep' = 
             shares: [
                 {
                     name: avdFslogixFileShareName
-                    shareQuota: avdFslogixFileShareQuotaSize * 100 //Portal UI steps scale
+                    shareQuota: avdFslogixFileShareQuotaSize
                 }
             ]
         }
@@ -1032,7 +958,7 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
         osType: 'Windows'
         licenseType: 'Windows_Client'
         vmSize: avdSessionHostsSize
-        imageReference: useSharedImage ? json('{\'id\': \'${avdImageTemplataDefinition.outputs.resourceId}\'}') : marketPlaceGalleryWindows[avdOsImage]
+        imageReference: useSharedImage ? json('{\'id\': \'${imageTemplate.outputs.resourceId}\'}') : marketPlaceGalleryWindows[avdOsImage]
         osDisk: {
             createOption: 'fromImage'
             deleteOption: 'Delete'
@@ -1093,7 +1019,6 @@ module avdSessionHosts '../arm/Microsoft.Compute/virtualMachines/deploy.bicep' =
     dependsOn: [
         avdComputeObjectsRg
         avdWrklKeyVaultget
-        imageTemplateBuildCheck
     ]
 }]
 // Add session hosts to AVD Host pool.
