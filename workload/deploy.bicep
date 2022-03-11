@@ -76,6 +76,9 @@ param avhHostPoolMaxSessions int = 15
 @description('Optional. AVD host pool start VM on Connect (Default: true)')
 param avdStartVMOnConnect bool = false
 
+@description('Create custom Start VM on connect role')
+param createStartVmOnConnectCustomRole bool = true
+
 @description('Optional. AVD deploy remote app application group (Default: true)')
 param avdDeployRAppGroup bool = true
 
@@ -132,9 +135,6 @@ param vNetworkGatewayOnHub bool = false
 
 @description('Optional. Fslogix file share size (Default: 5TB)')
 param avdFslogixFileShareQuotaSize string = '51200'
-
-@description('Create custom Start VM on connect role')
-param createStartVmOnConnectCustomRole bool = true
 
 @description('Deploy new session hosts (defualt: false)')
 param avdDeploySessionHosts bool = true
