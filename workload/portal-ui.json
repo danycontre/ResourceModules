@@ -550,17 +550,16 @@
                                     "constraints": {
                                         "allowedSizes": [],
                                         "excludedSizes": [],
-                                        "numAvailabilityZonesRequired": 3,
-                                        "zone": "3"
+                                        "required": true
                                     },
                                     "options": {
-                                        "hideDiskTypeFilter": false
+                                        "hideDiskTypeFilter": true
                                     },
                                     "osPlatform": "Windows",
                                     "imageReference": {
-                                        "publisher": "MicrosoftWindowsServer",
-                                        "offer": "WindowsServer",
-                                        "sku": "2012-R2-Datacenter"
+                                        "publisher": "MicrosoftWindowsDesktop",
+                                        "offer": "Windows-11",
+                                        "sku": "21h2-avd"
                                     }
                                 },
                                 {
@@ -1013,7 +1012,9 @@
                 "avdDeploySessionHostsCount": "[steps('avdSessionHosts').avdSessionHostsSettingsSection.avdSessionHostsCount]",
                 "useSharedImage": "[steps('avdSessionHosts').avdSessionHostsSettingsSection.avdSessionHostsImageSource]",
                 "avdOsImage": "[steps('avdSessionHosts').avdSessionHostsSettingsSection.avdSessionHostsOsImage]",
-                "avdSessionHostDiskType": "[steps('avdSessionHosts').avdSessionHostsSettingsSection.avdSessionHostDiskType]"
+                "avdSessionHostDiskType": "[steps('avdSessionHosts').avdSessionHostsSettingsSection.avdSessionHostDiskType]",
+                "avdSessionHostsSize": "[steps('avdSessionHosts').avdSessionHostsSettingsSection.element1]",
+                "avdFslogixFileShareQuotaSize": "[steps('avdSessionHosts').avdSessionHostsComputeStorageSection.avdSessionHostsFslogixFileShareQuota]"
             },
             "kind": "Tenant",
             "location": "[steps('basics').resourceScope.location.name]"

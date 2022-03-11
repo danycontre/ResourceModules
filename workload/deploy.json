@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.4.1272.37030",
-      "templateHash": "6877610918791702710"
+      "templateHash": "14003291054921913124"
     }
   },
   "parameters": {
@@ -100,13 +100,6 @@
         "description": "Optional. OU path to join AVd VMs"
       }
     },
-    "avdWrklSecretAccess": {
-      "type": "string",
-      "defaultValue": "",
-      "metadata": {
-        "description": "Optional. Id to grant access to on AVD workload key vault secrets"
-      }
-    },
     "avdHostPoolType": {
       "type": "string",
       "defaultValue": "Pooled",
@@ -154,6 +147,13 @@
         "description": "Optional. AVD host pool start VM on Connect (Default: true)"
       }
     },
+    "createStartVmOnConnectCustomRole": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Create custom Start VM on connect role"
+      }
+    },
     "avdDeployRAppGroup": {
       "type": "bool",
       "defaultValue": true,
@@ -175,52 +175,18 @@
         "description": "Create new virtual network (Default: true)"
       }
     },
-    "existingVnetSubscriptionId": {
+    "existingVnetSubnetResourceId": {
       "type": "string",
       "defaultValue": "",
       "metadata": {
-        "description": "Existing virtual network subscription"
+        "description": "Existing virtual network subnet"
       }
     },
-    "existingVnetRgName": {
+    "existingHubVnetResourceId": {
       "type": "string",
       "defaultValue": "",
       "metadata": {
-        "description": "Existing virtual network resource group"
-      }
-    },
-    "existingVnetName": {
-      "type": "string",
-      "defaultValue": "",
-      "metadata": {
-        "description": "Existing virtual network"
-      }
-    },
-    "existingHubVnetSubscriptionId": {
-      "type": "string",
-      "metadata": {
-        "description": "Existing hub virtual network subscription"
-      }
-    },
-    "existingHubVnetRgName": {
-      "type": "string",
-      "defaultValue": "",
-      "metadata": {
-        "description": "Existing hub virtual network resource group"
-      }
-    },
-    "existingHubVnetName": {
-      "type": "string",
-      "defaultValue": "",
-      "metadata": {
-        "description": "Existing hub virtual network"
-      }
-    },
-    "existingVnetSubnetName": {
-      "type": "string",
-      "defaultValue": "",
-      "metadata": {
-        "description": "Existing virtual network subnet (subnet requires PrivateEndpointNetworkPolicies property to be disabled)"
+        "description": "Existing hub virtual network for perring"
       }
     },
     "avdVnetworkAddressPrefixes": {
@@ -239,13 +205,6 @@
         "description": "AVD virtual network subnet address prefix (Default: 10.0.0.0/23)"
       }
     },
-    "customDnsAvailable": {
-      "type": "bool",
-      "defaultValue": true,
-      "metadata": {
-        "description": "Are custom DNS servers accessible form the hub (defualt: true)"
-      }
-    },
     "customDnsIps": {
       "type": "array",
       "defaultValue": [],
@@ -255,7 +214,7 @@
     },
     "vNetworkGatewayOnHub": {
       "type": "bool",
-      "defaultValue": true,
+      "defaultValue": false,
       "metadata": {
         "description": "Does the hub contains a virtual network gateway (defualt: true)"
       }
@@ -265,13 +224,6 @@
       "defaultValue": "51200",
       "metadata": {
         "description": "Optional. Fslogix file share size (Default: 5TB)"
-      }
-    },
-    "createStartVmOnConnectCustomRole": {
-      "type": "bool",
-      "defaultValue": true,
-      "metadata": {
-        "description": "Create custom Start VM on connect role"
       }
     },
     "avdDeploySessionHosts": {
@@ -299,7 +251,7 @@
     },
     "encryptionAtHost": {
       "type": "bool",
-      "defaultValue": false,
+      "defaultValue": true,
       "metadata": {
         "description": "Optional. This property can be used by user in the request to enable or disable the Host Encryption for the virtual machine. This will enable the encryption for all the disks including Resource/Temp disk at host itself. For security reasons, it is recommended to set encryptionAtHost to True. Restrictions: Cannot be enabled if Azure Disk Encryption (guest-VM encryption using bitlocker/DM-Crypt) is enabled on your VMs."
       }
@@ -403,8 +355,6 @@
     "avdStorageObjectsRgName": "[format('rg-{0}-avd-{1}-storage', variables('avdSessionHostLocationLowercase'), variables('deploymentPrefixLowercase'))]",
     "avdSharedResourcesRgName": "[format('rg-{0}-avd-shared-resources', variables('avdSessionHostLocationLowercase'))]",
     "imageGalleryName": "[format('avdgallery{0}', variables('avdSessionHostLocationLowercase'))]",
-    "existingVnetResourceId": "[format('/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Network/virtualNetworks/{2}', parameters('existingVnetSubscriptionId'), parameters('existingVnetRgName'), parameters('existingVnetName'))]",
-    "hubVnetId": "[format('/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Network/virtualNetworks/{2}', parameters('existingHubVnetSubscriptionId'), parameters('existingHubVnetRgName'), parameters('existingHubVnetName'))]",
     "avdVnetworkName": "[format('vnet-{0}-avd-{1}', variables('avdSessionHostLocationLowercase'), variables('deploymentPrefixLowercase'))]",
     "avdVnetworkSubnetName": "[format('avd-{0}', variables('deploymentPrefixLowercase'))]",
     "avdNetworksecurityGroupName": "[format('nsg-{0}-avd-{1}', variables('avdSessionHostLocationLowercase'), variables('deploymentPrefixLowercase'))]",
@@ -3038,7 +2988,7 @@
       "apiVersion": "2020-10-01",
       "name": "[format('AVD-ASG-{0}', parameters('time'))]",
       "subscriptionId": "[format('{0}', variables('avdWrklSubscriptionId'))]",
-      "resourceGroup": "[format('{0}', variables('avdNetworkObjectsRgName'))]",
+      "resourceGroup": "[format('{0}', variables('avdComputeObjectsRgName'))]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -3276,7 +3226,7 @@
         }
       },
       "dependsOn": [
-        "[subscriptionResourceId(variables('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Network-{0}', parameters('time')))]"
+        "[subscriptionResourceId(variables('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Compute-{0}', parameters('time')))]"
       ]
     },
     {
@@ -3562,12 +3512,12 @@
             "value": "[parameters('avdVnetworkAddressPrefixes')]"
           },
           "dnsServers": {
-            "value": "[if(parameters('customDnsAvailable'), parameters('customDnsIps'), createArray())]"
+            "value": "[if(not(empty(parameters('customDnsIps'))), parameters('customDnsIps'), createArray())]"
           },
           "virtualNetworkPeerings": {
             "value": [
               {
-                "remoteVirtualNetworkId": "[variables('hubVnetId')]",
+                "remoteVirtualNetworkId": "[parameters('existingHubVnetResourceId')]",
                 "name": "[variables('avdVNetworkPeeringName')]",
                 "allowForwardedTraffic": true,
                 "allowGatewayTransit": false,
@@ -4685,7 +4635,7 @@
         }
       },
       "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-ASG-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdComputeObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-ASG-{0}', parameters('time')))]",
         "[subscriptionResourceId(variables('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Network-{0}', parameters('time')))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-NSG-{0}', parameters('time')))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-UDR-{0}', parameters('time')))]"
@@ -4711,8 +4661,8 @@
           },
           "appGroupResourceIds": {
             "value": [
-              "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-ApplicationGroup-{0}', parameters('time')))).outputs.resourceId.value]",
-              "[if(parameters('avdDeployRAppGroup'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-ApplicationGroup-{0}', parameters('time')))).outputs.resourceId.value, '')]"
+              "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-AppGroup-Desktop-{0}', parameters('time')))).outputs.resourceId.value]",
+              "[if(parameters('avdDeployRAppGroup'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-AppGroup-RApp-{0}', parameters('time')))).outputs.resourceId.value, '')]"
             ]
           }
         },
@@ -5051,8 +5001,8 @@
         }
       },
       "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-ApplicationGroup-{0}', parameters('time')))]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-ApplicationGroup-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-AppGroup-Desktop-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdServiceObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-AppGroup-RApp-{0}', parameters('time')))]",
         "[subscriptionResourceId(variables('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-ServiceObjects-{0}', parameters('time')))]"
       ]
     },
@@ -5561,7 +5511,7 @@
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
-      "name": "[format('AVD-ApplicationGroup-{0}', parameters('time'))]",
+      "name": "[format('AVD-AppGroup-Desktop-{0}', parameters('time'))]",
       "subscriptionId": "[format('{0}', variables('avdWrklSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdServiceObjectsRgName'))]",
       "properties": {
@@ -6151,7 +6101,7 @@
       "condition": "[parameters('avdDeployRAppGroup')]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
-      "name": "[format('AVD-ApplicationGroup-{0}', parameters('time'))]",
+      "name": "[format('AVD-AppGroup-RApp-{0}', parameters('time'))]",
       "subscriptionId": "[format('{0}', variables('avdWrklSubscriptionId'))]",
       "resourceGroup": "[format('{0}', variables('avdServiceObjectsRgName'))]",
       "properties": {
@@ -10217,7 +10167,7 @@
           "privateEndpoints": {
             "value": [
               {
-                "subnetResourceId": "[if(parameters('createAvdVnet'), format('{0}/subnets/{1}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-vNet-{0}', parameters('time')))).outputs.resourceId.value, variables('avdVnetworkSubnetName')), format('{0}/subnets/{1}', variables('existingVnetResourceId'), parameters('existingVnetSubnetName')))]",
+                "subnetResourceId": "[if(parameters('createAvdVnet'), format('{0}/subnets/{1}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-vNet-{0}', parameters('time')))).outputs.resourceId.value, variables('avdVnetworkSubnetName')), parameters('existingVnetSubnetResourceId'))]",
                 "service": "vault"
               }
             ]
@@ -10247,19 +10197,6 @@
                 }
               ]
             }
-          },
-          "accessPolicies": {
-            "value": [
-              {
-                "objectId": "[parameters('avdWrklSecretAccess')]",
-                "permissions": {
-                  "secrets": [
-                    "get",
-                    "list"
-                  ]
-                }
-              }
-            ]
           }
         },
         "template": {
@@ -13113,7 +13050,7 @@
           "privateEndpoints": {
             "value": [
               {
-                "subnetResourceId": "[if(parameters('createAvdVnet'), format('{0}/subnets/{1}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-vNet-{0}', parameters('time')))).outputs.resourceId.value, variables('avdVnetworkSubnetName')), format('{0}/subnets/{1}', variables('existingVnetResourceId'), parameters('existingVnetSubnetName')))]",
+                "subnetResourceId": "[if(parameters('createAvdVnet'), format('{0}/subnets/{1}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-vNet-{0}', parameters('time')))).outputs.resourceId.value, variables('avdVnetworkSubnetName')), parameters('existingVnetSubnetResourceId'))]",
                 "service": "file"
               }
             ]
@@ -19383,11 +19320,11 @@
               {
                 "nicSuffix": "-nic-01",
                 "deleteOption": "Delete",
-                "asgId": "[if(parameters('createAvdVnet'), format('{0}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-ASG-{0}', parameters('time')))).outputs.resourceId.value), null())]",
+                "asgId": "[if(parameters('createAvdVnet'), format('{0}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdComputeObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-ASG-{0}', parameters('time')))).outputs.resourceId.value), null())]",
                 "ipConfigurations": [
                   {
                     "name": "ipconfig01",
-                    "subnetId": "[if(parameters('createAvdVnet'), format('{0}/subnets/{1}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-vNet-{0}', parameters('time')))).outputs.resourceId.value, variables('avdVnetworkSubnetName')), format('{0}/subnets/{1}', variables('existingVnetResourceId'), parameters('existingVnetSubnetName')))]"
+                    "subnetId": "[if(parameters('createAvdVnet'), format('{0}/subnets/{1}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-vNet-{0}', parameters('time')))).outputs.resourceId.value, variables('avdVnetworkSubnetName')), parameters('existingVnetSubnetResourceId'))]"
                   }
                 ]
               }
@@ -22777,7 +22714,7 @@
         }
       },
       "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-ASG-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdComputeObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-ASG-{0}', parameters('time')))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdComputeObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-Availability-Set-{0}', parameters('time')))]",
         "[subscriptionResourceId(variables('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Compute-{0}', parameters('time')))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-vNet-{0}', parameters('time')))]",
