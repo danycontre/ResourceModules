@@ -172,84 +172,77 @@
                             }
                         },
                         {
-                            "name": "avdDeploymentLocations",
-                            "type": "Microsoft.Common.Section",
+                            "name": "avdManagementPlaneLocation",
+                            "type": "Microsoft.Common.DropDown",
+                            "visible": true,
                             "label": "Deployment location",
-                            "elements": [
-                                {
-                                    "name": "avdManagementPlaneLocation",
-                                    "type": "Microsoft.Common.DropDown",
-                                    "visible": true,
-                                    "label": "Management plane",
-                                    "defaultValue": "",
-                                    "toolTip": "Select region where AVD workspace, host pool and application groups will be created.",
-                                    "constraints": {
-                                        "required": true,
-                                        "allowedValues": [
-                                            {
-                                                "label": "Canada Central",
-                                                "value": "canadacentral"
-                                            },
-                                            {
-                                                "label": "Canada East",
-                                                "value": "canadaeast"
-                                            },
-                                            {
-                                                "label": "Central US",
-                                                "value": "centralus"
-                                            },
-                                            {
-                                                "label": "East US",
-                                                "value": "eastus"
-                                            },
-                                            {
-                                                "label": "East US 2",
-                                                "value": "eastus2"
-                                            },
-                                            {
-                                                "label": "North Central US",
-                                                "value": "northcentralus"
-                                            },
-                                            {
-                                                "label": "North Europe",
-                                                "value": "northeurope"
-                                            },
-                                            {
-                                                "label": "South Central US",
-                                                "value": "southcentralus"
-                                            },
-                                            {
-                                                "label": "UK South",
-                                                "value": "uksouth"
-                                            },
-                                            {
-                                                "label": "UK West",
-                                                "value": "ukwest"
-                                            },
-                                            {
-                                                "label": "West Central US",
-                                                "value": "westcentralus"
-                                            },
-                                            {
-                                                "label": "West Europe",
-                                                "value": "westeurope"
-                                            },
-                                            {
-                                                "label": "West India",
-                                                "value": "westindia"
-                                            },
-                                            {
-                                                "label": "West US",
-                                                "value": "westus"
-                                            },
-                                            {
-                                                "label": "West US 2",
-                                                "value": "westus2"
-                                            }
-                                        ]
+                            "defaultValue": "East US 2",
+                            "toolTip": "Select region where AVD workspace, host pool and application groups will be created.",
+                            "constraints": {
+                                "required": true,
+                                "allowedValues": [
+                                    {
+                                        "label": "Canada Central",
+                                        "value": "canadacentral"
+                                    },
+                                    {
+                                        "label": "Canada East",
+                                        "value": "canadaeast"
+                                    },
+                                    {
+                                        "label": "Central US",
+                                        "value": "centralus"
+                                    },
+                                    {
+                                        "label": "East US",
+                                        "value": "eastus"
+                                    },
+                                    {
+                                        "label": "East US 2",
+                                        "value": "eastus2"
+                                    },
+                                    {
+                                        "label": "North Central US",
+                                        "value": "northcentralus"
+                                    },
+                                    {
+                                        "label": "North Europe",
+                                        "value": "northeurope"
+                                    },
+                                    {
+                                        "label": "South Central US",
+                                        "value": "southcentralus"
+                                    },
+                                    {
+                                        "label": "UK South",
+                                        "value": "uksouth"
+                                    },
+                                    {
+                                        "label": "UK West",
+                                        "value": "ukwest"
+                                    },
+                                    {
+                                        "label": "West Central US",
+                                        "value": "westcentralus"
+                                    },
+                                    {
+                                        "label": "West Europe",
+                                        "value": "westeurope"
+                                    },
+                                    {
+                                        "label": "West India",
+                                        "value": "westindia"
+                                    },
+                                    {
+                                        "label": "West US",
+                                        "value": "westus"
+                                    },
+                                    {
+                                        "label": "West US 2",
+                                        "value": "westus2"
                                     }
-                                }
-                            ]
+                                ]
+                            }
                         },
                         {
                             "name": "avdManagementPlaneHostPoolSettings",
@@ -476,111 +469,184 @@
                             }
                         },
                         {
-                            "name": "LocationsApi",
-                            "type": "Microsoft.Solutions.ArmApiControl",
-                            "request": {
-                                "method": "GET",
-                                "path": "locations?api-version=2019-11-01"
-                            }
-                        },
-                        {
-                            "name": "avdSessionHostLocation",
-                            "type": "Microsoft.Common.DropDown",
+                            "name": "avdSessionHostsComputeStorageSection",
+                            "type": "Microsoft.Common.Section",
                             "visible": "[equals(steps('avdSessionHosts').avdDeploySessionHosts, true)]",
-                            "label": "Deployment location",
-                            "filter": true,
-                            "defaultValue": "",
-                            "toolTip": "Select region where AVD session hosts (VMs), key vaults, image components and storage will be created, this location should be the closest one to the end users.",
-                            "constraints": {
-                                "required": true,
-                                "allowedValues": "[map(steps('avdSessionHosts').LocationsApi.value,(item) => parse(concat('{\"label\":\"',item.displayName,'\",\"value\":\"',item.name,'\"}')))]"
-                            }
-                        },
-                        {
-                            "name": "avdSessionHostsAvailabilitySettings",
-                            "type": "Microsoft.Common.OptionsGroup",
-                            "visible": "[equals(steps('avdSessionHosts').avdDeploySessionHosts, true)]",
-                            "label": "Use availability zones",
-                            "defaultValue": "No",
-                            "toolTip": "Distribute compute and storage resources across availability zones. When selecting No a availability set will be created to host the VMs.",
-                            "constraints": {
-                                "required": true,
-                                "allowedValues": [
-                                    {
-                                        "label": "Yes",
-                                        "value": true
-                                    },
-                                    {
-                                        "label": "No",
-                                        "value": false
+                            "label": "General settings",
+                            "tooltip": "This settings apply to compute, storage, image management and key vault resources.",
+                            "elements": [
+                                {
+                                    "name": "LocationsApi",
+                                    "type": "Microsoft.Solutions.ArmApiControl",
+                                    "request": {
+                                        "method": "GET",
+                                        "path": "locations?api-version=2019-11-01"
                                     }
-                                ]
-                            }
-                        },
-                        {
-                            "name": "avdSessionHostsCount",
-                            "type": "Microsoft.Common.TextBox",
-                            "visible": "[equals(steps('avdSessionHosts').avdDeploySessionHosts, true)]",
-                            "label": "Session hosts count",
-                            "toolTip": "Provide the number of session hosts to deploy (1-499).",
-                            "defaultValue": 1,
-                            "constraints": {
-                                "required": true,
-                                "regex": "^[1-499]{1,3}$",
-                                "validationMessage": "The count must be between 1-499 session hosts."
-                            }
-                        },
-                        {
-                            "name": "avdSessionHostsImageSource",
-                            "type": "Microsoft.Common.DropDown",
-                            "visible": "[equals(steps('avdSessionHosts').avdDeploySessionHosts, true)]",
-                            "label": "OS image source",
-                            "filter": true,
-                            "defaultValue": "Marketplace",
-                            "toolTip": "Select marketplace or build custom image to deploy the session hosts.",
-                            "constraints": {
-                                "required": true,
-                                "allowedValues": [
-                                    {
-                                        "label": "Marketplace",
-                                        "value": false
-                                    },
-                                    {
-                                        "label": "Build custom image",
-                                        "value": true
+                                },
+                                {
+                                    "name": "avdSessionHostLocation",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "label": "Deployment location",
+                                    "filter": true,
+                                    "defaultValue": "East US 2",
+                                    "toolTip": "Select region where AVD session hosts (VMs), key vaults, image components and storage will be created, this location should be the closest one to the end users.",
+                                    "constraints": {
+                                        "required": true,
+                                        "allowedValues": "[map(steps('avdSessionHosts').avdSessionHostsComputeStorageSection.LocationsApi.value,(item) => parse(concat('{\"label\":\"',item.displayName,'\",\"value\":\"',item.name,'\"}')))]"
                                     }
-                                ]
-                            }
+                                },
+                                {
+                                    "name": "avdSessionHostsAvailabilitySettings",
+                                    "type": "Microsoft.Common.OptionsGroup",
+                                    "label": "Use availability zones",
+                                    "defaultValue": "No",
+                                    "toolTip": "Distribute compute and storage resources across availability zones. When selecting No a availability set will be created to host the VMs.",
+                                    "constraints": {
+                                        "required": true,
+                                        "allowedValues": [
+                                            {
+                                                "label": "Yes",
+                                                "value": true
+                                            },
+                                            {
+                                                "label": "No",
+                                                "value": false
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "name": "avdSessionHostsFslogixFileShareQuota",
+                                    "type": "Microsoft.Common.Slider",
+                                    "label": "Fslogix file share size",
+                                    "subLabel": "x 100GB",
+                                    "toolTip": "Size of Premium File share storage in 10GB increments",
+                                    "min": 1,
+                                    "max": 100,
+                                    "defaultValue": 1,
+                                    "showStepMarkers": true,
+                                    "constraints": {
+                                        "required": true
+                                    }
+                                }
+                            ]
                         },
                         {
-                            "name": "avdSessionHostsOsImage",
-                            "type": "Microsoft.Common.DropDown",
+                            "name": "avdSessionHostsSettingsSection",
+                            "type": "Microsoft.Common.Section",
                             "visible": "[equals(steps('avdSessionHosts').avdDeploySessionHosts, true)]",
-                            "label": "OS version",
-                            "filter": true,
-                            "defaultValue": "Windows 11",
-                            "toolTip": "Select OS version to deploy the session hosts with.",
-                            "constraints": {
-                                "required": true,
-                                "allowedValues": [
-                                    {
-                                        "label": "Windows 10",
-                                        "value": "win10-21h2"
+                            "label": "Session hosts settings",
+                            "elements": [
+                                {
+                                    "name": "element1",
+                                    "type": "Microsoft.Compute.SizeSelector",
+                                    "label": "VM Size",
+                                    "toolTip": "",
+                                    "recommendedSizes": [
+                                        "Standard_D1",
+                                        "Standard_D2",
+                                        "Standard_D3"
+                                    ],
+                                    "constraints": {
+                                        "allowedSizes": [],
+                                        "excludedSizes": [],
+                                        "numAvailabilityZonesRequired": 3,
+                                        "zone": "3"
                                     },
-                                    {
-                                        "label": "Windows 10 - Office 365",
-                                        "value": "win10-21h2-office"
+                                    "options": {
+                                        "hideDiskTypeFilter": false
                                     },
-                                    {
-                                        "label": "Windows 11",
-                                        "value": "win11-21h2"
-                                    },
-                                    {
-                                        "label": "Windows 11 - Office 365",
-                                        "value": "win11-21h2-office"
+                                    "osPlatform": "Windows",
+                                    "imageReference": {
+                                        "publisher": "MicrosoftWindowsServer",
+                                        "offer": "WindowsServer",
+                                        "sku": "2012-R2-Datacenter"
                                     }
-                                ]
-                            }
+                                },
+                                {
+                                    "name": "avdSessionHostsCount",
+                                    "type": "Microsoft.Common.TextBox",
+                                    "label": "VM count",
+                                    "toolTip": "Provide the number of session hosts to deploy (1-499).",
+                                    "defaultValue": 1,
+                                    "constraints": {
+                                        "required": true,
+                                        "regex": "^[1-499]{1,3}$",
+                                        "validationMessage": "The count must be between 1-499 session hosts."
+                                    }
+                                },
+                                {
+                                    "name": "avdSessionHostsImageSource",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "label": "OS image source",
+                                    "filter": true,
+                                    "defaultValue": "Marketplace",
+                                    "toolTip": "Select marketplace or build custom image to deploy the session hosts.",
+                                    "constraints": {
+                                        "required": true,
+                                        "allowedValues": [
+                                            {
+                                                "label": "Marketplace",
+                                                "value": false
+                                            },
+                                            {
+                                                "label": "Build custom image",
+                                                "value": true
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "name": "avdSessionHostsOsImage",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "label": "OS version",
+                                    "filter": true,
+                                    "defaultValue": "Windows 11",
+                                    "toolTip": "Select OS version to deploy the session hosts with.",
+                                    "constraints": {
+                                        "required": true,
+                                        "allowedValues": [
+                                            {
+                                                "label": "Windows 10",
+                                                "value": "win10-21h2"
+                                            },
+                                            {
+                                                "label": "Windows 10 - Office 365",
+                                                "value": "win10-21h2-office"
+                                            },
+                                            {
+                                                "label": "Windows 11",
+                                                "value": "win11-21h2"
+                                            },
+                                            {
+                                                "label": "Windows 11 - Office 365",
+                                                "value": "win11-21h2-office"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "name": "avdSessionHostDiskType",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "label": "OS Disk type",
+                                    "filter": true,
+                                    "defaultValue": "Standard",
+                                    "toolTip": "Select session host disk type to host the OS.",
+                                    "constraints": {
+                                        "required": true,
+                                        "allowedValues": [
+                                            {
+                                                "label": "Standard",
+                                                "value": "Standard_LRS"
+                                            },
+                                            {
+                                                "label": "Premium",
+                                                "value": "Premium_LRS"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
                         }
                     ]
                 },
@@ -915,8 +981,8 @@
         "outputs": {
             "parameters": {
                 "deploymentPrefix": "[steps('avdLzSettings').avdDeploymentPrefix]",
-                "avdSessionHostLocation": "[steps('avdSessionHosts').avdSessionHostLocation]",
-                "avdManagementPlaneLocation": "[steps('avdManagementPlane').avdDeploymentLocations.avdManagementPlaneLocation]",
+                "avdSessionHostLocation": "[steps('avdSessionHosts').avdSessionHostsComputeStorageSection.avdSessionHostLocation]",
+                "avdManagementPlaneLocation": "[steps('avdManagementPlane').avdManagementPlaneLocation]",
                 "avdSubOrgsOption": "[steps('avdLzSettings').avdSubOrgsOption]",
                 "avdSingleSubsId": "[steps('avdLzSettings').avdSingleSubSection.avdSingleSub]",
                 "avdShrdlSubsId": "[steps('avdLzSettings').avdMultipleSubSection.avdMultipleSubShared]",
@@ -943,10 +1009,11 @@
                 "avdDeploySessionHosts": "[steps('avdSessionHosts').avdDeploySessionHosts]",
                 "avdStartVMOnConnect": "[steps('avdManagementPlane').avdManagementPlaneHostPoolScaling.startVmOnConnect]",
                 "createStartVmOnConnectCustomRole": "[steps('avdManagementPlane').avdManagementPlaneHostPoolScaling.createVmRole]",
-                "avdUseAvailabilityZones": "[steps('avdSessionHosts').avdSessionHostsAvailabilitySettings]",
-                "avdDeploySessionHostsCount": "[steps('avdSessionHosts').avdSessionHostsCount]",
-                "useSharedImage": "[steps('avdSessionHosts').avdSessionHostsImageSource]",
-                "avdOsImage": "[steps('avdSessionHosts').avdSessionHostsOsImage]"
+                "avdUseAvailabilityZones": "[steps('avdSessionHosts').avdSessionHostsComputeStorageSection.avdSessionHostsAvailabilitySettings]",
+                "avdDeploySessionHostsCount": "[steps('avdSessionHosts').avdSessionHostsSettingsSection.avdSessionHostsCount]",
+                "useSharedImage": "[steps('avdSessionHosts').avdSessionHostsSettingsSection.avdSessionHostsImageSource]",
+                "avdOsImage": "[steps('avdSessionHosts').avdSessionHostsSettingsSection.avdSessionHostsOsImage]",
+                "avdSessionHostDiskType": "[steps('avdSessionHosts').avdSessionHostsSettingsSection.avdSessionHostDiskType]"
             },
             "kind": "Tenant",
             "location": "[steps('basics').resourceScope.location.name]"
