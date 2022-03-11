@@ -52,7 +52,7 @@
                             "type": "Microsoft.Common.TextBox",
                             "label": "Deployment prefix",
                             "toolTip": "Provide a prefix (max 4 characters) for the resource groups and resources created as part of AVD landing zones.",
-                            "defaultValue": "Example: App1",
+                            "placeholder": "Example: App1",
                             "constraints": {
                                 "required": true,
                                 "regex": "^[a-z0-9A-Z-]{1,4}$",
@@ -679,7 +679,7 @@
                                     "type": "Microsoft.Common.TextBox",
                                     "label": "Domain",
                                     "toolTip": "Provide username with permissions to join session host to the domain.",
-                                    "defaultValue": "Example: contoso.com",
+                                    "placeholder": "Example: contoso.com",
                                     "constraints": {
                                         "required": true
                                     }
@@ -689,7 +689,7 @@
                                     "type": "Microsoft.Common.TextBox",
                                     "label": "OU path (Optional)",
                                     "toolTip": "Provide OU where to locate session hosts, if not provided session hosts will be placed on the default (computers) OU.",
-                                    "defaultValue": "Example: OU:avd;DC:contoso;DC:com",
+                                    "placeholder": "Example: OU:avd;DC:contoso;DC:com",
                                     "constraints": {}
                                 }
                             ]
