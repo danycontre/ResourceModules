@@ -69,6 +69,7 @@ stages:
           workingDir: $(System.DefaultWorkingDirectory)/workload
           templateFile: deploy.bicep
           parameterArray:
+            - deploymentPrefix 'app2'
             - avdWrklSubsId $(avdWrklSubsId)
             - avdSingleSubsId $(avdWrklSubsId)
             - avdSubOrgsOption 'Single'
