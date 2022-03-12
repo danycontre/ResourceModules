@@ -233,6 +233,7 @@ var aibManagedIdentityName = 'avd-uai-aib'
 var imageDefinitionsTemSpecName = 'AVDImageDefinition_${avdOsImage}'
 var imageTemplateBuildName = 'AVD-Image-Template-Build'
 var avdEnterpriseApplicationId = '486795c7-d929-4b48-a99e-3c5329d4ce86' // needs to be queried.
+var imageVmSize = 'Standard_D4_v3'
 var avdOsImageDefinitions = {
     'win10_21h2_office': {
         name: 'Windows10_21H2_Office'
@@ -688,6 +689,7 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
         location: aiblocation
         imageReplicationRegions: (avdSessionHostLocation == aiblocation) ? array('${avdSessionHostLocation}') : concat(array('${aiblocation}'), array('${avdSessionHostLocation}'))
         sigImageDefinitionId: useSharedImage ? avdImageTemplataDefinition.outputs.resourceId : ''
+        vmSize: imageVmSize
         customizationSteps: [
             {
                 type: 'PowerShell'
