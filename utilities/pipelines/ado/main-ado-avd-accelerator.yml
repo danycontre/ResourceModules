@@ -71,7 +71,9 @@ stages:
           parameterArray:
             - avdWrklSubsId $(avdWrklSubsId)
             - avdSingleSubsId $(avdWrklSubsId)
-            - location $(deploymentRegion)
+            - avdSubOrgsOption 'Single'
+            - avdManagementPlaneLocation $(deploymentRegion)
+            - avdSessionHostLocation $(deploymentRegion)
             - avdWrklSecretAccess $(avdWrklSecretAccess)
             - useSharedImage $(useSharedImage)
             - avdOsImage $(avdOsImage)
