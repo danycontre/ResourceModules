@@ -76,7 +76,7 @@ stages:
             - avdManagementPlaneLocation $(deploymentRegion)
             - avdSessionHostLocation $(deploymentRegion)
         #    - avdWrklSecretAccess $(avdWrklSecretAccess)
-            - existingVnetSubnetResourceId '/subscriptions/4f6c98e1-04a4-49f0-abce-6240b1726c3f/resourceGroups/AzurelabCACN-VNET/providers/Microsoft.Network/virtualNetworks/azureminlab-eastus2-avd-vnet'
+            - existingVnetSubnetResourceId '/subscriptions/4f6c98e1-04a4-49f0-abce-6240b1726c3f/resourceGroups/AzurelabCACN-VNET/providers/Microsoft.Network/virtualNetworks/azureminlab-eastus2-avd-vnet/subnets/vms'
             - useSharedImage $(useSharedImage)
             - avdOsImage $(avdOsImage)
             - createAvdVnet $(createAvdVnet)
