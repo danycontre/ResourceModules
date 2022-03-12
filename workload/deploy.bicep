@@ -249,7 +249,7 @@ var avdOsImageDefinitions = {
         osState: 'Generalized'
         offer: 'Windows-10'
         publisher: 'MicrosoftWindowsDesktop'
-        sku: '21h2-evd'
+        sku: 'win10-21h2-avd'
         hyperVGeneration: 'V1'
     }
     'win11_21h2_office': {
@@ -283,7 +283,7 @@ var marketPlaceGalleryWindows = {
     'win10_21h2': {
         publisher: 'MicrosoftWindowsDesktop'
         offer: 'Windows-10'
-        sku: '21h2-avd'
+        sku: '21h2-evd'
         version: 'latest'
     }
 
