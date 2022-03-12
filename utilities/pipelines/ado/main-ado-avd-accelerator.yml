@@ -69,20 +69,17 @@ stages:
           workingDir: $(System.DefaultWorkingDirectory)/workload
           templateFile: deploy.bicep
           parameterArray:
+            - deploymentPrefix 'app2'
             - avdWrklSubsId $(avdWrklSubsId)
             - avdSingleSubsId $(avdWrklSubsId)
-            - location $(deploymentRegion)
-            - avdWrklSecretAccess $(avdWrklSecretAccess)
+            - avdSubOrgsOption 'Single'
+            - avdManagementPlaneLocation $(deploymentRegion)
+            - avdSessionHostLocation $(deploymentRegion)
+        #    - avdWrklSecretAccess $(avdWrklSecretAccess)
+            - existingVnetSubnetResourceId '/subscriptions/4f6c98e1-04a4-49f0-abce-6240b1726c3f/resourceGroups/AzurelabCACN-VNET/providers/Microsoft.Network/virtualNetworks/azureminlab-eastus2-avd-vnet/subnets/vms'
             - useSharedImage $(useSharedImage)
             - avdOsImage $(avdOsImage)
             - createAvdVnet $(createAvdVnet)
-            - existingVnetName $(existingVnetName)
-            - existingVnetRgName $(existingVnetRgName)
-            - existingVnetSubscriptionId $(existingVnetSubscriptionId)
-            - existingVnetSubnetName $(existingVnetSubnetName)
-            - existingHubVnetName $(existingVnetName)
-            - existingHubVnetRgName $(existingVnetRgName)
-            - existingHubVnetSubscriptionId $(existingVnetSubscriptionId)
             - avdDomainJoinUserName $(avdDomainJoinUserName)
             - avdDomainJoinUserPassword $(avdDomainJoinUserPassword)
             - avdVmLocalUserName $(avdVmLocalUserName)
