@@ -257,7 +257,7 @@ var avdOsImageDefinitions = {
         name: 'Windows11_21H2'
         osType: 'Windows'
         osState: 'Generalized'
-        offer: 'windows-11'
+        offer: 'office-365'
         publisher: 'MicrosoftWindowsDesktop'
         sku: 'win11-21h2-avd-m365'
         hyperVGeneration: 'V2'
