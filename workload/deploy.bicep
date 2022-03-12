@@ -686,7 +686,7 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
         userMsiName: createAibManagedIdentity ? imageBuilderManagedIdentity.outputs.name : ''
         userMsiResourceGroup: createAibManagedIdentity ? imageBuilderManagedIdentity.outputs.resourceGroupName : ''
         location: aiblocation
-        imageReplicationRegions: concat(array('${aiblocation}'), array('${avdSessionHostLocation}'))
+        imageReplicationRegions: (avdSessionHostLocation == aiblocation) ? array('${avdSessionHostLocation}') : concat(array('${aiblocation}'), array('${avdSessionHostLocation}'))
         sigImageDefinitionId: useSharedImage ? avdImageTemplataDefinition.outputs.resourceId : ''
         customizationSteps: [
             {
