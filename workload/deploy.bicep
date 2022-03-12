@@ -233,7 +233,6 @@ var aibManagedIdentityName = 'avd-uai-aib'
 var imageDefinitionsTemSpecName = 'AVDImageDefinition_${avdOsImage}'
 var imageTemplateBuildName = 'AVD-Image-Template-Build'
 var avdEnterpriseApplicationId = '486795c7-d929-4b48-a99e-3c5329d4ce86' // needs to be queried.
-//var hyperVGeneration = 'V2'
 var avdOsImageDefinitions = {
     'win10_21h2_office': {
         name: 'Windows10_21H2_Office'
@@ -493,25 +492,6 @@ module avdHostPool '../arm/Microsoft.DesktopVirtualization/hostpools/deploy.bice
     ]
 }
 
-/*
-module hostpoolToken '../arm/Microsoft.Resources/deploymentScripts/deploy.bicep' = if (useSharedImage) {
-    scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdServiceObjectsRgName}')
-    name: 'AVD-Host-Pool-Token-${time}'
-    params: {
-        name: 'imageTemplateBuildName-${avdOsImage}'
-        location: aiblocation
-        azPowerShellVersion: '6.2'
-        cleanupPreference: 'OnSuccess'
-        userAssignedIdentities: {
-            '${imageBuilderManagedIdentity.outputs.resourceId}': {}
-        }
-        scriptContent: ''
-    }
-    dependsOn: [
-        avdHostPool
-    ]
-}
-*/
 module avdApplicationGroupDesktop '../arm/Microsoft.DesktopVirtualization/applicationgroups/deploy.bicep' = {
     scope: resourceGroup('${avdWrklSubscriptionId}', '${avdServiceObjectsRgName}')
     name: 'AVD-AppGroup-Desktop-${time}'
@@ -706,7 +686,7 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
         userMsiName: createAibManagedIdentity ? imageBuilderManagedIdentity.outputs.name : ''
         userMsiResourceGroup: createAibManagedIdentity ? imageBuilderManagedIdentity.outputs.resourceGroupName : ''
         location: aiblocation
-        imageReplicationRegions: avdImageRegionsReplicas
+        imageReplicationRegions: concat(array('${aiblocation}'), array('${avdSessionHostLocation}'))
         sigImageDefinitionId: useSharedImage ? avdImageTemplataDefinition.outputs.resourceId : ''
         customizationSteps: [
             {
