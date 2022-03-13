@@ -248,9 +248,9 @@ var avdOsImageDefinitions = {
         name: 'Windows10_21H2'
         osType: 'Windows'
         osState: 'Generalized'
-        offer: 'Windows-10'
+        offer: 'windows-10'
         publisher: 'MicrosoftWindowsDesktop'
-        sku: 'win10-21h2-avd'
+        sku: '21h1-evd'
         hyperVGeneration: 'V1'
     }
     'win11_21h2_office': {
