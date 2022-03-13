@@ -134,7 +134,7 @@ param customDnsIps array = []
 param vNetworkGatewayOnHub bool = false
 
 @description('Optional. Fslogix file share size (Default: 5TB)')
-param avdFslogixFileShareQuotaSize int = 51200
+param avdFslogixFileShareQuotaSize int = 512
 
 @description('Deploy new session hosts (defualt: false)')
 param avdDeploySessionHosts bool = true
@@ -773,7 +773,7 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
         userAssignedIdentities: createAibManagedIdentity ? {
             '${imageBuilderManagedIdentity.outputs.resourceId}': {}
         } : {}
-        arguments: '-resourceGroupName \'${avdSharedResourcesRgName}\' -imageTemplateName \'${imageTemplate.outputs.name}\''
+        arguments: '-resourceGroupName \'${avdSharedResourcesRgName}\' -imageTemplateName \'${(useSharedImage ? imageTemplate.outputs.name : null)}\''
         scriptContent: useSharedImage ? '''
         param(
         [string] [Parameter(Mandatory=$true)] $resourceGroupName,
@@ -816,10 +816,10 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
         ''' : ''
     }
     dependsOn: [
-        imageTemplate
+        //imageTemplate //we need to make this dependson conditional so it plays well with other deployment flags
         avdSharedResourcesRg
         azureImageBuilderRoleAssign
-        imageTemplateBuild
+        //imageTemplateBuild //we need to make this dependson conditional so it plays well with other deployment flags
     ]
 }
 

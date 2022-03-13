@@ -607,19 +607,19 @@
                                         "allowedValues": [
                                             {
                                                 "label": "Windows 10",
-                                                "value": "win10-21h2"
+                                                "value": "win10_21h2"
                                             },
                                             {
                                                 "label": "Windows 10 - Office 365",
-                                                "value": "win10-21h2-office"
+                                                "value": "win10_21h2_office"
                                             },
                                             {
                                                 "label": "Windows 11",
-                                                "value": "win11-21h2"
+                                                "value": "win11_21h2"
                                             },
                                             {
                                                 "label": "Windows 11 - Office 365",
-                                                "value": "win11-21h2-office"
+                                                "value": "win11_21h2_office"
                                             }
                                         ]
                                     }
