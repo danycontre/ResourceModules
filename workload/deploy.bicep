@@ -123,7 +123,7 @@ param avdVnetworkAddressPrefixes string = '10.0.0.0/23'
 param avdVnetworkSubnetAddressPrefix string = '10.0.0.0/23'
 
 @description('custom DNS servers IPs')
-param customDnsIps array = []
+param customDnsIps string = ''
 
 @description('Does the hub contains a virtual network gateway (defualt: true)')
 param vNetworkGatewayOnHub bool = false
@@ -409,7 +409,7 @@ module avdVirtualNetwork '../arm/Microsoft.Network/virtualNetworks/deploy.bicep'
         name: avdVnetworkName
         location: avdSessionHostLocation
         addressPrefixes: array(avdVnetworkAddressPrefixes)
-        dnsServers: !empty(customDnsIps) ? customDnsIps : []
+        dnsServers: !empty(customDnsIps) ? array(customDnsIps) : []
         virtualNetworkPeerings: [
             {
                 remoteVirtualNetworkId: existingHubVnetResourceId

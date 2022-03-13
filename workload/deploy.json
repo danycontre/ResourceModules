@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.4.1272.37030",
-      "templateHash": "5415690682041169239"
+      "templateHash": "11819809352152853812"
     }
   },
   "parameters": {
@@ -204,8 +204,8 @@
       }
     },
     "customDnsIps": {
-      "type": "array",
-      "defaultValue": [],
+      "type": "string",
+      "defaultValue": "",
       "metadata": {
         "description": "custom DNS servers IPs"
       }
@@ -3514,7 +3514,7 @@
             "value": "[array(parameters('avdVnetworkAddressPrefixes'))]"
           },
           "dnsServers": {
-            "value": "[if(not(empty(parameters('customDnsIps'))), parameters('customDnsIps'), createArray())]"
+            "value": "[if(not(empty(parameters('customDnsIps'))), array(parameters('customDnsIps')), createArray())]"
           },
           "virtualNetworkPeerings": {
             "value": [
