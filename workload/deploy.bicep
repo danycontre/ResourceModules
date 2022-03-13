@@ -773,11 +773,13 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
         userAssignedIdentities: createAibManagedIdentity ? {
             '${imageBuilderManagedIdentity.outputs.resourceId}': {}
         } : {}
-        arguments: '-resourceGroupName \'${avdSharedResourcesRgName}\' -imageTemplateName \'${imageTemplate.outputs.name}\''
+        arguments: '-subscriptionId \'${avdShrdlSubsId}\' -clientId \'${imageBuilderManagedIdentity.outputs.clientId}\' -resourceGroupName \'${avdSharedResourcesRgName}\' -imageTemplateName \'${imageTemplate.outputs.name}\''
         scriptContent: useSharedImage ? '''
         param(
         [string] [Parameter(Mandatory=$true)] $resourceGroupName,
-        [string] [Parameter(Mandatory=$true)] $imageTemplateName
+        [string] [Parameter(Mandatory=$true)] $imageTemplateName,
+        [string] [Parameter(Mandatory=$true)] $subscriptionId,
+        [string] [Parameter(Mandatory=$true)] $clientId
         )
             $ErrorActionPreference = "Stop"
             Install-Module -Name Az.ImageBuilder -Force
@@ -785,9 +787,21 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
         $getStatus=$(Get-AzImageBuilderTemplate -ResourceGroupName $resourceGroupName -Name $imageTemplateName)
         $status=$getStatus.LastRunStatusRunState
         $statusMessage=$getStatus.LastRunStatusMessage
+        $startTime=Get-Date
+        $expiryTime=$startTime + (New-TimeSpan -Minutes 55)
+        $reauthTime= $startTime + (New-TimeSpan -Minutes 50)
             do {
             $now=(Get-Date)
             Write-Host "Getting the current time: $now"
+            Write-Host "Auth token would be reset at $reauthTime and expiry time is at $expiryTime"
+            if (($now -gt $reauthTime) -and ($now -lt $expriryTime)) {
+                Write-Host "Reset Azure Context"
+                Clear-AzContext
+                Write-Host "Setting up the AzContext"
+                Write-Host "Logging into $subscriptionId with clientId $clientId"
+                Connect-AzAccount -Identity -AccountId $clientId
+                Select-AzSubscription -Subscription $subscriptionId
+            }
             $getStatus=$(Get-AzImageBuilderTemplate -ResourceGroupName $resourceGroupName -Name $imageTemplateName)
             $status=$getStatus.LastRunStatusRunState
             Write-Host "Current status of the image build $imageTemplateName is: $status"
