@@ -714,6 +714,12 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
                 ]
                 updateLimit: 40
             }
+
+            {
+                type: 'WindowsRestart'
+                restartCheckCommand: 'write-host "restarting post Windows updates"'
+                restartTimeout: '5m'
+            }
         ]
         imageSource: {
             type: 'PlatformImage'
