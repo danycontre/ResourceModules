@@ -5,15 +5,15 @@ $drive = 'C:\'
 New-Item -Path $drive -Name $appName -ItemType Directory -ErrorAction SilentlyContinue
 $LocalPath = $drive + '\' + $appName
 Set-Location $LocalPath
-Write-Host 'Created the loca directory'
+Write-Host 'Created the local directory'
 $osOptURL = 'https://github.com/The-Virtual-Desktop-Team/Virtual-Desktop-Optimization-Tool/archive/refs/heads/main.zip'
 $osOptURLexe = 'Windows_10_VDI_Optimize-main.zip'
 $outputPath = $LocalPath + '\' + $osOptURLexe
 Write-Host 'Loading up the repo to local folder'
 Invoke-WebRequest -Uri $osOptURL -OutFile $outputPath
 Write-Host 'AIB Customization: Starting OS Optimizations script'
-Expand-Archive -LiteralPath 'C:\\Optimize\\Windows_10_VDI_Optimize-master.zip' -DestinationPath $Localpath -Force -Verbose
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Force -Verbose
+Expand-Archive -LiteralPath 'C:\\Optimize\\Windows_10_VDI_Optimize-main.zip' -DestinationPath $Localpath -Force -Verbose
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 Set-Location -Path C:\\Optimize\\Virtual-Desktop-Optimization-Tool-main
 
 # instrumentation
@@ -23,8 +23,15 @@ Invoke-WebRequest -Uri $osOptURL -OutFile $osOptURLexe
 
 # Patch: overide the Win10_VirtualDesktop_Optimize.ps1 - setting 'Set-NetAdapterAdvancedProperty'(see readme.md)
 Write-Host 'Patch: Disabling Set-NetAdapterAdvancedProperty'
-$updatePath = 'C:\optimize\Virtual-Desktop-Optimization-Tool-master\Win10_VirtualDesktop_Optimize.ps1'
+$updatePath = 'C:\optimize\Virtual-Desktop-Optimization-Tool-main\Win10_VirtualDesktop_Optimize.ps1'
  ((Get-Content -Path $updatePath -Raw) -replace 'Set-NetAdapterAdvancedProperty -DisplayName "Send Buffer Size" -DisplayValue 4MB', '#Set-NetAdapterAdvancedProperty -DisplayName "Send Buffer Size" -DisplayValue 4MB') | Set-Content -Path $updatePath
+
+
+
+Write-Host 'Patch: Disabling Set-NetAdapterAdvancedProperty in Windows_VDOT.ps1'
+$updatePath = 'C:\optimize\Virtual-Desktop-Optimization-Tool-main\Windows_VDOT.ps1'
+ ((Get-Content -Path $updatePath -Raw) -replace 'Set-NetAdapterAdvancedProperty -DisplayName "Send Buffer Size" -DisplayValue 4MB', '#Set-NetAdapterAdvancedProperty -DisplayName "Send Buffer Size" -DisplayValue 4MB') | Set-Content -Path $updatePath
+
 
 # Patch: overide the REG UNLOAD, needs GC before, otherwise will Access Deny unload(see readme.md)
 
@@ -42,11 +49,13 @@ Set-Content $updatePath $file
 
 # run script
 # .\optimize -WindowsVersion 2004 -Verbose
-.\Win10_VirtualDesktop_Optimize.ps1 -Verbose
+.\Win10_VirtualDesktop_Optimize.ps1 -Verbose -AcceptEULA
 Write-Host 'AIB Customization: Finished OS Optimizations script'
 
+#Running new file
 
-
+#Write-Host 'Running new AIB Customization script'
+.\Windows_VDOT.ps1 -Verbose -AcceptEULA
 ### Setting the RDP Shortpath.
 Write-Host 'Configuring RDP ShortPath'
 

@@ -60,7 +60,7 @@ param maxRecommendedMemory int = 16
   'V2'
 ])
 param hyperVGeneration string = 'V1'
-
+/*
 @description('Optional. The description of this gallery Image Definition resource. This property is updatable.')
 param imageDefinitionDescription string = ''
 
@@ -87,7 +87,7 @@ param endOfLife string = ''
 
 @description('Optional. List of the excluded disk types. E.g. Standard_LRS')
 param excludedDiskTypes array = []
-
+*/
 @description('Optional. Array of role assignment objects that contain the \'roleDefinitionIdOrName\' and \'principalId\' to define RBAC role assignments on this resource. In the roleDefinitionIdOrName attribute, you can provide either the display name of the role definition, or its fully qualified ID in the following format: \'/providers/Microsoft.Authorization/roleDefinitions/c2f4ef07-c644-48eb-af81-4b1b4947fb11\'')
 param roleAssignments array = []
 
@@ -127,7 +127,10 @@ resource image 'Microsoft.Compute/galleries/images@2020-09-30' = {
       }
     }
     hyperVGeneration: hyperVGeneration
-    description: imageDefinitionDescription
+
+    /// Options below break the VM creation from Image Gallery. Therefore, it's commented out for AVD
+
+    /* description: imageDefinitionDescription
     eula: eula
     privacyStatementUri: privacyStatementUri
     releaseNoteUri: releaseNoteUri
@@ -139,7 +142,7 @@ resource image 'Microsoft.Compute/galleries/images@2020-09-30' = {
     endOfLifeDate: endOfLife
     disallowed: {
       diskTypes: excludedDiskTypes
-    }
+    } */
   }
 }
 

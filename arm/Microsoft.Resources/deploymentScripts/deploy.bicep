@@ -53,7 +53,7 @@ param cleanupPreference string = 'Always'
 param containerGroupName string = ''
 
 @description('Optional. Maximum allowed script execution time specified in ISO 8601 format. Default value is PT1H - 1 hour; \'PT30M\' - 30 minutes; \'P5D\' - 5 days; \'P1Y\' 1 year.')
-param timeout string = 'PT1H'
+param timeout string = 'PT6H'
 
 @description('Generated. Do not provide a value! This date value is used to make sure the script run every time the template is deployed.')
 param baseTime string = utcNow('yyyy-MM-dd-HH-mm-ss')
