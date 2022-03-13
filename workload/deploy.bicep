@@ -117,17 +117,12 @@ param existingHubVnetName string = ''
 param existingHubVnetResourceId string = ''
 
 @description('AVD virtual network address prefixes (Default: 10.0.0.0/23)')
-param avdVnetworkAddressPrefixes array = [
-    '10.0.0.0/23'
-]
+param avdVnetworkAddressPrefixes string = '10.0.0.0/23'
 
 @description('AVD virtual network subnet address prefix (Default: 10.0.0.0/23)')
 param avdVnetworkSubnetAddressPrefix string = '10.0.0.0/23'
-/*
-@description('Are custom DNS servers accessible form the hub (defualt: true)')
-param customDnsAvailable bool = true
-*/
-@description('custom DNS servers IPs (defualt: 10.10.10.5, 10.10.10.6)')
+
+@description('custom DNS servers IPs')
 param customDnsIps array = []
 
 @description('Does the hub contains a virtual network gateway (defualt: true)')
@@ -207,10 +202,8 @@ param time string = utcNow()
 var deploymentPrefixLowercase = toLower(deploymentPrefix)
 var avdSessionHostLocationLowercase = toLower(avdSessionHostLocation)
 var avdManagementPlaneLocationLowercase = toLower(avdManagementPlaneLocation)
-
 var avdWrklSubscriptionId = (avdSubOrgsOption == 'Multiple') ? avdWrklSubsId : avdSingleSubsId
 var avdShrdlSubscriptionId = (avdSubOrgsOption == 'Multiple') ? avdShrdlSubsId : avdSingleSubsId
-
 var avdServiceObjectsRgName = 'rg-${avdManagementPlaneLocationLowercase}-avd-${deploymentPrefixLowercase}-service-objects' // max length limit 90 characters
 var avdNetworkObjectsRgName = 'rg-${avdSessionHostLocationLowercase}-avd-${deploymentPrefixLowercase}-network' // max length limit 90 characters
 var avdComputeObjectsRgName = 'rg-${avdSessionHostLocationLowercase}-avd-${deploymentPrefixLowercase}-pool-compute' // max length limit 90 characters
@@ -415,8 +408,7 @@ module avdVirtualNetwork '../arm/Microsoft.Network/virtualNetworks/deploy.bicep'
     params: {
         name: avdVnetworkName
         location: avdSessionHostLocation
-        addressPrefixes: avdVnetworkAddressPrefixes
-        //dnsServers: customDnsAvailable ? customDnsIps : []
+        addressPrefixes: array(avdVnetworkAddressPrefixes)
         dnsServers: !empty(customDnsIps) ? customDnsIps : []
         virtualNetworkPeerings: [
             {
