@@ -283,7 +283,7 @@ var marketPlaceGalleryWindows = {
 
     'win10_21h2': {
         publisher: 'MicrosoftWindowsDesktop'
-        offer: 'Windows-10'
+        offer: 'windows-10'
         sku: '21h2-evd'
         version: 'latest'
     }
