@@ -773,7 +773,7 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
         userAssignedIdentities: createAibManagedIdentity ? {
             '${imageBuilderManagedIdentity.outputs.resourceId}': {}
         } : {}
-        arguments: '-subscriptionId \'${avdShrdlSubsId}\' -clientId \'${imageBuilderManagedIdentity.outputs.clientId}\' -resourceGroupName \'${avdSharedResourcesRgName}\' -imageTemplateName \'${imageTemplate.outputs.name}\''
+        arguments: '-subscriptionId \'${avdShrdlSubscriptionId}\' -clientId \'${imageBuilderManagedIdentity.outputs.clientId}\' -resourceGroupName \'${avdSharedResourcesRgName}\' -imageTemplateName \'${imageTemplate.outputs.name}\''
         scriptContent: useSharedImage ? '''
         param(
         [string] [Parameter(Mandatory=$true)] $resourceGroupName,
