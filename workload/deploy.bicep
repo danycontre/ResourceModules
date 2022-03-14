@@ -242,6 +242,7 @@ var avdOsImageDefinitions = {
         offer: 'office-365'
         publisher: 'MicrosoftWindowsDesktop'
         sku: 'win10-21h2-avd-m365'
+        osAccountType: 'StandardSSD_LRS'
         hyperVGeneration: 'V1'
     }
     'win10_21h2': {
@@ -251,6 +252,7 @@ var avdOsImageDefinitions = {
         offer: 'windows-10'
         publisher: 'MicrosoftWindowsDesktop'
         sku: '21h1-evd'
+        osAccountType: 'StandardSSD_LRS'
         hyperVGeneration: 'V1'
     }
     'win11_21h2_office': {
@@ -260,6 +262,7 @@ var avdOsImageDefinitions = {
         offer: 'office-365'
         publisher: 'MicrosoftWindowsDesktop'
         sku: 'win11-21h2-avd-m365'
+        osAccountType: 'StandardSSD_LRS'
         hyperVGeneration: 'V2'
     }
     'win11_21h2': {
@@ -269,6 +272,7 @@ var avdOsImageDefinitions = {
         offer: 'windows-11'
         publisher: 'MicrosoftWindowsDesktop'
         sku: 'win11-21h2-avd'
+        osAccountType: 'StandardSSD_LRS'
         hyperVGeneration: 'V2'
     }
 }
@@ -736,7 +740,7 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
             publisher: avdOsImageDefinitions[avdOsImage].publisher
             offer: avdOsImageDefinitions[avdOsImage].offer
             sku: avdOsImageDefinitions[avdOsImage].sku
-            version: 'latest'
+            osAccountType: avdOsImageDefinitions[avdOsImage].osAccountType
         }
     }
     dependsOn: [
