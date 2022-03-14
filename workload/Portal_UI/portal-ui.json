@@ -279,7 +279,7 @@
                                     "type": "Microsoft.Common.DropDown",
                                     "visible": "[equals(steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.hostPoolType, 'Pooled')]",
                                     "label": "Load balancer",
-                                    "defaultValue": "DepthFirst",
+                                    "defaultValue": "BreadthFirst",
                                     "multiLine": true,
                                     "toolTip": "Breadth-first load balancing distributes new user sessions across all available session hosts in the host pool. Depth-first load balancing distributes new user sessions to an available session host with the highest number of connections but has not reached its maximum session limit threshold.",
                                     "constraints": {
