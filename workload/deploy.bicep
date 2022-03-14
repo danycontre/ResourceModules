@@ -806,7 +806,7 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
             Write-Host "Auth token would be reset at $reauthTime and expiry time is at $expiryTime"
             if ($now -gt $reauthTime)  {
                 Write-Host "Reset Azure Context"
-                Clear-AzContext
+                Clear-AzContext -Force
                 Write-Host "Setting up the AzContext"
                 Write-Host "Logging into $subscriptionId with clientId $clientId"
                 Connect-AzAccount -Identity -AccountId $clientId
