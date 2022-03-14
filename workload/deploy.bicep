@@ -803,18 +803,19 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
         $status=$getStatus.LastRunStatusRunState
         $statusMessage=$getStatus.LastRunStatusMessage
         $startTime=Get-Date
-        $expiryTime=$startTime + (New-TimeSpan -Minutes 55)
-        $reauthTime= $startTime + (New-TimeSpan -Minutes 50)
+        $expiryTime=(Get-AzAccessToken).ExpiresOn
+
             do {
             $now=Get-Date
             Write-Host "Getting the current time: $now"
-            Write-Host "Auth token would be reset at $reauthTime and expiry time is at $expiryTime"
-            if ($now -gt $reauthTime)  {
+            Write-Host "Auth token would be reset at $expiryTime"
+            if ($now -gt $expiryTime)  {
                 Write-Host "Reset Azure Context"
                 Clear-AzContext -Force
                 Write-Host "Setting up the AzContext"
                 Write-Host "Logging into $subscriptionId with clientId $clientId"
                 Connect-AzAccount -Identity -AccountId $clientId
+                Get-AzAccessToken
                 Select-AzSubscription -Subscription $subscriptionId
             }
             $getStatus=$(Get-AzImageBuilderTemplate -ResourceGroupName $resourceGroupName -Name $imageTemplateName)
@@ -837,8 +838,11 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
             }
             # Sleep for 2 minutes
             Write-Host "Sleeping for 2 min"
+            Get-AzAccessToken
             $DeploymentScriptOutputs="Sleeping for 2 minutes"
             Start-Sleep 120
+
+
         }
         until ($status -eq "Succeeded")
 
