@@ -775,14 +775,14 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     name: 'AVD-Build-Image-Template-Check-Build-${time}'
     params: {
-        name: 'imageTemplateBuildCheckName-${avdOsImage}'
+        name: 'imageTemplateBuildCheckName-${avdOsImage}-${time}'
         location: aiblocation
         timeout: 'PT6H'
         azPowerShellVersion: '7.2'
         cleanupPreference: 'OnSuccess'
-        /* userAssignedIdentities: createAibManagedIdentity ? {
+        userAssignedIdentities: createAibManagedIdentity ? {
             '${imageBuilderManagedIdentity.outputs.resourceId}': {}
-        } : {} */
+        } : {}
         arguments: '-subscriptionId \'${avdShrdlSubscriptionId}\' -clientId \'${imageBuilderManagedIdentity.outputs.clientId}\' -resourceGroupName \'${avdSharedResourcesRgName}\' -imageTemplateName \'${imageTemplate.outputs.name}\''
         scriptContent: useSharedImage ? '''
         param(
@@ -794,12 +794,6 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
             $ErrorActionPreference = "Stop"
             Install-Module -Name Az.ImageBuilder -Force
             $DeploymentScriptOutputs = @{}
-            Write-Host "Reset Azure Context"
-                Clear-AzContext -Force
-                Write-Host "Setting up the AzContext"
-                Write-Host "Logging into $subscriptionId with clientId $clientId"
-                Connect-AzAccount -Identity -AccountId $clientId
-                Select-AzSubscription -Subscription $subscriptionId
 
         $getStatus=$(Get-AzImageBuilderTemplate -ResourceGroupName $resourceGroupName -Name $imageTemplateName)
         $status=$getStatus.LastRunStatusRunState
