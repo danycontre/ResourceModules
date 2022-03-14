@@ -98,7 +98,6 @@ var sharedImage = {
     creationTime: baseTime
   }
   replicationRegions: imageReplicationRegions_var
-  storageAccountType: imageSource.osAccountType
 }
 var conditionalSharedImage = empty(sigImageDefinitionId) ? [] : array(sharedImage)
 var unManagedImage = {
