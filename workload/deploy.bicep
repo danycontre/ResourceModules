@@ -741,6 +741,7 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
             offer: avdOsImageDefinitions[avdOsImage].offer
             sku: avdOsImageDefinitions[avdOsImage].sku
             osAccountType: avdOsImageDefinitions[avdOsImage].osAccountType
+            version: 'latest'
         }
     }
     dependsOn: [
