@@ -837,11 +837,11 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
                 Write-Host "Success. Image template definition: $imageTemplateName is finished "
                 break
             }
-            # Sleep for 2 minutes
-            Write-Host "Sleeping for 2 min"
+            # Sleep for 5 minutes
+            Write-Host "Sleeping for 5 min"
             Get-AzAccessToken
-            $DeploymentScriptOutputs="Sleeping for 2 minutes"
-            Start-Sleep 120
+            $DeploymentScriptOutputs="Sleeping for 5 minutes"
+            Start-Sleep 300
 
 
         }
