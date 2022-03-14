@@ -804,7 +804,7 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
         $status=$getStatus.LastRunStatusRunState
         $statusMessage=$getStatus.LastRunStatusMessage
         $startTime=Get-Date
-        $expiryTime=(Get-AzAccessToken).ExpiresOn
+        $expiryTime=(Get-AzAccessToken).ExpiresOn.Datetime
 
             do {
             $now=Get-Date
