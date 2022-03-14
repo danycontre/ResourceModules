@@ -720,6 +720,16 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
                 restartCheckCommand: 'write-host "restarting post Windows updates"'
                 restartTimeout: '5m'
             }
+            {
+                type: 'PowerShell'
+                name: 'Sleep for a min'
+                runElevated: true
+                runAsSystem: true
+                inline: [
+                    'Write-Host "Sleep for a min" '
+                    'Start-Sleep 60'
+                ]
+            }
         ]
         imageSource: {
             type: 'PlatformImage'
@@ -794,7 +804,7 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
             $now=Get-Date
             Write-Host "Getting the current time: $now"
             Write-Host "Auth token would be reset at $reauthTime and expiry time is at $expiryTime"
-            if (($now -gt $reauthTime) -and ($now -lt $expriryTime)) {
+            if ($now -gt $reauthTime)  {
                 Write-Host "Reset Azure Context"
                 Clear-AzContext
                 Write-Host "Setting up the AzContext"
