@@ -679,7 +679,7 @@
                                     "type": "Microsoft.Common.TextBox",
                                     "label": "Domain",
                                     "toolTip": "Provide username with permissions to join session host to the domain.",
-                                    "placeholder": "contoso.com",
+                                    "placeholder": "Example: contoso.com",
                                     "constraints": {
                                         "required": true
                                     }
@@ -705,7 +705,7 @@
                                     "type": "Microsoft.Common.TextBox",
                                     "label": "Username",
                                     "toolTip": "Provide username with permissions to join session host to the domain.",
-                                    "placeholder": "avdadmin@contoso.com",
+                                    "placeholder": "Example: avdadmin@contoso.com",
                                     "defaultValue": "",
                                     "constraints": {
                                         "required": true
@@ -743,7 +743,7 @@
                                     "type": "Microsoft.Common.TextBox",
                                     "label": "Username",
                                     "toolTip": "Provide username for session host local admin account.",
-                                    "placeholder": "avdadmin",
+                                    "placeholder": "Example: avdadmin",
                                     "defaultValue": "",
                                     "constraints": {
                                         "required": true
