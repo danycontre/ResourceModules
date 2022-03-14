@@ -798,8 +798,8 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
         $status=$getStatus.LastRunStatusRunState
         $statusMessage=$getStatus.LastRunStatusMessage
         $startTime=Get-Date
-        $expiryTime=$startTime + (New-TimeSpan -Minutes 2)
-        $reauthTime= $startTime + (New-TimeSpan -Minutes 1)
+        $expiryTime=$startTime + (New-TimeSpan -Minutes 55)
+        $reauthTime= $startTime + (New-TimeSpan -Minutes 50)
             do {
             $now=Get-Date
             Write-Host "Getting the current time: $now"
