@@ -275,6 +275,16 @@
                                     }
                                 },
                                 {
+                                    "name": "subWarning",
+                                    "type": "Microsoft.Common.InfoBox",
+                                    "visible": true,
+                                    "options": {
+                                        "icon": "Warning",
+                                        "text": "Host pool type can not be changed after deployment.",
+                                        "uri": "https://docs.microsoft.com/azure/cloud-adoption-framework/ready/enterprise-scale/management-group-and-subscription-organization"
+                                    }
+                                },
+                                {
                                     "name": "loadBalancerType",
                                     "type": "Microsoft.Common.DropDown",
                                     "visible": "[equals(steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.hostPoolType, 'Pooled')]",
@@ -425,16 +435,6 @@
                                     }
                                 }
                             ]
-                        },
-                        {
-                            "name": "subWarning",
-                            "type": "Microsoft.Common.InfoBox",
-                            "visible": true,
-                            "options": {
-                                "icon": "Warning",
-                                "text": "Host pool type can not be changed after deployment.",
-                                "uri": "https://docs.microsoft.com/azure/cloud-adoption-framework/ready/enterprise-scale/management-group-and-subscription-organization"
-                            }
                         }
                     ]
                 },
