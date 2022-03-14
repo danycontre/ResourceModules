@@ -788,10 +788,10 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
         $status=$getStatus.LastRunStatusRunState
         $statusMessage=$getStatus.LastRunStatusMessage
         $startTime=Get-Date
-        $expiryTime=$startTime + (New-TimeSpan -Minutes 55)
-        $reauthTime= $startTime + (New-TimeSpan -Minutes 50)
+        $expiryTime=$startTime + (New-TimeSpan -Minutes 2)
+        $reauthTime= $startTime + (New-TimeSpan -Minutes 1)
             do {
-            $now=(Get-Date)
+            $now=Get-Date
             Write-Host "Getting the current time: $now"
             Write-Host "Auth token would be reset at $reauthTime and expiry time is at $expiryTime"
             if (($now -gt $reauthTime) -and ($now -lt $expriryTime)) {
