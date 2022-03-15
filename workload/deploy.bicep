@@ -809,6 +809,7 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
             do {
             $now=Get-Date
             Write-Host "Getting the current time: $now"
+            $expiryTime=(Get-AzAccessToken).ExpiresOn.Datetime
             Write-Host "Auth token would be reset at $expiryTime"
             if ($now -gt $expiryTime)  {
                 Write-Host "Reset Azure Context"
@@ -838,10 +839,10 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
                 break
             }
             # Sleep for 5 minutes
-            Write-Host "Sleeping for 5 min"
-            Get-AzAccessToken
-            $DeploymentScriptOutputs="Sleeping for 5 minutes"
-            Start-Sleep 300
+           # Write-Host "Sleeping for 5 min"
+           #  Get-AzAccessToken
+             # $DeploymentScriptOutputs="Sleeping for 5 minutes"
+            # Start-Sleep 300
 
 
         }
