@@ -229,7 +229,7 @@ var avdWorkSpaceName = 'avdws-${deploymentPrefixLowercase}'
 var avdHostPoolName = 'avdhp-${deploymentPrefixLowercase}'
 var avdApplicationGroupNameDesktop = 'avd-dag-${deploymentPrefixLowercase}'
 var avdApplicationGroupNameRApp = 'avd-raag-${deploymentPrefixLowercase}'
-var aibManagedIdentityName = 'avd-uai-aib1'
+var aibManagedIdentityName = 'avd-uai-aib'
 var imageDefinitionsTemSpecName = 'AVDImageDefinition_${avdOsImage}'
 var imageTemplateBuildName = 'AVD-Image-Template-Build'
 var avdEnterpriseApplicationId = '486795c7-d929-4b48-a99e-3c5329d4ce86' // needs to be queried.
@@ -834,6 +834,7 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
             }
         }
         until (($now -eq $reset) -or ($now -gt $reset))
+        Write-Host "Finished check for image build status at $now"
 
         ''' : ''
     }
