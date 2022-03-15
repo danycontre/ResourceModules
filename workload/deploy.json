@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.4.1272.37030",
-      "templateHash": "16616682026526052474"
+      "templateHash": "11819809352152853812"
     }
   },
   "parameters": {
@@ -190,10 +190,8 @@
       }
     },
     "avdVnetworkAddressPrefixes": {
-      "type": "array",
-      "defaultValue": [
-        "10.0.0.0/23"
-      ],
+      "type": "string",
+      "defaultValue": "10.0.0.0/23",
       "metadata": {
         "description": "AVD virtual network address prefixes (Default: 10.0.0.0/23)"
       }
@@ -206,10 +204,10 @@
       }
     },
     "customDnsIps": {
-      "type": "array",
-      "defaultValue": [],
+      "type": "string",
+      "defaultValue": "",
       "metadata": {
-        "description": "custom DNS servers IPs (defualt: 10.10.10.5, 10.10.10.6)"
+        "description": "custom DNS servers IPs"
       }
     },
     "vNetworkGatewayOnHub": {
@@ -221,7 +219,7 @@
     },
     "avdFslogixFileShareQuotaSize": {
       "type": "int",
-      "defaultValue": 51200,
+      "defaultValue": 512,
       "metadata": {
         "description": "Optional. Fslogix file share size (Default: 5TB)"
       }
@@ -302,15 +300,15 @@
     },
     "avdOsImage": {
       "type": "string",
-      "defaultValue": "win10-21h2",
+      "defaultValue": "win10_21h2",
       "metadata": {
         "description": "Required. AVD OS image source (Default: win10-21h2)"
       },
       "allowedValues": [
-        "win10-21h2-office",
-        "win10-21h2",
-        "win11-21h2-office",
-        "win11-21h2"
+        "win10_21h2_office",
+        "win10_21h2",
+        "win11_21h2_office",
+        "win11_21h2"
       ]
     },
     "useSharedImage": {
@@ -366,64 +364,68 @@
     "avdApplicationGroupNameDesktop": "[format('avd-dag-{0}', variables('deploymentPrefixLowercase'))]",
     "avdApplicationGroupNameRApp": "[format('avd-raag-{0}', variables('deploymentPrefixLowercase'))]",
     "aibManagedIdentityName": "avd-uai-aib",
-    "imageDefinitionsTemSpecName": "[format('AVD-Image-Definition-{0}', parameters('avdOsImage'))]",
+    "imageDefinitionsTemSpecName": "[format('AVDImageDefinition_{0}', parameters('avdOsImage'))]",
     "imageTemplateBuildName": "AVD-Image-Template-Build",
     "avdEnterpriseApplicationId": "486795c7-d929-4b48-a99e-3c5329d4ce86",
-    "hyperVGeneration": "V2",
+    "imageVmSize": "Standard_D4s_v3",
     "avdOsImageDefinitions": {
-      "win10-21h2-office": {
+      "win10_21h2_office": {
         "name": "Windows10_21H2_Office",
         "osType": "Windows",
         "osState": "Generalized",
         "offer": "office-365",
         "publisher": "MicrosoftWindowsDesktop",
-        "sku": "win10-21h2-avd-m365"
+        "sku": "win10-21h2-avd-m365",
+        "hyperVGeneration": "V1"
       },
-      "win10-21h2": {
+      "win10_21h2": {
         "name": "Windows10_21H2",
         "osType": "Windows",
         "osState": "Generalized",
-        "offer": "Windows-10",
+        "offer": "windows-10",
         "publisher": "MicrosoftWindowsDesktop",
-        "sku": "21h2-avd"
+        "sku": "21h1-evd",
+        "hyperVGeneration": "V1"
       },
-      "win11-21h2-office": {
+      "win11_21h2_office": {
+        "name": "Windows11_21H2",
+        "osType": "Windows",
+        "osState": "Generalized",
+        "offer": "office-365",
+        "publisher": "MicrosoftWindowsDesktop",
+        "sku": "win11-21h2-avd-m365",
+        "hyperVGeneration": "V2"
+      },
+      "win11_21h2": {
         "name": "Windows11_21H2",
         "osType": "Windows",
         "osState": "Generalized",
         "offer": "windows-11",
         "publisher": "MicrosoftWindowsDesktop",
-        "sku": "win11-21h2-avd-m365"
-      },
-      "win11-21h2": {
-        "name": "Windows11_21H2",
-        "osType": "Windows",
-        "osState": "Generalized",
-        "offer": "windows-11",
-        "publisher": "MicrosoftWindowsDesktop",
-        "sku": "win11-21h2-avd"
+        "sku": "win11-21h2-avd",
+        "hyperVGeneration": "V2"
       }
     },
     "marketPlaceGalleryWindows": {
-      "win10-21h2-office": {
+      "win10_21h2_office": {
         "publisher": "MicrosoftWindowsDesktop",
         "offer": "office-365",
         "sku": "win10-21h2-avd-m365",
         "version": "latest"
       },
-      "win10-21h2": {
+      "win10_21h2": {
         "publisher": "MicrosoftWindowsDesktop",
         "offer": "Windows-10",
-        "sku": "21h2-avd",
+        "sku": "21h2-evd",
         "version": "latest"
       },
-      "win11-21h2-office": {
+      "win11_21h2_office": {
         "publisher": "MicrosoftWindowsDesktop",
         "offer": "office-365",
         "sku": "win11-21h2-avd-m365",
         "version": "latest"
       },
-      "win11-21h2": {
+      "win11_21h2": {
         "publisher": "MicrosoftWindowsDesktop",
         "offer": "Windows-11",
         "sku": "win11-21h2-avd",
@@ -3509,10 +3511,10 @@
             "value": "[parameters('avdSessionHostLocation')]"
           },
           "addressPrefixes": {
-            "value": "[parameters('avdVnetworkAddressPrefixes')]"
+            "value": "[array(parameters('avdVnetworkAddressPrefixes'))]"
           },
           "dnsServers": {
-            "value": "[if(not(empty(parameters('customDnsIps'))), parameters('customDnsIps'), createArray())]"
+            "value": "[if(not(empty(parameters('customDnsIps'))), array(parameters('customDnsIps')), createArray())]"
           },
           "virtualNetworkPeerings": {
             "value": [
@@ -6879,6 +6881,7 @@
               "Microsoft.Resources/deploymentScripts/read",
               "Microsoft.Resources/deploymentScripts/write",
               "Microsoft.VirtualMachineImages/imageTemplates/run/action",
+              "Microsoft.VirtualMachineImages/imageTemplates/read",
               "Microsoft.Network/virtualNetworks/read",
               "Microsoft.Network/virtualNetworks/subnets/join/action"
             ]
@@ -8232,7 +8235,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.4.1272.37030",
-              "templateHash": "13971812044232925961"
+              "templateHash": "2946734335041369354"
             }
           },
           "parameters": {
@@ -8485,33 +8488,6 @@
                   "hyperVGeneration": {
                     "value": "[if(contains(parameters('images')[copyIndex()], 'hyperVGeneration'), parameters('images')[copyIndex()].hyperVGeneration, 'V1')]"
                   },
-                  "imageDefinitionDescription": {
-                    "value": "[if(contains(parameters('images')[copyIndex()], 'imageDefinitionDescription'), parameters('images')[copyIndex()].imageDefinitionDescription, '')]"
-                  },
-                  "eula": {
-                    "value": "[if(contains(parameters('images')[copyIndex()], 'eula'), parameters('images')[copyIndex()].eula, '')]"
-                  },
-                  "privacyStatementUri": {
-                    "value": "[if(contains(parameters('images')[copyIndex()], 'privacyStatementUri'), parameters('images')[copyIndex()].privacyStatementUri, '')]"
-                  },
-                  "releaseNoteUri": {
-                    "value": "[if(contains(parameters('images')[copyIndex()], 'releaseNoteUri'), parameters('images')[copyIndex()].releaseNoteUri, '')]"
-                  },
-                  "productName": {
-                    "value": "[if(contains(parameters('images')[copyIndex()], 'productName'), parameters('images')[copyIndex()].productName, '')]"
-                  },
-                  "planName": {
-                    "value": "[if(contains(parameters('images')[copyIndex()], 'planName'), parameters('images')[copyIndex()].planName, '')]"
-                  },
-                  "planPublisherName": {
-                    "value": "[if(contains(parameters('images')[copyIndex()], 'planPublisherName'), parameters('images')[copyIndex()].planPublisherName, '')]"
-                  },
-                  "endOfLife": {
-                    "value": "[if(contains(parameters('images')[copyIndex()], 'endOfLife'), parameters('images')[copyIndex()].endOfLife, '')]"
-                  },
-                  "excludedDiskTypes": {
-                    "value": "[if(contains(parameters('images')[copyIndex()], 'excludedDiskTypes'), parameters('images')[copyIndex()].excludedDiskTypes, createArray())]"
-                  },
                   "roleAssignments": {
                     "value": "[if(contains(parameters('images')[copyIndex()], 'roleAssignments'), parameters('images')[copyIndex()].roleAssignments, createArray())]"
                   },
@@ -8526,7 +8502,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.4.1272.37030",
-                      "templateHash": "780081869203455696"
+                      "templateHash": "7394022970317708952"
                     }
                   },
                   "parameters": {
@@ -8647,69 +8623,6 @@
                         "description": "Optional. The hypervisor generation of the Virtual Machine. Applicable to OS disks only. - V1 or V2"
                       }
                     },
-                    "imageDefinitionDescription": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The description of this gallery Image Definition resource. This property is updatable."
-                      }
-                    },
-                    "eula": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The Eula agreement for the gallery Image Definition. Has to be a valid URL."
-                      }
-                    },
-                    "privacyStatementUri": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The privacy statement uri. Has to be a valid URL."
-                      }
-                    },
-                    "releaseNoteUri": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The release note uri. Has to be a valid URL."
-                      }
-                    },
-                    "productName": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The product ID."
-                      }
-                    },
-                    "planName": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The plan ID."
-                      }
-                    },
-                    "planPublisherName": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The publisher ID."
-                      }
-                    },
-                    "endOfLife": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The end of life date of the gallery Image Definition. This property can be used for decommissioning purposes. This property is updatable. Allowed format: 2020-01-10T23:00:00.000Z"
-                      }
-                    },
-                    "excludedDiskTypes": {
-                      "type": "array",
-                      "defaultValue": [],
-                      "metadata": {
-                        "description": "Optional. List of the excluded disk types. E.g. Standard_LRS"
-                      }
-                    },
                     "roleAssignments": {
                       "type": "array",
                       "defaultValue": [],
@@ -8750,20 +8663,7 @@
                             "max": "[parameters('maxRecommendedMemory')]"
                           }
                         },
-                        "hyperVGeneration": "[parameters('hyperVGeneration')]",
-                        "description": "[parameters('imageDefinitionDescription')]",
-                        "eula": "[parameters('eula')]",
-                        "privacyStatementUri": "[parameters('privacyStatementUri')]",
-                        "releaseNoteUri": "[parameters('releaseNoteUri')]",
-                        "purchasePlan": {
-                          "product": "[if(not(empty(parameters('productName'))), parameters('productName'), null())]",
-                          "name": "[if(not(empty(parameters('planName'))), parameters('planName'), null())]",
-                          "publisher": "[if(not(empty(parameters('planPublisherName'))), parameters('planPublisherName'), null())]"
-                        },
-                        "endOfLifeDate": "[parameters('endOfLife')]",
-                        "disallowed": {
-                          "diskTypes": "[parameters('excludedDiskTypes')]"
-                        }
+                        "hyperVGeneration": "[parameters('hyperVGeneration')]"
                       }
                     },
                     {
@@ -8977,7 +8877,7 @@
             "value": "[parameters('aiblocation')]"
           },
           "hyperVGeneration": {
-            "value": "[variables('hyperVGeneration')]"
+            "value": "[variables('avdOsImageDefinitions')[parameters('avdOsImage')].hyperVGeneration]"
           }
         },
         "template": {
@@ -8987,7 +8887,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.4.1272.37030",
-              "templateHash": "780081869203455696"
+              "templateHash": "7394022970317708952"
             }
           },
           "parameters": {
@@ -9108,69 +9008,6 @@
                 "description": "Optional. The hypervisor generation of the Virtual Machine. Applicable to OS disks only. - V1 or V2"
               }
             },
-            "imageDefinitionDescription": {
-              "type": "string",
-              "defaultValue": "",
-              "metadata": {
-                "description": "Optional. The description of this gallery Image Definition resource. This property is updatable."
-              }
-            },
-            "eula": {
-              "type": "string",
-              "defaultValue": "",
-              "metadata": {
-                "description": "Optional. The Eula agreement for the gallery Image Definition. Has to be a valid URL."
-              }
-            },
-            "privacyStatementUri": {
-              "type": "string",
-              "defaultValue": "",
-              "metadata": {
-                "description": "Optional. The privacy statement uri. Has to be a valid URL."
-              }
-            },
-            "releaseNoteUri": {
-              "type": "string",
-              "defaultValue": "",
-              "metadata": {
-                "description": "Optional. The release note uri. Has to be a valid URL."
-              }
-            },
-            "productName": {
-              "type": "string",
-              "defaultValue": "",
-              "metadata": {
-                "description": "Optional. The product ID."
-              }
-            },
-            "planName": {
-              "type": "string",
-              "defaultValue": "",
-              "metadata": {
-                "description": "Optional. The plan ID."
-              }
-            },
-            "planPublisherName": {
-              "type": "string",
-              "defaultValue": "",
-              "metadata": {
-                "description": "Optional. The publisher ID."
-              }
-            },
-            "endOfLife": {
-              "type": "string",
-              "defaultValue": "",
-              "metadata": {
-                "description": "Optional. The end of life date of the gallery Image Definition. This property can be used for decommissioning purposes. This property is updatable. Allowed format: 2020-01-10T23:00:00.000Z"
-              }
-            },
-            "excludedDiskTypes": {
-              "type": "array",
-              "defaultValue": [],
-              "metadata": {
-                "description": "Optional. List of the excluded disk types. E.g. Standard_LRS"
-              }
-            },
             "roleAssignments": {
               "type": "array",
               "defaultValue": [],
@@ -9211,20 +9048,7 @@
                     "max": "[parameters('maxRecommendedMemory')]"
                   }
                 },
-                "hyperVGeneration": "[parameters('hyperVGeneration')]",
-                "description": "[parameters('imageDefinitionDescription')]",
-                "eula": "[parameters('eula')]",
-                "privacyStatementUri": "[parameters('privacyStatementUri')]",
-                "releaseNoteUri": "[parameters('releaseNoteUri')]",
-                "purchasePlan": {
-                  "product": "[if(not(empty(parameters('productName'))), parameters('productName'), null())]",
-                  "name": "[if(not(empty(parameters('planName'))), parameters('planName'), null())]",
-                  "publisher": "[if(not(empty(parameters('planPublisherName'))), parameters('planPublisherName'), null())]"
-                },
-                "endOfLifeDate": "[parameters('endOfLife')]",
-                "disallowed": {
-                  "diskTypes": "[parameters('excludedDiskTypes')]"
-                }
+                "hyperVGeneration": "[parameters('hyperVGeneration')]"
               }
             },
             {
@@ -9397,10 +9221,13 @@
             "value": "[parameters('aiblocation')]"
           },
           "imageReplicationRegions": {
-            "value": "[parameters('avdImageRegionsReplicas')]"
+            "value": "[if(equals(parameters('avdSessionHostLocation'), parameters('aiblocation')), array(format('{0}', parameters('avdSessionHostLocation'))), concat(array(format('{0}', parameters('aiblocation'))), array(format('{0}', parameters('avdSessionHostLocation')))))]"
           },
           "sigImageDefinitionId": {
             "value": "[if(parameters('useSharedImage'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('Deploy-AVD-Image-Template-Definition-{0}', parameters('time')))).outputs.resourceId.value, '')]"
+          },
+          "vmSize": {
+            "value": "[variables('imageVmSize')]"
           },
           "customizationSteps": {
             "value": [
@@ -9424,6 +9251,11 @@
                   "include:$true"
                 ],
                 "updateLimit": 40
+              },
+              {
+                "type": "WindowsRestart",
+                "restartCheckCommand": "write-host \"restarting post Windows updates\"",
+                "restartTimeout": "5m"
               }
             ]
           },
@@ -9871,7 +9703,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.4.1272.37030",
-              "templateHash": "11797784322845047042"
+              "templateHash": "10579853314175634433"
             }
           },
           "parameters": {
@@ -9990,7 +9822,313 @@
             },
             "timeout": {
               "type": "string",
-              "defaultValue": "PT1H",
+              "defaultValue": "PT6H",
+              "metadata": {
+                "description": "Optional. Maximum allowed script execution time specified in ISO 8601 format. Default value is PT1H - 1 hour; 'PT30M' - 30 minutes; 'P5D' - 5 days; 'P1Y' 1 year."
+              }
+            },
+            "baseTime": {
+              "type": "string",
+              "defaultValue": "[utcNow('yyyy-MM-dd-HH-mm-ss')]",
+              "metadata": {
+                "description": "Generated. Do not provide a value! This date value is used to make sure the script run every time the template is deployed."
+              }
+            },
+            "lock": {
+              "type": "string",
+              "defaultValue": "NotSpecified",
+              "metadata": {
+                "description": "Optional. Specify the type of lock."
+              },
+              "allowedValues": [
+                "CanNotDelete",
+                "NotSpecified",
+                "ReadOnly"
+              ]
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Optional. Tags of the resource."
+              }
+            },
+            "cuaId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. Customer Usage Attribution ID (GUID). This GUID must be previously registered"
+              }
+            }
+          },
+          "variables": {
+            "containerSettings": {
+              "containerGroupName": "[parameters('containerGroupName')]"
+            },
+            "identityType": "[if(not(empty(parameters('userAssignedIdentities'))), 'UserAssigned', 'None')]",
+            "identity": "[if(not(equals(variables('identityType'), 'None')), createObject('type', variables('identityType'), 'userAssignedIdentities', if(not(empty(parameters('userAssignedIdentities'))), parameters('userAssignedIdentities'), null())), null())]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Resources/deploymentScripts",
+              "apiVersion": "2020-10-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "identity": "[variables('identity')]",
+              "kind": "[parameters('kind')]",
+              "properties": {
+                "azPowerShellVersion": "[if(equals(parameters('kind'), 'AzurePowerShell'), parameters('azPowerShellVersion'), null())]",
+                "azCliVersion": "[if(equals(parameters('kind'), 'AzureCLI'), parameters('azCliVersion'), null())]",
+                "containerSettings": "[if(empty(parameters('containerGroupName')), null(), variables('containerSettings'))]",
+                "arguments": "[parameters('arguments')]",
+                "environmentVariables": "[if(empty(parameters('environmentVariables')), null(), parameters('environmentVariables'))]",
+                "scriptContent": "[if(empty(parameters('scriptContent')), null(), parameters('scriptContent'))]",
+                "primaryScriptUri": "[if(empty(parameters('primaryScriptUri')), null(), parameters('primaryScriptUri'))]",
+                "supportingScriptUris": "[if(empty(parameters('supportingScriptUris')), null(), parameters('supportingScriptUris'))]",
+                "cleanupPreference": "[parameters('cleanupPreference')]",
+                "forceUpdateTag": "[if(parameters('runOnce'), resourceGroup().name, parameters('baseTime'))]",
+                "retentionInterval": "[parameters('retentionInterval')]",
+                "timeout": "[parameters('timeout')]"
+              }
+            },
+            {
+              "condition": "[not(equals(parameters('lock'), 'NotSpecified'))]",
+              "type": "Microsoft.Authorization/locks",
+              "apiVersion": "2017-04-01",
+              "scope": "[format('Microsoft.Resources/deploymentScripts/{0}', parameters('name'))]",
+              "name": "[format('{0}-{1}-lock', parameters('name'), parameters('lock'))]",
+              "properties": {
+                "level": "[parameters('lock')]",
+                "notes": "[if(equals(parameters('lock'), 'CanNotDelete'), 'Cannot delete resource or child resources.', 'Cannot modify the resource or child resources.')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Resources/deploymentScripts', parameters('name'))]"
+              ]
+            },
+            {
+              "condition": "[not(empty(parameters('cuaId')))]",
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2020-10-01",
+              "name": "[format('pid-{0}', parameters('cuaId'))]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {},
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.4.1272.37030",
+                      "templateHash": "4174488789265615178"
+                    }
+                  },
+                  "resources": []
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "resourceId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Resources/deploymentScripts', parameters('name'))]",
+              "metadata": {
+                "description": "The resource ID of the deployment script"
+              }
+            },
+            "resourceGroupName": {
+              "type": "string",
+              "value": "[resourceGroup().name]",
+              "metadata": {
+                "description": "The resource group the deployment script was deployed into"
+              }
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]",
+              "metadata": {
+                "description": "The name of the deployment script"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId(variables('avdShrdlSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Shared-Resources-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('Azure-Image-Builder-RoleAssign-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('image-Builder-Managed-Identity-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('AVD-Deploy-Image-Template-{0}', parameters('time')))]"
+      ]
+    },
+    {
+      "condition": "[parameters('useSharedImage')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "[format('AVD-Build-Image-Template-Check-Build-{0}', parameters('time'))]",
+      "subscriptionId": "[format('{0}', variables('avdShrdlSubscriptionId'))]",
+      "resourceGroup": "[format('{0}', variables('avdSharedResourcesRgName'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('imageTemplateBuildCheckName-{0}', parameters('avdOsImage'))]"
+          },
+          "location": {
+            "value": "[parameters('aiblocation')]"
+          },
+          "timeout": {
+            "value": "PT6H"
+          },
+          "azPowerShellVersion": {
+            "value": "7.2"
+          },
+          "cleanupPreference": {
+            "value": "OnSuccess"
+          },
+          "userAssignedIdentities": {
+            "value": "[if(parameters('createAibManagedIdentity'), createObject(format('{0}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('image-Builder-Managed-Identity-{0}', parameters('time')))).outputs.resourceId.value), createObject()), createObject())]"
+          },
+          "arguments": {
+            "value": "[format('-resourceGroupName ''{0}'' -imageTemplateName ''{1}''', variables('avdSharedResourcesRgName'), if(parameters('useSharedImage'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('AVD-Deploy-Image-Template-{0}', parameters('time')))).outputs.name.value, null()))]"
+          },
+          "scriptContent": {
+            "value": "[if(parameters('useSharedImage'), '        param(\r\n        [string] [Parameter(Mandatory=$true)] $resourceGroupName,\r\n        [string] [Parameter(Mandatory=$true)] $imageTemplateName\r\n        )\r\n            $ErrorActionPreference = \"Stop\"\r\n            Install-Module -Name Az.ImageBuilder -Force\r\n            $DeploymentScriptOutputs = @{}\r\n        $getStatus=$(Get-AzImageBuilderTemplate -ResourceGroupName $resourceGroupName -Name $imageTemplateName)\r\n        $status=$getStatus.LastRunStatusRunState\r\n        $statusMessage=$getStatus.LastRunStatusMessage\r\n            do {\r\n            $now=(Get-Date)\r\n            Write-Host \"Getting the current time: $now\"\r\n            $getStatus=$(Get-AzImageBuilderTemplate -ResourceGroupName $resourceGroupName -Name $imageTemplateName)\r\n            $status=$getStatus.LastRunStatusRunState\r\n            Write-Host \"Current status of the image build $imageTemplateName is: $status\"\r\n            $DeploymentScriptOutputs=$now\r\n            $DeploymentScriptOutputs=$status\r\n            if ($status -eq \"Failed\") {\r\n                Write-Host \"Build failed for image template: $imageTemplateName. Check the Packer logs\"\r\n                $DeploymentScriptOutputs=\"Build Failed\"\r\n                throw \"Build Failed\"\r\n            }\r\n            if ($status -eq \"Canceled\") {\r\n                Write-Host \"User canceled the build. Delete the Image template definition: $imageTemplateName\"\r\n                throw \"User canceled the build.\"\r\n            }\r\n            if ($status -eq \"Succeeded\") {\r\n                Write-Host \"Success. Image template definition: $imageTemplateName is finished \"\r\n                break\r\n            }\r\n            # Sleep for 2 minutes\r\n            Write-Host \"Sleeping for 2 min\"\r\n            $DeploymentScriptOutputs=\"Sleeping for 2 minutes\"\r\n            Start-Sleep 120\r\n        }\r\n        until ($status -eq \"Succeeded\")\r\n\r\n        ', '')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.4.1272.37030",
+              "templateHash": "10579853314175634433"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Required. Display name of the script to be run."
+              }
+            },
+            "userAssignedIdentities": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Optional. The ID(s) to assign to the resource."
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Optional. Location for all resources."
+              }
+            },
+            "kind": {
+              "type": "string",
+              "defaultValue": "AzurePowerShell",
+              "allowedValues": [
+                "AzurePowerShell",
+                "AzureCLI"
+              ],
+              "metadata": {
+                "description": "Optional. Type of the script. AzurePowerShell, AzureCLI."
+              }
+            },
+            "azPowerShellVersion": {
+              "type": "string",
+              "defaultValue": "3.0",
+              "metadata": {
+                "description": "Optional. Azure PowerShell module version to be used."
+              }
+            },
+            "azCliVersion": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. Azure CLI module version to be used."
+              }
+            },
+            "scriptContent": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. Script body. Max length: 32000 characters. To run an external script, use primaryScriptURI instead."
+              }
+            },
+            "primaryScriptUri": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. Uri for the external script. This is the entry point for the external script. To run an internal script, use the scriptContent instead."
+              }
+            },
+            "environmentVariables": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Optional. The environment variables to pass over to the script. Must have a 'name' and a 'value' or a 'secretValue' property."
+              }
+            },
+            "supportingScriptUris": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Optional. List of supporting files for the external script (defined in primaryScriptUri). Does not work with internal scripts (code defined in scriptContent)."
+              }
+            },
+            "arguments": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. Command-line arguments to pass to the script. Arguments are separated by spaces."
+              }
+            },
+            "retentionInterval": {
+              "type": "string",
+              "defaultValue": "P1D",
+              "metadata": {
+                "description": "Optional. Interval for which the service retains the script resource after it reaches a terminal state. Resource will be deleted when this duration expires. Duration is based on ISO 8601 pattern (for example P7D means one week)."
+              }
+            },
+            "runOnce": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Optional. When set to false, script will run every time the template is deployed. When set to true, the script will only run once."
+              }
+            },
+            "cleanupPreference": {
+              "type": "string",
+              "defaultValue": "Always",
+              "allowedValues": [
+                "Always",
+                "OnSuccess",
+                "OnExpiration"
+              ],
+              "metadata": {
+                "description": "Optional. The clean up preference when the script execution gets in a terminal state. Specify the preference on when to delete the deployment script resources. The default value is Always, which means the deployment script resources are deleted despite the terminal state (Succeeded, Failed, canceled)."
+              }
+            },
+            "containerGroupName": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. Container group name, if not specified then the name will get auto-generated. Not specifying a 'containerGroupName' indicates the system to generate a unique name which might end up flagging an Azure Policy as non-compliant. Use 'containerGroupName' when you have an Azure Policy that expects a specific naming convention or when you want to fully control the name. 'containerGroupName' property must be between 1 and 63 characters long, must contain only lowercase letters, numbers, and dashes and it cannot start or end with a dash and consecutive dashes are not allowed."
+              }
+            },
+            "timeout": {
+              "type": "string",
+              "defaultValue": "PT6H",
               "metadata": {
                 "description": "Optional. Maximum allowed script execution time specified in ISO 8601 format. Default value is PT1H - 1 hour; 'PT30M' - 30 minutes; 'P5D' - 5 days; 'P1Y' 1 year."
               }
@@ -19292,7 +19430,7 @@
             "value": "[parameters('avdSessionHostsSize')]"
           },
           "imageReference": {
-            "value": "[if(parameters('useSharedImage'), json(format('{{''id'': ''{0}''}}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('AVD-Deploy-Image-Template-{0}', parameters('time')))).outputs.resourceId.value)), variables('marketPlaceGalleryWindows')[parameters('avdOsImage')])]"
+            "value": "[if(parameters('useSharedImage'), json(format('{{''id'': ''{0}''}}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('Deploy-AVD-Image-Template-Definition-{0}', parameters('time')))).outputs.resourceId.value)), variables('marketPlaceGalleryWindows')[parameters('avdOsImage')])]"
           },
           "osDisk": {
             "value": {
@@ -22717,8 +22855,9 @@
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdComputeObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-ASG-{0}', parameters('time')))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdComputeObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-Availability-Set-{0}', parameters('time')))]",
         "[subscriptionResourceId(variables('avdWrklSubscriptionId'), 'Microsoft.Resources/deployments', format('AVD-RG-Compute-{0}', parameters('time')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('Deploy-AVD-Image-Template-Definition-{0}', parameters('time')))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdWrklSubscriptionId')), format('{0}', variables('avdNetworkObjectsRgName'))), 'Microsoft.Resources/deployments', format('AVD-vNet-{0}', parameters('time')))]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('AVD-Deploy-Image-Template-{0}', parameters('time')))]"
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', format('{0}', variables('avdShrdlSubscriptionId')), format('{0}', variables('avdSharedResourcesRgName'))), 'Microsoft.Resources/deployments', format('AVD-Build-Image-Template-Check-Build-{0}', parameters('time')))]"
       ]
     },
     {

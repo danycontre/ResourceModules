@@ -117,24 +117,19 @@ param existingHubVnetName string = ''
 param existingHubVnetResourceId string = ''
 
 @description('AVD virtual network address prefixes (Default: 10.0.0.0/23)')
-param avdVnetworkAddressPrefixes array = [
-    '10.0.0.0/23'
-]
+param avdVnetworkAddressPrefixes string = '10.0.0.0/23'
 
 @description('AVD virtual network subnet address prefix (Default: 10.0.0.0/23)')
 param avdVnetworkSubnetAddressPrefix string = '10.0.0.0/23'
-/*
-@description('Are custom DNS servers accessible form the hub (defualt: true)')
-param customDnsAvailable bool = true
-*/
-@description('custom DNS servers IPs (defualt: 10.10.10.5, 10.10.10.6)')
-param customDnsIps array = []
+
+@description('custom DNS servers IPs')
+param customDnsIps string = ''
 
 @description('Does the hub contains a virtual network gateway (defualt: true)')
 param vNetworkGatewayOnHub bool = false
 
 @description('Optional. Fslogix file share size (Default: 5TB)')
-param avdFslogixFileShareQuotaSize int = 51200
+param avdFslogixFileShareQuotaSize int = 512
 
 @description('Deploy new session hosts (defualt: false)')
 param avdDeploySessionHosts bool = true
@@ -207,10 +202,8 @@ param time string = utcNow()
 var deploymentPrefixLowercase = toLower(deploymentPrefix)
 var avdSessionHostLocationLowercase = toLower(avdSessionHostLocation)
 var avdManagementPlaneLocationLowercase = toLower(avdManagementPlaneLocation)
-
 var avdWrklSubscriptionId = (avdSubOrgsOption == 'Multiple') ? avdWrklSubsId : avdSingleSubsId
 var avdShrdlSubscriptionId = (avdSubOrgsOption == 'Multiple') ? avdShrdlSubsId : avdSingleSubsId
-
 var avdServiceObjectsRgName = 'rg-${avdManagementPlaneLocationLowercase}-avd-${deploymentPrefixLowercase}-service-objects' // max length limit 90 characters
 var avdNetworkObjectsRgName = 'rg-${avdSessionHostLocationLowercase}-avd-${deploymentPrefixLowercase}-network' // max length limit 90 characters
 var avdComputeObjectsRgName = 'rg-${avdSessionHostLocationLowercase}-avd-${deploymentPrefixLowercase}-pool-compute' // max length limit 90 characters
@@ -419,9 +412,8 @@ module avdVirtualNetwork '../arm/Microsoft.Network/virtualNetworks/deploy.bicep'
     params: {
         name: avdVnetworkName
         location: avdSessionHostLocation
-        addressPrefixes: avdVnetworkAddressPrefixes
-        //dnsServers: customDnsAvailable ? customDnsIps : []
-        dnsServers: !empty(customDnsIps) ? customDnsIps : []
+        addressPrefixes: array(avdVnetworkAddressPrefixes)
+        dnsServers: !empty(customDnsIps) ? array(customDnsIps) : []
         virtualNetworkPeerings: [
             {
                 remoteVirtualNetworkId: existingHubVnetResourceId
@@ -798,7 +790,7 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
         userAssignedIdentities: createAibManagedIdentity ? {
             '${imageBuilderManagedIdentity.outputs.resourceId}': {}
         } : {}
-        arguments: '-subscriptionId \'${avdShrdlSubscriptionId}\' -clientId \'${imageBuilderManagedIdentity.outputs.clientId}\' -resourceGroupName \'${avdSharedResourcesRgName}\' -imageTemplateName \'${imageTemplate.outputs.name}\''
+        arguments: '-subscriptionId \'${avdShrdlSubscriptionId}\' -clientId \'${imageBuilderManagedIdentity.outputs.clientId}\' -resourceGroupName \'${avdSharedResourcesRgName}\' -imageTemplateName \'${(useSharedImage ? imageTemplate.outputs.name : null)}\''
         scriptContent: useSharedImage ? '''
         param(
         [string] [Parameter(Mandatory=$true)] $resourceGroupName,
@@ -849,10 +841,10 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
         ''' : ''
     }
     dependsOn: [
-        imageTemplate
+        //imageTemplate //we need to make this dependson conditional so it plays well with other deployment flags
         avdSharedResourcesRg
         azureImageBuilderRoleAssign
-        imageTemplateBuild
+        //imageTemplateBuild //we need to make this dependson conditional so it plays well with other deployment flags
     ]
 }]
 

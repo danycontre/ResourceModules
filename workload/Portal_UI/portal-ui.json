@@ -3,7 +3,7 @@
     "view": {
         "kind": "Form",
         "properties": {
-            "title": "Azure AVD landing zone accelerator",
+            "title": "AVD Landing Zone Accelerator",
             "steps": [
                 {
                     "name": "basics",
@@ -275,11 +275,21 @@
                                     }
                                 },
                                 {
+                                    "name": "subWarning",
+                                    "type": "Microsoft.Common.InfoBox",
+                                    "visible": true,
+                                    "options": {
+                                        "icon": "Warning",
+                                        "text": "Host pool type can not be changed after deployment.",
+                                        "uri": "https://docs.microsoft.com/azure/cloud-adoption-framework/ready/enterprise-scale/management-group-and-subscription-organization"
+                                    }
+                                },
+                                {
                                     "name": "loadBalancerType",
                                     "type": "Microsoft.Common.DropDown",
                                     "visible": "[equals(steps('avdManagementPlane').avdManagementPlaneHostPoolSettings.hostPoolType, 'Pooled')]",
                                     "label": "Load balancer",
-                                    "defaultValue": "DepthFirst",
+                                    "defaultValue": "BreadthFirst",
                                     "multiLine": true,
                                     "toolTip": "Breadth-first load balancing distributes new user sessions across all available session hosts in the host pool. Depth-first load balancing distributes new user sessions to an available session host with the highest number of connections but has not reached its maximum session limit threshold.",
                                     "constraints": {
@@ -425,16 +435,6 @@
                                     }
                                 }
                             ]
-                        },
-                        {
-                            "name": "subWarning",
-                            "type": "Microsoft.Common.InfoBox",
-                            "visible": true,
-                            "options": {
-                                "icon": "Warning",
-                                "text": "Host pool type can not be changed after deployment.",
-                                "uri": "https://docs.microsoft.com/azure/cloud-adoption-framework/ready/enterprise-scale/management-group-and-subscription-organization"
-                            }
                         }
                     ]
                 },
@@ -607,19 +607,19 @@
                                         "allowedValues": [
                                             {
                                                 "label": "Windows 10",
-                                                "value": "win10-21h2"
+                                                "value": "win10_21h2"
                                             },
                                             {
                                                 "label": "Windows 10 - Office 365",
-                                                "value": "win10-21h2-office"
+                                                "value": "win10_21h2_office"
                                             },
                                             {
                                                 "label": "Windows 11",
-                                                "value": "win11-21h2"
+                                                "value": "win11_21h2"
                                             },
                                             {
                                                 "label": "Windows 11 - Office 365",
-                                                "value": "win11-21h2-office"
+                                                "value": "win11_21h2_office"
                                             }
                                         ]
                                     }
@@ -689,7 +689,7 @@
                                     "type": "Microsoft.Common.TextBox",
                                     "label": "OU path (Optional)",
                                     "toolTip": "Provide OU where to locate session hosts, if not provided session hosts will be placed on the default (computers) OU.",
-                                    "placeholder": "Example: OU:avd;DC:contoso;DC:com",
+                                    "placeholder": "Example: OU:avd,DC:contoso,DC:com",
                                     "constraints": {}
                                 }
                             ]
@@ -705,6 +705,7 @@
                                     "type": "Microsoft.Common.TextBox",
                                     "label": "Username",
                                     "toolTip": "Provide username with permissions to join session host to the domain.",
+                                    "placeholder": "Example: avdadmin@contoso.com",
                                     "defaultValue": "",
                                     "constraints": {
                                         "required": true
@@ -742,6 +743,7 @@
                                     "type": "Microsoft.Common.TextBox",
                                     "label": "Username",
                                     "toolTip": "Provide username for session host local admin account.",
+                                    "placeholder": "Example: avdadmin",
                                     "defaultValue": "",
                                     "constraints": {
                                         "required": true
@@ -760,7 +762,7 @@
                                     },
                                     "constraints": {
                                         "required": true,
-                                        "customPasswordRegex": "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{12,}$",
+                                        "customPasswordRegex": "^(?=.*[A-Za-z])(?=.*@!_$#\\d)[A-Za-z\\d]{12,}$",
                                         "customValidationMessage": "The password must be alphanumeric, contain at least 12 characters, and have at least 1 letter and 1 number."
                                     },
                                     "options": {
