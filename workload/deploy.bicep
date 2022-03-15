@@ -777,7 +777,7 @@ module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.b
 // Execute Deployment script to check the status of the image build.
 
 @batchSize(1)
-module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/deploy.bicep' = [for i in range(0, 8): if (useSharedImage) {
+module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/deploy.bicep' = [for i in range(0, 39): if (useSharedImage) {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     name: 'AVD-Build-Image-Template-Check-Build-${i}'
     params: {
@@ -804,7 +804,7 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
         $status=$getStatus.LastRunStatusRunState
         $statusMessage=$getStatus.LastRunStatusMessage
         $startTime=Get-Date
-        $reset=$startTime + (New-TimeSpan -Minutes 10)
+        $reset=$startTime + (New-TimeSpan -Minutes 2)
         Write-Host "Script will time out in $reset"
             do {
             $now=Get-Date
