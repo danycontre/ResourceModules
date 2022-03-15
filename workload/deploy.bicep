@@ -804,11 +804,12 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
         $status=$getStatus.LastRunStatusRunState
         $statusMessage=$getStatus.LastRunStatusMessage
         $startTime=Get-Date
-        $reset=$startTime + (New-TimeSpan -Minutes 20)
+        $reset=$startTime + (New-TimeSpan -Minutes 2)
+        Write-Host "Script will time out in $reset"
             do {
             $now=Get-Date
             Write-Host "Getting the current time: $now"
-            if ( $now -eq $reset ){
+            if (($now -eq $reset) -or ($now -gt $reset)) {
                 break
             }
             $expiryTime=(Get-AzAccessToken).ExpiresOn.Datetime
@@ -832,7 +833,7 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
                 break
             }
         }
-        until ($status -eq "Succeeded")
+        until (($now -eq $reset) -or ($now -gt $reset))
 
         ''' : ''
     }
