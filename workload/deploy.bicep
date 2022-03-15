@@ -812,8 +812,8 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
             $expiryTime=(Get-AzAccessToken).ExpiresOn.Datetime
             $reset=$startTime + (New-TimeSpan -Minutes 45)
             Write-Host "Auth token would be expire on $expiryTime"
-            Write-Host "Reset time is $reset"
-            if ($now -gt $reset)  {
+           # Write-Host "Reset time is $reset"
+           # if ($now -gt $reset)  {
                 Write-Host "Reset Azure Context"
                 Clear-AzContext -Force
                 Write-Host "Setting up the AzContext"
@@ -821,7 +821,7 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
                 Connect-AzAccount -Identity -AccountId $clientId
                 Get-AzAccessToken
                 Select-AzSubscription -Subscription $subscriptionId
-            }
+            # }
             $getStatus=$(Get-AzImageBuilderTemplate -ResourceGroupName $resourceGroupName -Name $imageTemplateName)
             $status=$getStatus.LastRunStatusRunState
             Write-Host "Current status of the image build $imageTemplateName is: $status"
