@@ -776,6 +776,7 @@ module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.b
 
 // Execute Deployment script to check the status of the image build.
 
+@batchSize(1)
 module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/deploy.bicep' = [for i in range(0, 4): if (useSharedImage) {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
     name: 'AVD-Build-Image-Template-Check-Build-${i}'
