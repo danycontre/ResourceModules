@@ -804,7 +804,7 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
         $status=$getStatus.LastRunStatusRunState
         $statusMessage=$getStatus.LastRunStatusMessage
         $startTime=Get-Date
-        $reset=$startTime + (New-TimeSpan -Minutes 2)
+        $reset=$startTime + (New-TimeSpan -Minutes 20)
         Write-Host "Script will time out in $reset"
             do {
             $now=Get-Date
@@ -817,6 +817,7 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
             $getStatus=$(Get-AzImageBuilderTemplate -ResourceGroupName $resourceGroupName -Name $imageTemplateName)
             $status=$getStatus.LastRunStatusRunState
             Write-Host "Current status of the image build $imageTemplateName is: $status"
+            Write-Host "Script will time out in $reset"
             $DeploymentScriptOutputs=$now
             $DeploymentScriptOutputs=$status
             if ($status -eq "Failed") {
