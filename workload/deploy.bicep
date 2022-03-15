@@ -706,7 +706,7 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
             {
                 type: 'WindowsRestart'
                 restartCheckCommand: 'write-host "restarting post Optimizations"'
-                restartTimeout: '5m'
+                restartTimeout: '10m'
             }
 
             {
@@ -722,7 +722,7 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
             {
                 type: 'WindowsRestart'
                 restartCheckCommand: 'write-host "restarting post Windows updates"'
-                restartTimeout: '5m'
+                restartTimeout: '10m'
             }
             {
                 type: 'PowerShell'
@@ -731,7 +731,7 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
                 runAsSystem: true
                 inline: [
                     'Write-Host "Sleep for a min" '
-                    'Start-Sleep 60'
+                    'Start-Sleep -Seconds 60'
                 ]
             }
         ]
