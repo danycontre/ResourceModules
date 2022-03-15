@@ -49,13 +49,14 @@ Set-Content $updatePath $file
 
 # run script
 # .\optimize -WindowsVersion 2004 -Verbose
-.\Win10_VirtualDesktop_Optimize.ps1 -Verbose -AcceptEULA
-Write-Host 'AIB Customization: Finished OS Optimizations script'
+##.\Win10_VirtualDesktop_Optimize.ps1 -Verbose -AcceptEULA
+#Write-Host 'AIB Customization: Finished OS Optimizations script'
 
 #Running new file
 
 #Write-Host 'Running new AIB Customization script'
 .\Windows_VDOT.ps1 -Verbose -AcceptEULA
+Write-Host 'AIB Customization: Finished OS Optimizations script'
 ### Setting the RDP Shortpath.
 Write-Host 'Configuring RDP ShortPath'
 
