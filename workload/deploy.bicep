@@ -814,13 +814,13 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
             Write-Host "Auth token would be expire on $expiryTime"
            # Write-Host "Reset time is $reset"
            # if ($now -gt $reset)  {
-                Write-Host "Reset Azure Context"
-                Clear-AzContext -Force
-                Write-Host "Setting up the AzContext"
-                Write-Host "Logging into $subscriptionId with clientId $clientId"
-                Connect-AzAccount -Identity -AccountId $clientId
+               # Write-Host "Reset Azure Context"
+               # Clear-AzContext -Force
+               # Write-Host "Setting up the AzContext"
+              #  Write-Host "Logging into $subscriptionId with clientId $clientId"
+               # Connect-AzAccount -Identity -AccountId $clientId
                 Get-AzAccessToken
-                Select-AzSubscription -Subscription $subscriptionId
+               # Select-AzSubscription -Subscription $subscriptionId
             # }
             $getStatus=$(Get-AzImageBuilderTemplate -ResourceGroupName $resourceGroupName -Name $imageTemplateName)
             $status=$getStatus.LastRunStatusRunState
