@@ -776,11 +776,11 @@ module imageTemplateBuild '../arm/Microsoft.Resources/deploymentScripts/deploy.b
 
 // Execute Deployment script to check the status of the image build.
 
-module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/deploy.bicep' = if (useSharedImage) {
+module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/deploy.bicep' = [for i in range(0, 4): if (useSharedImage) {
     scope: resourceGroup('${avdShrdlSubscriptionId}', '${avdSharedResourcesRgName}')
-    name: 'AVD-Build-Image-Template-Check-Build-${time}'
+    name: 'AVD-Build-Image-Template-Check-Build-${i}'
     params: {
-        name: 'imageTemplateBuildCheckName-${avdOsImage}-${time}'
+        name: 'imageTemplateBuildCheckName-${avdOsImage}'
         location: aiblocation
         timeout: 'PT6H'
         azPowerShellVersion: '7.2'
@@ -799,29 +799,19 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
             $ErrorActionPreference = "Stop"
             Install-Module -Name Az.ImageBuilder -Force
             $DeploymentScriptOutputs = @{}
-
         $getStatus=$(Get-AzImageBuilderTemplate -ResourceGroupName $resourceGroupName -Name $imageTemplateName)
         $status=$getStatus.LastRunStatusRunState
         $statusMessage=$getStatus.LastRunStatusMessage
         $startTime=Get-Date
-        $expiryTime=(Get-AzAccessToken).ExpiresOn.Datetime
-
+        $reset=$startTime + (New-TimeSpan -Minutes 20)
             do {
             $now=Get-Date
             Write-Host "Getting the current time: $now"
+            if ( $now -eq $reset ){
+                break
+            }
             $expiryTime=(Get-AzAccessToken).ExpiresOn.Datetime
-            $reset=$startTime + (New-TimeSpan -Minutes 45)
-            Write-Host "Auth token would be expire on $expiryTime"
-           # Write-Host "Reset time is $reset"
-           # if ($now -gt $reset)  {
-               # Write-Host "Reset Azure Context"
-               # Clear-AzContext -Force
-               # Write-Host "Setting up the AzContext"
-              #  Write-Host "Logging into $subscriptionId with clientId $clientId"
-               # Connect-AzAccount -Identity -AccountId $clientId
-                Get-AzAccessToken
-               # Select-AzSubscription -Subscription $subscriptionId
-            # }
+            Write-Host "Token expiry time is $expiryTime"
             $getStatus=$(Get-AzImageBuilderTemplate -ResourceGroupName $resourceGroupName -Name $imageTemplateName)
             $status=$getStatus.LastRunStatusRunState
             Write-Host "Current status of the image build $imageTemplateName is: $status"
@@ -840,13 +830,6 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
                 Write-Host "Success. Image template definition: $imageTemplateName is finished "
                 break
             }
-            # Sleep for 5 minutes
-           # Write-Host "Sleeping for 5 min"
-           #  Get-AzAccessToken
-             # $DeploymentScriptOutputs="Sleeping for 5 minutes"
-            # Start-Sleep 300
-
-
         }
         until ($status -eq "Succeeded")
 
@@ -858,7 +841,7 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
         azureImageBuilderRoleAssign
         imageTemplateBuild
     ]
-}
+}]
 
 //
 
