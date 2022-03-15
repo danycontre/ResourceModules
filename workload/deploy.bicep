@@ -718,7 +718,16 @@ module imageTemplate '../arm/Microsoft.VirtualMachineImages/imageTemplates/deplo
                 ]
                 updateLimit: 40
             }
-
+            {
+                type: 'PowerShell'
+                name: 'Sleep for a min'
+                runElevated: true
+                runAsSystem: true
+                inline: [
+                    'Write-Host "Sleep for a 5 min" '
+                    'Start-Sleep -Seconds 300'
+                ]
+            }
             {
                 type: 'WindowsRestart'
                 restartCheckCommand: 'write-host "restarting post Windows updates"'
