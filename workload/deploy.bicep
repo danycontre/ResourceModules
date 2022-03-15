@@ -810,8 +810,10 @@ module imageTemplateBuildCheck '../arm/Microsoft.Resources/deploymentScripts/dep
             $now=Get-Date
             Write-Host "Getting the current time: $now"
             $expiryTime=(Get-AzAccessToken).ExpiresOn.Datetime
-            Write-Host "Auth token would be reset at $expiryTime"
-            if ($now -gt $expiryTime)  {
+            $reset=$startTime + (New-TimeSpan -Minutes 45)
+            Write-Host "Auth token would be expire on $expiryTime"
+            Write-Host "Reset time is $reset"
+            if ($now -gt $reset)  {
                 Write-Host "Reset Azure Context"
                 Clear-AzContext -Force
                 Write-Host "Setting up the AzContext"
